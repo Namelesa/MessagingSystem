@@ -4,7 +4,7 @@ namespace MessagingSystem.Services.User.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<Core.User.User> Users { get; set; }
+    public DbSet<Core.User.User> Users { get; init; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -12,11 +12,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Core.User.User>(builder =>
         {
             builder.Property(u => u.Login)
-                .HasMaxLength(20)
+                .HasMaxLength(80)
                 .IsRequired();
 
             builder.Property(u => u.NickName)
-                .HasMaxLength(15)
+                .HasMaxLength(80)
                 .IsRequired();
         });
         modelBuilder.Entity<Core.User.User>()

@@ -6,7 +6,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
 {
     public async Task<Core.User.User?> FindUserByNickNameAsync(string nickName) => await db.Users.FindAsync(nickName);
 
-    public async Task<Core.User.User?> FindUserByIdAsync(Guid id) => await db.Users.FindAsync(id);
+    public async Task<Core.User.User?> FindUserByIdAsync(Guid id) => await db.Users.FindAsync(id.ToString());
 
     public async Task AddUserAsync(Core.User.User user)
     {

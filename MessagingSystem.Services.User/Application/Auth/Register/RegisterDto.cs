@@ -13,5 +13,5 @@ public class RegisterDto(
     public string Email { get; init; } = email;
     public string Login { get; init; } = login;
     public string NickName { get; init; } = nickName;
-    public string Password { get; init; } = password;
+    public string Password { get; set; } = password;
 }

@@ -10,7 +10,7 @@ public class RegisterMap : Profile
     {
         CreateMap<RegisterContract, RegisterDto>();
         CreateMap<RegisterDto, Core.User.User>()
-            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+            .ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.Password))
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.FirstName + src.LastName))
             .ForMember(dest => dest.NormalizedUserName, opt => opt.MapFrom(src => (src.FirstName + src.LastName).ToUpperInvariant()))
             .ForMember(dest => dest.NormalizedEmail, opt => opt.MapFrom(src => src.Email.ToUpperInvariant()))
