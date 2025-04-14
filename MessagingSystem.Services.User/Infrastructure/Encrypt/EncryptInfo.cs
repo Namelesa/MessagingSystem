@@ -57,10 +57,10 @@ public class EncryptInfo : IEncryptInfo
 
     public void EncryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "Id" };
+        var excludedProps = new[] { "HashLogin", "HashEmail", "HashNickName" };
 
         var props = typeof(T).GetProperties()
-            .Where(p =>
+            .Where(p => 
                 p is { CanRead: true, CanWrite: true } &&
                 p.PropertyType == typeof(string) &&
                 !excludedProps.Contains(p.Name));
@@ -77,13 +77,8 @@ public class EncryptInfo : IEncryptInfo
 
     public void DecryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "Id" };
-
         var props = typeof(T).GetProperties()
-            .Where(p =>
-                p is { CanRead: true, CanWrite: true } &&
-                p.PropertyType == typeof(string) &&
-                !excludedProps.Contains(p.Name));
+            .Where(p => p is { CanRead: true, CanWrite: true } && p.PropertyType == typeof(string));
 
         foreach (var prop in props)
         {

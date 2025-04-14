@@ -18,15 +18,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             builder.Property(u => u.NickName)
                 .HasMaxLength(80)
                 .IsRequired();
+            
+            builder.Property(u => u.HashLogin)
+                .HasMaxLength(120)
+                .IsRequired();
+            
+            builder.Property(u => u.HashEmail)
+                .HasMaxLength(120)
+                .IsRequired();
+            
+            builder.Property(u => u.HashNickName)
+                .HasMaxLength(120)
+                .IsRequired();
         });
         modelBuilder.Entity<Core.User.User>()
-            .HasIndex(u => u.Login)
+            .HasIndex(u => u.HashLogin)
             .IsUnique();
         modelBuilder.Entity<Core.User.User>()
-            .HasIndex(r => r.NickName)
+            .HasIndex(r => r.HashEmail)
             .IsUnique();
         modelBuilder.Entity<Core.User.User>()
-            .HasIndex(r => r.Email)
+            .HasIndex(r => r.HashNickName)
             .IsUnique();
     }
 }

@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace MessagingSystem.Services.User.Application.Auth.Register;
+namespace MessagingSystem.Services.User.Application.User;
 
-public class RegisterValidator : AbstractValidator<RegisterDto>
+public class UserValidator : AbstractValidator<UserDto>
 {
-    public RegisterValidator()
+    public UserValidator()
     {
         RuleFor(u => u.FirstName)
             .NotEmpty().WithMessage("First name cannot be empty.")
@@ -32,11 +32,6 @@ public class RegisterValidator : AbstractValidator<RegisterDto>
             .MaximumLength(15).WithMessage("Last name must be at most 25 characters long.")
             .Matches(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!_@])[a-zA-Z\d!_@]{5,15}$")
             .WithMessage("Nick name must be 5 to 15 characters long and " +
-                         "include at least one letter, one number, and one special character (!, _, @).");
-        RuleFor(u => u.Password)
-            .NotEmpty().WithMessage("Nick name cannot be empty.")
-            .Matches(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!_@])[a-zA-Z\d!_@]{5,15}$")
-            .WithMessage("Password must be 5 to 15 characters long and " +
                          "include at least one letter, one number, and one special character (!, _, @).");
     }
 }

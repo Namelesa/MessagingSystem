@@ -1,6 +1,8 @@
 namespace MessagingSystem.Services.User.Application.Auth.Login;
 
-public class LoginDto
+public class LoginDto(string login, string password)
 {
+    public string Login { get; init; } = login;
+    public string Password { get; init; } = password;
     
 }
