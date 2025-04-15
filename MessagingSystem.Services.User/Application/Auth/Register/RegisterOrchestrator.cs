@@ -43,7 +43,7 @@ public class RegisterOrchestrator(
             if (user.UserName == null || user.Email == null) 
                 return OperationResult<string>.Fail("User can not have null properties");
             
-            var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email);
+            var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email, hashNickName);
             await publishEndpoint.Publish(confirmUserEmail);
 
             return OperationResult<string>.Ok("User registered and need to confirm email");
@@ -52,6 +52,28 @@ public class RegisterOrchestrator(
         {
             Console.WriteLine(e);
             return OperationResult<string>.Fail($"User can not be added {e.Message}");
+        }
+    }
+    
+    public async Task<OperationResult<string>> ConfirmEmailAsync(string hashNickName)
+    {
+        var decodedHash = Uri.UnescapeDataString(hashNickName);
+        var user = await userRepository.FindUserByHashNickNameAsync(decodedHash);
+
+        if (user == null)
+            return OperationResult<string>.Fail("User not found");
+
+        user.EmailConfirmed = true;
+
+        try
+        {
+            await userRepository.UpdateUserAsync(user);
+            return OperationResult<string>.Ok("User confirm email");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return OperationResult<string>.Fail($"Error {e}");
         }
     }
 }

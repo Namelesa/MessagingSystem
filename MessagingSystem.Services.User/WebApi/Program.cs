@@ -56,7 +56,7 @@ builder.Services.AddMassTransit(busConfiguration =>
 {
     busConfiguration.UsingRabbitMq((context, configurator) =>
     {
-        MessageBrokerSettings settings = context.GetRequiredService<MessageBrokerSettings>();
+        var settings = context.GetRequiredService<MessageBrokerSettings>();
          
         configurator.Host(new Uri(settings.Host), h =>
         {

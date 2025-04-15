@@ -20,4 +20,13 @@ public class RegisterController(RegisterOrchestrator registerOrchestrator, IMapp
             ? Ok($"{result.Data}")
             : BadRequest($"{result.Message}");
     } 
+    
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmailAsync([FromQuery] string id)
+    {
+        var result = await registerOrchestrator.ConfirmEmailAsync(id);
+        return result.Success
+            ? Ok($"{result.Data}")
+            : BadRequest($"{result.Message}");
+    }
 }

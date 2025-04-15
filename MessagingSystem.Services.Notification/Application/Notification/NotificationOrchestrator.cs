@@ -26,7 +26,7 @@ public class NotificationOrchestrator(
     public Task<OperationResult<string>> SendConfirmEmailAsync(UserDto userDto)
         => SendEmailAsync(userDto, async u =>
         {
-            var link = GenerateLink(u.UserName);
+            var link = GenerateLink(u.NickName);
             return await notification.SendConfirmEmailAsync(u, link);
         });
 
@@ -46,15 +46,9 @@ public class NotificationOrchestrator(
         return validationResult;
     }
 
-    private static string GenerateLink(string userName)
+    private static string GenerateLink(string nickName)
     {
-        const string baseUrl = "https://localhost:7210/";
-        var token = GenerateConfirmationToken(); 
-        return $"{baseUrl}confirm-email?user={userName}&token={token}";
-    }
-
-    private static string GenerateConfirmationToken()
-    {
-        return Guid.NewGuid().ToString();
+        const string baseUrl = "https://localhost:7210/api/auth/";
+        return $"{baseUrl}confirm-email?id={nickName}";
     }
 }

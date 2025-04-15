@@ -9,7 +9,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
         await db.Users.FirstOrDefaultAsync(u => u.HashLogin == login);
     
     public async Task<Core.User.User?> FindUserByHashNickNameAsync(string hashNickName) => 
-        await db.Users.FirstOrDefaultAsync(u => u.HashLogin == hashNickName);
+        await db.Users.FirstOrDefaultAsync(u => u.HashNickName == hashNickName);
     
     public async Task<Core.User.User?> FindUserByIdAsync(string id) => 
         await db.Users.FirstOrDefaultAsync(u => u.Id == id);
