@@ -20,7 +20,7 @@ public class NotificationController(NotificationOrchestrator notificationOrchest
     [HttpPost("deleteUser")]
     public async Task<IActionResult> SendDeleteUserEmailAsync([FromBody]UserDto userDto)
     {
-        var result = await notificationOrchestrator.SendEditUserInfoEmailAsync(userDto);
+        var result = await notificationOrchestrator.SendDeleteUserInfoEmailAsync(userDto);
         return result.Success
             ? Ok($"{result.Data}")
             : BadRequest($"{result.Message}");
@@ -29,7 +29,7 @@ public class NotificationController(NotificationOrchestrator notificationOrchest
     [HttpPost("editUser")]
     public async Task<IActionResult> SendEditUserEmailAsync([FromBody]UserDto userDto)
     {
-        var result = await notificationOrchestrator.SendDeleteUserInfoEmailAsync(userDto);
+        var result = await notificationOrchestrator.SendEditUserInfoEmailAsync(userDto);
         return result.Success
             ? Ok($"{result.Data}")
             : BadRequest($"{result.Message}");

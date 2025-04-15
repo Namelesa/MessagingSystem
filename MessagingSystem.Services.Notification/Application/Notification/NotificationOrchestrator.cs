@@ -38,11 +38,11 @@ public class NotificationOrchestrator(
 
     private async Task<ValidationResult> ValidateAndEncryptAsync(UserDto userDto)
     {
-        var validationResult = await validator.ValidateAsync(userDto);
-        if (validationResult.IsValid && encryptInfo is EncryptInfo concreteEncryptor)
+        if (encryptInfo is EncryptInfo concreteEncryptor)
         {
             concreteEncryptor.DecryptObjectStrings(userDto);
         }
+        var validationResult = await validator.ValidateAsync(userDto);
         return validationResult;
     }
 
