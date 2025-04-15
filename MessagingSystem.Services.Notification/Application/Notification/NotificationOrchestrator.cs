@@ -23,10 +23,10 @@ public class NotificationOrchestrator(
             : OperationResult<string>.Fail("User was not notified");
     }
 
-    public Task<OperationResult<string>> SendConfirmEmailAsync(UserDto userDto)
+    public Task<OperationResult<string>> SendConfirmEmailAsync(UserDto userDto, string nickName)
         => SendEmailAsync(userDto, async u =>
         {
-            var link = GenerateLink(u.NickName);
+            var link = GenerateLink(nickName);
             return await notification.SendConfirmEmailAsync(u, link);
         });
 

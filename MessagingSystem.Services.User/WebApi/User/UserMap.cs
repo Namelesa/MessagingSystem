@@ -8,15 +8,7 @@ public class UserMap : Profile
 {
     public UserMap()
     {
-        CreateMap<EditUserContract, UserDto>()
-            .ConstructUsing(src => new UserDto(
-                src.FirstName,
-                src.LastName,
-                src.Login,
-                src.Email,
-                src.NickName
-            ));
-        
+        CreateMap<EditUserContract, UserDto>();
         CreateMap<UserDto, Core.User.User>()
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.FirstName + src.LastName))

@@ -1,6 +1,11 @@
 namespace MessagingSystem.Services.User.Application.User;
 
-public class UserDto(string firstName, string lastName, string login, string email, string nickName)
+public class UserDto(
+    string firstName, 
+    string lastName, 
+    string login, 
+    string email, 
+    string nickName)
 {
     public string FirstName { get; init; } = firstName;
     public string LastName { get; init; } = lastName;

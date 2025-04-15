@@ -74,13 +74,10 @@ public class EncryptInfo : IEncryptInfo
 
     public void DecryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "NickName" };
-
         var props = typeof(T).GetProperties()
             .Where(p => 
                 p is { CanRead: true, CanWrite: true } &&
-                p.PropertyType == typeof(string) &&
-                !excludedProps.Contains(p.Name));
+                p.PropertyType == typeof(string));
 
         foreach (var prop in props)
         {

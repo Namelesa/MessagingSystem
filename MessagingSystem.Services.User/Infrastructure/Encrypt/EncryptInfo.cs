@@ -75,6 +75,26 @@ public class EncryptInfo : IEncryptInfo
         }
     }
 
+    public void EncryptObjectStringsForUpdate<T>(T obj)
+    {
+        var excludedProps = new[] { "UserName", "Login", "Email", "NickName" };
+
+        var props = typeof(T).GetProperties()
+            .Where(p => 
+                p is { CanRead: true, CanWrite: true } &&
+                p.PropertyType == typeof(string) &&
+                excludedProps.Contains(p.Name));
+
+        foreach (var prop in props)
+        {
+            var value = prop.GetValue(obj) as string;
+            if (!string.IsNullOrEmpty(value))
+            {
+                prop.SetValue(obj, Encrypt(value));
+            }
+        }
+    }
+    
     public void DecryptObjectStrings<T>(T obj)
     {
         var excludedProps = new[] { "HashLogin", "HashEmail", "HashNickName" };

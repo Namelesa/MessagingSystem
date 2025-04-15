@@ -31,6 +31,8 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddMassTransit(busConfiguration =>
 {
     busConfiguration.AddConsumer<ConfirmEmailConsumer>();
+    busConfiguration.AddConsumer<EditUserInfoConsumer>();
+    busConfiguration.AddConsumer<DeleteUserInfoConsumer>();
     
     busConfiguration.UsingRabbitMq((context, configurator) =>
     {
@@ -45,6 +47,14 @@ builder.Services.AddMassTransit(busConfiguration =>
         configurator.ReceiveEndpoint("confirm-email-queue", e =>
         {
             e.ConfigureConsumer<ConfirmEmailConsumer>(context);
+        });
+        configurator.ReceiveEndpoint("edit-user-queue", e =>
+        {
+            e.ConfigureConsumer<EditUserInfoConsumer>(context);
+        });
+        configurator.ReceiveEndpoint("delete-user-queue", e =>
+        {
+            e.ConfigureConsumer<DeleteUserInfoConsumer>(context);
         });
     });
 });

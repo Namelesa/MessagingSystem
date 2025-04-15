@@ -2,7 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MessagingSystem.Services.User.WebApi.Register.Contracts;
 
-public class RegisterContract(string firstName, string lastName, string login, string email, string nickName, string password)
+public class RegisterContract(
+    string firstName, 
+    string lastName, 
+    string login, 
+    string email, 
+    string nickName, 
+    string password)
 {
     [Required(ErrorMessage = "First name is required")]
     [RegularExpression("^[A-Za-zА-Яа-яЁё]{3,25}$", 

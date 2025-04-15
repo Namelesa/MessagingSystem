@@ -18,9 +18,11 @@ public class UsersController(UserOrchestrator userOrchestrator, IMapper mapper) 
         var userDto = mapper.Map<UserDto>(userContract);
         var result = await userOrchestrator.EditUserInfoAsync(userDto, userId);
 
-        return result.Success
-            ? Ok($"{result.Data}")
-            : BadRequest($"{result.Message}");
+        if (!result.Success) 
+            return BadRequest($"{result.Message}");
+        
+        Redirect("api/auth/login");
+        return Ok($"{result.Data}");
     }
 
     [HttpDelete("delete")]
@@ -28,8 +30,10 @@ public class UsersController(UserOrchestrator userOrchestrator, IMapper mapper) 
     {
         var result = await userOrchestrator.DeleteUserAsync(id);
         
-        return result.Success
-            ? Ok($"{result.Data}")
-            : BadRequest($"{result.Message}");
+        if (!result.Success) 
+            return BadRequest($"{result.Message}");
+        
+        Redirect("api/auth/register");
+        return Ok($"{result.Data}");
     }
 }
