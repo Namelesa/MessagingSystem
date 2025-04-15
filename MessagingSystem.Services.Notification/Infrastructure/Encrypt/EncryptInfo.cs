@@ -1,9 +1,9 @@
+using System.Security.Cryptography;
 using System.Text;
 using Org.BouncyCastle.Crypto.Parameters;
-using System.Security.Cryptography;
 using ChaCha20Poly1305 = Org.BouncyCastle.Crypto.Modes.ChaCha20Poly1305;
 
-namespace MessagingSystem.Services.User.Infrastructure.Encrypt;
+namespace MessagingSystem.Services.Notification.Infrastructure.Encrypt;
 
 public class EncryptInfo : IEncryptInfo
 {
@@ -57,13 +57,10 @@ public class EncryptInfo : IEncryptInfo
 
     public void EncryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "HashLogin", "HashEmail", "HashNickName" };
-
         var props = typeof(T).GetProperties()
             .Where(p => 
                 p is { CanRead: true, CanWrite: true } &&
-                p.PropertyType == typeof(string) &&
-                !excludedProps.Contains(p.Name));
+                p.PropertyType == typeof(string));
 
         foreach (var prop in props)
         {
@@ -77,13 +74,10 @@ public class EncryptInfo : IEncryptInfo
 
     public void DecryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "HashLogin", "HashEmail", "HashNickName" };
-
         var props = typeof(T).GetProperties()
             .Where(p => 
                 p is { CanRead: true, CanWrite: true } &&
-                p.PropertyType == typeof(string) &&
-                !excludedProps.Contains(p.Name));
+                p.PropertyType == typeof(string));
 
         foreach (var prop in props)
         {

@@ -52,7 +52,7 @@ public class UserOrchestrator(
         var user = await userRepository.FindUserByIdAsync(userId);
         if (user == null)
             return OperationResult<string>.Fail("Not found user");
-
+        
         try
         {
             await userRepository.DeleteUserAsync(user);

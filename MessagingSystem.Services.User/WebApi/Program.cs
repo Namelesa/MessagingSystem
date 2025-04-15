@@ -1,5 +1,6 @@
 using System.Text;
 using FluentValidation;
+using MassTransit;
 using MessagingSystem.Services.User.Application.Auth.Login;
 using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.User;
@@ -7,6 +8,7 @@ using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
+using MessagingSystem.Services.User.Infrastructure.MessageBroker;
 using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
 using MessagingSystem.Services.User.Persistence;
 using MessagingSystem.Services.User.Persistence.DbInitializer;
@@ -14,9 +16,9 @@ using MessagingSystem.Services.User.Persistence.User;
 using MessagingSystem.Services.User.WebApi.Login;
 using MessagingSystem.Services.User.WebApi.Register;
 using MessagingSystem.Services.User.WebApi.User;
-using MessagingSystem.Services.User.WebApi.User.Contracts;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -26,7 +28,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-
 builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 
 builder.Services.AddScoped<IHasher, Hasher>();
@@ -44,6 +45,26 @@ builder.Services.AddScoped<IValidator<UserDto>, UserValidator>();
 builder.Services.AddAutoMapper(config => config.AddProfile(new RegisterMap()));
 builder.Services.AddAutoMapper(config => config.AddProfile(new LoginMap()));
 builder.Services.AddAutoMapper(config => config.AddProfile(new UserMap()));
+
+builder.Services.Configure<MessageBrokerSettings>(
+    builder.Configuration.GetSection("MessageBroker"));
+
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IOptions<MessageBrokerSettings>>().Value);
+
+builder.Services.AddMassTransit(busConfiguration =>
+{
+    busConfiguration.UsingRabbitMq((context, configurator) =>
+    {
+        MessageBrokerSettings settings = context.GetRequiredService<MessageBrokerSettings>();
+         
+        configurator.Host(new Uri(settings.Host), h =>
+        {
+            h.Username(settings.UserName);
+            h.Password(settings.Password);
+        });
+    });
+});
 
 builder.Services.AddAuthentication(options =>
 {

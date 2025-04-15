@@ -1,7 +1,7 @@
 using AutoMapper;
 using FluentValidation;
-//using MassTransit;
-//using MessagingSystem.SendingModels.UserNotification;
+using MassTransit;
+using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
@@ -15,7 +15,8 @@ public class RegisterOrchestrator(
     IValidator<RegisterDto> validator,
     IHasherPassword hasherPassword,
     IEncryptInfo encryptInfo,
-    IHasher hasher)
+    IHasher hasher,
+    IPublishEndpoint publishEndpoint)
 {
     public async Task<OperationResult<string>> RegisterUserAsync(RegisterDto registerDto)
     {
@@ -42,8 +43,8 @@ public class RegisterOrchestrator(
             if (user.UserName == null || user.Email == null) 
                 return OperationResult<string>.Fail("User can not have null properties");
             
-            //var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email);
-            //await publishEndpoint.Publish(confirmUserEmail);
+            var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email);
+            await publishEndpoint.Publish(confirmUserEmail);
 
             return OperationResult<string>.Ok("User registered and need to confirm email");
         }
