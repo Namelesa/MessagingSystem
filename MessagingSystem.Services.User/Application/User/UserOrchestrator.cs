@@ -5,6 +5,7 @@ using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
+using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
 
 namespace MessagingSystem.Services.User.Application.User;
 
@@ -14,10 +15,16 @@ public class UserOrchestrator(
     IUserRepository userRepository,
     IEncryptInfo encryptInfo,
     IHasher hasher,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    IPublicKeyStorage publicKeyStorage)
 {
     public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
     {
+        var publicKey = publicKeyStorage.Get("Notification");
+
+        if (publicKey == null)
+            return OperationResult<string>.Fail("Public key for Notification service not found");
+        
         var validationResult = await validator.ValidateAsync(userDto);
         if (!validationResult.IsValid) 
             return OperationResult<string>.Fail(string.Join("; ", validationResult.Errors));
@@ -37,7 +44,6 @@ public class UserOrchestrator(
         if (encryptInfo is EncryptInfo concreteEncryptor)
             concreteEncryptor.EncryptObjectStringsForUpdate(existingUser);
         
-        Console.WriteLine(existingUser.UserName);
         try
         {
             if (existingUser.UserName == null || existingUser.Email == null) 
@@ -46,6 +52,9 @@ public class UserOrchestrator(
             await userRepository.UpdateUserAsync(existingUser);
             
             var editUserInfo = new EditUserEmail(existingUser.Email, existingUser.UserName);
+            if (encryptInfo is EncryptInfo concreteEncryptorRsa)
+                concreteEncryptorRsa.EncryptRsaObjectStrings(editUserInfo, publicKey);
+
             await publishEndpoint.Publish(editUserInfo);
             
             return OperationResult<string>.Ok("Update user info");
@@ -59,6 +68,11 @@ public class UserOrchestrator(
     }
     public async Task<OperationResult<string>> DeleteUserAsync(string userId)
     {
+        var publicKey = publicKeyStorage.Get("Notification");
+
+        if (publicKey == null)
+            return OperationResult<string>.Fail("Public key for Notification service not found");
+        
         var user = await userRepository.FindUserByIdAsync(userId);
         if (user == null)
             return OperationResult<string>.Fail("Not found user");
@@ -71,6 +85,9 @@ public class UserOrchestrator(
             await userRepository.DeleteUserAsync(user);
             
             var editUserInfo = new DeleteUserEmail(user.Email, user.UserName);
+            if (encryptInfo is EncryptInfo concreteEncryptorRsa)
+                concreteEncryptorRsa.EncryptRsaObjectStrings(editUserInfo, publicKey);
+            
             await publishEndpoint.Publish(editUserInfo);
             
             return OperationResult<string>.Ok("Delete user");

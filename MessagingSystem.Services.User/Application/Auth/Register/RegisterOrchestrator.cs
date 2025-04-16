@@ -5,6 +5,7 @@ using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
+using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
 using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
 
 namespace MessagingSystem.Services.User.Application.Auth.Register;
@@ -16,10 +17,16 @@ public class RegisterOrchestrator(
     IHasherPassword hasherPassword,
     IEncryptInfo encryptInfo,
     IHasher hasher,
-    IPublishEndpoint publishEndpoint)
+    IPublishEndpoint publishEndpoint,
+    IPublicKeyStorage publicKeyStorage)
 {
     public async Task<OperationResult<string>> RegisterUserAsync(RegisterDto registerDto)
     {
+        var publicKey = publicKeyStorage.Get("Notification");
+
+        if (publicKey == null)
+            return OperationResult<string>.Fail("Public key for Notification service not found");
+        
         var validationResult = await validator.ValidateAsync(registerDto);
         if (!validationResult.IsValid) 
             return OperationResult<string>.Fail(string.Join("; ", validationResult.Errors));
@@ -44,6 +51,9 @@ public class RegisterOrchestrator(
                 return OperationResult<string>.Fail("User can not have null properties");
             
             var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email, hashNickName);
+            if (encryptInfo is EncryptInfo concreteEncryptorRsa)
+                concreteEncryptorRsa.EncryptRsaObjectStrings(confirmUserEmail, publicKey);
+            
             await publishEndpoint.Publish(confirmUserEmail);
 
             return OperationResult<string>.Ok("User registered and need to confirm email");

@@ -3,11 +3,14 @@ using FluentValidation;
 using MassTransit;
 using MessagingSystem.Services.User.Application.Auth.Login;
 using MessagingSystem.Services.User.Application.Auth.Register;
+using MessagingSystem.Services.User.Application.Messaging.Key;
 using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
+using MessagingSystem.Services.User.Infrastructure.Keys.Publisher;
+using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
 using MessagingSystem.Services.User.Infrastructure.MessageBroker;
 using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
 using MessagingSystem.Services.User.Persistence;
@@ -27,12 +30,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options => 
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddScoped<KeyPublisher>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 
 builder.Services.AddScoped<IHasher, Hasher>();
 builder.Services.AddScoped<IHasherPassword, HasherPassword>();
 builder.Services.AddSingleton<IEncryptInfo, EncryptInfo>();
+builder.Services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
 
 builder.Services.AddScoped<RegisterOrchestrator>();
 builder.Services.AddScoped<LoginOrchestrator>();
@@ -54,6 +60,8 @@ builder.Services.AddSingleton(sp =>
 
 builder.Services.AddMassTransit(busConfiguration =>
 {
+    busConfiguration.AddConsumer<PublicKeyConsumer>();
+    
     busConfiguration.UsingRabbitMq((context, configurator) =>
     {
         var settings = context.GetRequiredService<MessageBrokerSettings>();
@@ -62,6 +70,11 @@ builder.Services.AddMassTransit(busConfiguration =>
         {
             h.Username(settings.UserName);
             h.Password(settings.Password);
+        });
+        
+        configurator.ReceiveEndpoint("public-key-notification-queue", e =>
+        {
+            e.ConfigureConsumer<PublicKeyConsumer>(context);
         });
     });
 });
@@ -147,6 +160,8 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    var publisher = scope.ServiceProvider.GetRequiredService<KeyPublisher>();
+    await publisher.PublishAsync();
     await dbInitializer.Initialize();
 }
 

@@ -3,7 +3,7 @@ using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.Notification.Application.Notification;
 using MessagingSystem.Services.Notification.Core.User;
 
-namespace MessagingSystem.Services.Notification.Application.Messaging;
+namespace MessagingSystem.Services.Notification.Application.Messaging.Email;
 
 public class DeleteUserInfoConsumer(NotificationOrchestrator notificationOrchestrator) : IConsumer<DeleteUserEmail>
 {

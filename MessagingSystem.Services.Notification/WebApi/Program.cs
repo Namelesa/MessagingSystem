@@ -1,9 +1,11 @@
 using FluentValidation;
 using MassTransit;
-using MessagingSystem.Services.Notification.Application.Messaging;
+using MessagingSystem.Services.Notification.Application.Messaging.Email;
+using MessagingSystem.Services.Notification.Application.Messaging.Key;
 using MessagingSystem.Services.Notification.Application.Notification;
 using MessagingSystem.Services.Notification.Core.User;
 using MessagingSystem.Services.Notification.Infrastructure.Encrypt;
+using MessagingSystem.Services.Notification.Infrastructure.KeyPublisher;
 using MessagingSystem.Services.Notification.Infrastructure.MailJet;
 using MessagingSystem.Services.Notification.Infrastructure.MessageBroker;
 using MessagingSystem.Services.Notification.Infrastructure.ReaderTemplate;
@@ -13,6 +15,7 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<KeyPublisher>();
 
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddTransient<ITemplateReader, TemplateReader>();
@@ -33,6 +36,7 @@ builder.Services.AddMassTransit(busConfiguration =>
     busConfiguration.AddConsumer<ConfirmEmailConsumer>();
     busConfiguration.AddConsumer<EditUserInfoConsumer>();
     busConfiguration.AddConsumer<DeleteUserInfoConsumer>();
+    busConfiguration.AddConsumer<PublicKeyConsumer>();
     
     busConfiguration.UsingRabbitMq((context, configurator) =>
     {
@@ -56,6 +60,10 @@ builder.Services.AddMassTransit(busConfiguration =>
         {
             e.ConfigureConsumer<DeleteUserInfoConsumer>(context);
         });
+        configurator.ReceiveEndpoint("public-key-user-queue", e =>
+        {
+            e.ConfigureConsumer<PublicKeyConsumer>(context);
+        });
     });
 });
 
@@ -70,6 +78,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var publisher = scope.ServiceProvider.GetRequiredService<KeyPublisher>();
+    await publisher.PublishAsync();
 }
 
 app.UseHttpsRedirection();
