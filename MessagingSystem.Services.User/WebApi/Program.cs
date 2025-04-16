@@ -1,146 +1,16 @@
-using System.Text;
-using FluentValidation;
-using MassTransit;
-using MessagingSystem.Services.User.Application.Auth.Login;
-using MessagingSystem.Services.User.Application.Auth.Register;
-using MessagingSystem.Services.User.Application.Messaging.Key;
-using MessagingSystem.Services.User.Application.User;
-using MessagingSystem.Services.User.Core.User;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
-using MessagingSystem.Services.User.Infrastructure.HasherInfo;
-using MessagingSystem.Services.User.Infrastructure.Jwt;
+using MessagingSystem.Services.User.Application;
+using MessagingSystem.Services.User.Infrastructure;
 using MessagingSystem.Services.User.Infrastructure.Keys.Publisher;
-using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
-using MessagingSystem.Services.User.Infrastructure.MessageBroker;
-using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
 using MessagingSystem.Services.User.Persistence;
 using MessagingSystem.Services.User.Persistence.DbInitializer;
-using MessagingSystem.Services.User.Persistence.User;
-using MessagingSystem.Services.User.WebApi.Login;
-using MessagingSystem.Services.User.WebApi.Register;
-using MessagingSystem.Services.User.WebApi.User;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using MessagingSystem.Services.User.WebApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddScoped<KeyPublisher>();
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IDbInitializer, DbInitializer>();
-
-builder.Services.AddScoped<IHasher, Hasher>();
-builder.Services.AddScoped<IHasherPassword, HasherPassword>();
-builder.Services.AddSingleton<IEncryptInfo, EncryptInfo>();
-builder.Services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
-
-builder.Services.AddScoped<RegisterOrchestrator>();
-builder.Services.AddScoped<LoginOrchestrator>();
-builder.Services.AddScoped<UserOrchestrator>();
-
-builder.Services.AddScoped<IValidator<RegisterDto>, RegisterValidator>();
-builder.Services.AddScoped<IValidator<LoginDto>, LoginValidator>();
-builder.Services.AddScoped<IValidator<UserDto>, UserValidator>();
-
-builder.Services.AddAutoMapper(config => config.AddProfile(new RegisterMap()));
-builder.Services.AddAutoMapper(config => config.AddProfile(new LoginMap()));
-builder.Services.AddAutoMapper(config => config.AddProfile(new UserMap()));
-
-builder.Services.Configure<MessageBrokerSettings>(
-    builder.Configuration.GetSection("MessageBroker"));
-
-builder.Services.AddSingleton(sp =>
-    sp.GetRequiredService<IOptions<MessageBrokerSettings>>().Value);
-
-builder.Services.AddMassTransit(busConfiguration =>
-{
-    busConfiguration.AddConsumer<PublicKeyConsumer>();
-    
-    busConfiguration.UsingRabbitMq((context, configurator) =>
-    {
-        var settings = context.GetRequiredService<MessageBrokerSettings>();
-         
-        configurator.Host(new Uri(settings.Host), h =>
-        {
-            h.Username(settings.UserName);
-            h.Password(settings.Password);
-        });
-        
-        configurator.ReceiveEndpoint("public-key-notification-queue", e =>
-        {
-            e.ConfigureConsumer<PublicKeyConsumer>(context);
-        });
-    });
-});
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidIssuer = builder.Configuration["JWTConfig:Issuer"],
-        ValidAudience = builder.Configuration["JWTConfig:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTConfig:Key"] ?? string.Empty)),
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true
-        
-    };
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            if (!context.Request.Cookies.ContainsKey("access_token")) 
-                return Task.CompletedTask;
-            var encryptedToken = context.Request.Cookies["access_token"];
-            var decryptService = context.HttpContext.RequestServices.GetRequiredService<IEncryptInfo>();
-            if (encryptedToken == null) 
-                return Task.CompletedTask;
-            var decryptedToken = decryptService.Decrypt(encryptedToken);
-            context.Token = decryptedToken;
-
-            return Task.CompletedTask;
-        }
-    };
-});
-builder.Services.AddAuthorization();
-builder.Services.AddScoped<IJwtService, JwtService>();
-
-builder.Services.AddSwaggerGen(options =>
-{
-    var jwtSecurityScheme = new OpenApiSecurityScheme
-    {
-        BearerFormat = "JWT",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.Http,
-        Scheme = JwtBearerDefaults.AuthenticationScheme,
-        Description = "Enter your JWT access token",
-        Reference = new OpenApiReference
-        {
-            Id = JwtBearerDefaults.AuthenticationScheme,
-            Type = ReferenceType.SecurityScheme
-        }
-    };
-    options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {jwtSecurityScheme, Array.Empty<string>()}
-    });
-});
+builder.Services.AddPersistenceLayer(builder.Configuration);
+builder.Services.AddApplicationLayer(builder.Configuration);
+builder.Services.AddInfrastructureLayer(builder.Configuration);
+builder.Services.AddWebApiLayer(builder.Configuration);
 
 builder.Services.AddControllers();
 
@@ -167,6 +37,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
