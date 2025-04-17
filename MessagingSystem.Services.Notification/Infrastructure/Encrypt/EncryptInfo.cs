@@ -54,15 +54,7 @@ public class EncryptInfo : IEncryptInfo
 
         return Convert.ToBase64String(result);
     }
-
-    public string EncryptRsa(string plainText, string baseKey)
-    {
-        using var rsa = RSA.Create();
-        rsa.ImportRSAPublicKey(Convert.FromBase64String(baseKey), out _);
-        var encrypted = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.OaepSHA256);
-        return Convert.ToBase64String(encrypted);
-    }
-
+    
     public string Decrypt(string cipherText)
     {
         var input = Convert.FromBase64String(cipherText);
@@ -86,24 +78,7 @@ public class EncryptInfo : IEncryptInfo
         var decrypted = _rsa.Decrypt(encryptedBytes, RSAEncryptionPadding.OaepSHA256);
         return Encoding.UTF8.GetString(decrypted);
     }
-
-    public void EncryptObjectStrings<T>(T obj)
-    {
-        var props = typeof(T).GetProperties()
-            .Where(p => 
-                p is { CanRead: true, CanWrite: true } &&
-                p.PropertyType == typeof(string));
-
-        foreach (var prop in props)
-        {
-            var value = prop.GetValue(obj) as string;
-            if (!string.IsNullOrEmpty(value))
-            {
-                prop.SetValue(obj, Encrypt(value));
-            }
-        }
-    }
-
+    
     public void DecryptObjectStrings<T>(T obj)
     {
         var props = typeof(T).GetProperties()

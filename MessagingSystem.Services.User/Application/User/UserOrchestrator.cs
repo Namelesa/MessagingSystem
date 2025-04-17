@@ -41,8 +41,7 @@ public class UserOrchestrator(
         mapper.Map(userDto, existingUser);
         existingUser.SetHashes(hashLogin, hashEmail, hashNickName);
         
-        if (encryptInfo is EncryptInfo concreteEncryptor)
-            concreteEncryptor.EncryptObjectStringsForUpdate(existingUser);
+        encryptInfo.EncryptObjectStringsForUpdate(existingUser);
         
         try
         {
@@ -52,9 +51,8 @@ public class UserOrchestrator(
             await userRepository.UpdateUserAsync(existingUser);
             
             var editUserInfo = new EditUserEmail(existingUser.Email, existingUser.UserName);
-            if (encryptInfo is EncryptInfo concreteEncryptorRsa)
-                concreteEncryptorRsa.EncryptRsaObjectStrings(editUserInfo, publicKey);
-
+            encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKey);
+            
             await publishEndpoint.Publish(editUserInfo);
             
             return OperationResult<string>.Ok("Update user info");
@@ -85,8 +83,7 @@ public class UserOrchestrator(
             await userRepository.DeleteUserAsync(user);
             
             var editUserInfo = new DeleteUserEmail(user.Email, user.UserName);
-            if (encryptInfo is EncryptInfo concreteEncryptorRsa)
-                concreteEncryptorRsa.EncryptRsaObjectStrings(editUserInfo, publicKey);
+            encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKey);
             
             await publishEndpoint.Publish(editUserInfo);
             

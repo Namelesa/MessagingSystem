@@ -37,7 +37,7 @@ public class EmailSender(IConfiguration configuration, ILogger<EmailSender> logg
 
                 if (response.IsSuccessStatusCode)
                 {
-                    logger.LogInformation("Email sent successfully to {email}.", email);
+                    logger.LogInformation("Email sent successfully to user.");
                 }
                 else
                 {

@@ -39,9 +39,8 @@ public class RegisterOrchestrator(
             
         var user = mapper.Map<Core.User.User>(registerDto);
         user.SetHashes(hashLogin, hashEmail, hashNickName);
-            
-        if (encryptInfo is EncryptInfo concreteEncryptor)
-            concreteEncryptor.EncryptObjectStrings(user);
+        
+        encryptInfo.EncryptObjectStrings(user);
         
         try
         {
@@ -51,8 +50,7 @@ public class RegisterOrchestrator(
                 return OperationResult<string>.Fail("User can not have null properties");
             
             var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email, hashNickName);
-            if (encryptInfo is EncryptInfo concreteEncryptorRsa)
-                concreteEncryptorRsa.EncryptRsaObjectStrings(confirmUserEmail, publicKey);
+            encryptInfo.EncryptRsaObjectStrings(confirmUserEmail, publicKey);
             
             await publishEndpoint.Publish(confirmUserEmail);
 

@@ -38,11 +38,9 @@ public class NotificationOrchestrator(
 
     private async Task<ValidationResult> ValidateAndEncryptAsync(UserDto userDto)
     {
-        if (encryptInfo is EncryptInfo concreteDecryptor)
-            concreteDecryptor.DecryptRsaObjectStrings(userDto);
+        encryptInfo.DecryptRsaObjectStrings(userDto);
         
-        if (encryptInfo is EncryptInfo concreteEncryptor)
-            concreteEncryptor.DecryptObjectStrings(userDto);
+        encryptInfo.DecryptObjectStrings(userDto);
         
         var validationResult = await validator.ValidateAsync(userDto);
         return validationResult;
