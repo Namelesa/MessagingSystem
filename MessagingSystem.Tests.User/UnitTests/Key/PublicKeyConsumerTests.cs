@@ -9,128 +9,124 @@ namespace MessagingSystem.Tests.User.UnitTests.Key;
 
 public class PublicKeyConsumerTests
 {
-    private readonly Mock<IDecryptionInfo> _decryptInfoMock;
-    private readonly Mock<IPublicKeyStorage> _storageMock;
-    private readonly PublicKeyConsumer _consumer;
+    private readonly Mock<IDecryptionInfo> _decryptMock = new();
+    private readonly Mock<IPublicKeyStorage> _storageMock = new();
+    private readonly Mock<ConsumeContext<PublicKeyMessage>> _contextMock = new();
 
-    public PublicKeyConsumerTests()
+    private void CleanDirectory(string serviceName)
     {
-        _decryptInfoMock = new Mock<IDecryptionInfo>();
-        _storageMock = new Mock<IPublicKeyStorage>();
-        _consumer = new PublicKeyConsumer(_decryptInfoMock.Object, _storageMock.Object);
+        var keyFolder = Path.Combine(AppContext.BaseDirectory, "Key", serviceName);
+        if (Directory.Exists(keyFolder))
+            Directory.Delete(keyFolder, true);
     }
 
     [Fact]
-    public async Task Consume_ShouldDecryptServiceNameAndIgnoreUserService()
+    public async Task Consume_Should_Not_Save_When_ServiceName_Is_User()
     {
         // Arrange
-        const string encryptedServiceName = "encryptedServiceName";
-        const string decryptedServiceName = "User";
-        var message = new PublicKeyMessage
-        {
-            ServiceName = encryptedServiceName,
-            PublicKey = "publicKey"
-        };
+        const string encryptedServiceName = "encryptedUser";
+        var message = new PublicKeyMessage { ServiceName = encryptedServiceName, PublicKey = "encryptedKey" };
+        _contextMock.Setup(c => c.Message).Returns(message);
+        _decryptMock.Setup(d => d.Decrypt(encryptedServiceName)).Returns("User");
 
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedServiceName)).Returns(decryptedServiceName);
-
-        var contextMock = new Mock<ConsumeContext<PublicKeyMessage>>();
-        contextMock.Setup(c => c.Message).Returns(message);
+        var consumer = new PublicKeyConsumer(_decryptMock.Object, _storageMock.Object);
 
         // Act
-        await _consumer.Consume(contextMock.Object);
+        await consumer.Consume(_contextMock.Object);
 
         // Assert
-        _decryptInfoMock.Verify(d => d.Decrypt(encryptedServiceName), Times.Once);
         _storageMock.Verify(s => s.Save(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task Consume_ShouldDecryptAndSavePublicKey_WhenServiceIsNotUser()
+    public async Task Consume_Should_Decrypt_And_Save_PublicKey_When_Valid()
     {
         // Arrange
-        const string encryptedServiceName = "encryptedServiceName";
-        const string decryptedServiceName = "OtherService";
-        const string encryptedPublicKey = "encryptedPublicKey";
-        const string decryptedPublicKey = "decryptedPublicKey";
+        const string serviceName = "Auth";
+        CleanDirectory(serviceName);
 
-        var message = new PublicKeyMessage
-        {
-            ServiceName = encryptedServiceName,
-            PublicKey = encryptedPublicKey
-        };
+        var message = new PublicKeyMessage { ServiceName = "encryptedService", PublicKey = "encryptedKey" };
+        _contextMock.Setup(c => c.Message).Returns(message);
+        _decryptMock.Setup(d => d.Decrypt("encryptedService")).Returns(serviceName);
+        _decryptMock.Setup(d => d.Decrypt("encryptedKey")).Returns("DecryptedPublicKey");
 
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedServiceName)).Returns(decryptedServiceName);
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedPublicKey)).Returns(decryptedPublicKey);
+        var consumer = new PublicKeyConsumer(_decryptMock.Object, _storageMock.Object);
 
-        var contextMock = new Mock<ConsumeContext<PublicKeyMessage>>();
-        contextMock.Setup(c => c.Message).Returns(message);
+        var keyPath = Path.Combine(AppContext.BaseDirectory, "Key", serviceName, "public.key");
 
         // Act
-        await _consumer.Consume(contextMock.Object);
+        await consumer.Consume(_contextMock.Object);
 
         // Assert
-        _decryptInfoMock.Verify(d => d.Decrypt(encryptedServiceName), Times.Once);
-        _decryptInfoMock.Verify(d => d.Decrypt(encryptedPublicKey), Times.Once);
-        _storageMock.Verify(s => s.Save(decryptedServiceName, decryptedPublicKey), Times.Once);
+        _storageMock.Verify(s => s.Save(serviceName, "DecryptedPublicKey"), Times.Once);
+        Assert.True(File.Exists(keyPath));
+        var fileContent = await File.ReadAllTextAsync(keyPath);
+        Assert.Equal("DecryptedPublicKey", fileContent);
 
-        var serviceKeyFolder = Path.Combine(AppContext.BaseDirectory, "Key", decryptedServiceName);
-        Assert.True(Directory.Exists(serviceKeyFolder));
-
-        var publicKeyPath = Path.Combine(serviceKeyFolder, "public.key");
-        Assert.True(File.Exists(publicKeyPath));
-        var savedKey = await File.ReadAllTextAsync(publicKeyPath);
-        Assert.Equal(decryptedPublicKey, savedKey);
+        // Cleanup
+        CleanDirectory(serviceName);
     }
 
     [Fact]
-    public async Task Consume_ShouldCreateDirectoryIfNotExists()
+    public async Task Consume_Should_Create_Directory_If_Not_Exists()
     {
         // Arrange
-        const string encryptedServiceName = "encryptedServiceName";
-        const string decryptedServiceName = "TestService";
-        const string encryptedPublicKey = "encryptedPublicKey";
-        const string decryptedPublicKey = "decryptedPublicKey";
+        const string serviceName = "MyService";
+        CleanDirectory(serviceName);
 
-        var message = new PublicKeyMessage
-        {
-            ServiceName = encryptedServiceName,
-            PublicKey = encryptedPublicKey
-        };
+        var message = new PublicKeyMessage { ServiceName = "encService", PublicKey = "encKey" };
+        _contextMock.Setup(c => c.Message).Returns(message);
+        _decryptMock.Setup(d => d.Decrypt("encService")).Returns(serviceName);
+        _decryptMock.Setup(d => d.Decrypt("encKey")).Returns("MyKey");
 
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedServiceName)).Returns(decryptedServiceName);
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedPublicKey)).Returns(decryptedPublicKey);
+        var consumer = new PublicKeyConsumer(_decryptMock.Object, _storageMock.Object);
+        var dirPath = Path.Combine(AppContext.BaseDirectory, "Key", serviceName);
+        var filePath = Path.Combine(dirPath, "public.key");
 
-        var contextMock = new Mock<ConsumeContext<PublicKeyMessage>>();
-        contextMock.Setup(c => c.Message).Returns(message);
+        // Assert pre-condition
+        Assert.False(Directory.Exists(dirPath));
 
         // Act
-        await _consumer.Consume(contextMock.Object);
+        await consumer.Consume(_contextMock.Object);
 
         // Assert
-        var serviceKeyFolder = Path.Combine(AppContext.BaseDirectory, "Key", decryptedServiceName);
-        Assert.True(Directory.Exists(serviceKeyFolder));
+        Assert.True(Directory.Exists(dirPath));
+        Assert.True(File.Exists(filePath));
+        var content = await File.ReadAllTextAsync(filePath);
+        Assert.Equal("MyKey", content);
+
+        // Cleanup
+        CleanDirectory(serviceName);
     }
 
     [Fact]
-    public async Task Consume_ShouldNotThrowException_WhenDirectoryCreationFails()
+    public async Task Consume_Should_Overwrite_Existing_PublicKey_File()
     {
         // Arrange
-        const string encryptedServiceName = "encryptedServiceName";
-        const string decryptedServiceName = "FailingService";
-        const string encryptedPublicKey = "encryptedPublicKey";
-        const string decryptedPublicKey = "decryptedPublicKey";
+        const string serviceName = "OverwriteService";
+        var dirPath = Path.Combine(AppContext.BaseDirectory, "Key", serviceName);
+        var filePath = Path.Combine(dirPath, "public.key");
 
-        var message = new PublicKeyMessage
-        {
-            ServiceName = encryptedServiceName,
-            PublicKey = encryptedPublicKey
-        };
+        CleanDirectory(serviceName);
+        Directory.CreateDirectory(dirPath);
+        await File.WriteAllTextAsync(filePath, "OldKey");
 
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedServiceName)).Returns(decryptedServiceName);
-        _decryptInfoMock.Setup(d => d.Decrypt(encryptedPublicKey)).Returns(decryptedPublicKey);
+        var message = new PublicKeyMessage { ServiceName = "encryptedService", PublicKey = "encryptedNewKey" };
+        _contextMock.Setup(c => c.Message).Returns(message);
+        _decryptMock.Setup(d => d.Decrypt("encryptedService")).Returns(serviceName);
+        _decryptMock.Setup(d => d.Decrypt("encryptedNewKey")).Returns("NewKey");
 
-        var contextMock = new Mock<ConsumeContext<PublicKeyMessage>>();
-        contextMock.Setup(c => c.Message).Returns(message);
+        var consumer = new PublicKeyConsumer(_decryptMock.Object, _storageMock.Object);
+
+        // Act
+        await consumer.Consume(_contextMock.Object);
+
+        // Assert
+        Assert.True(File.Exists(filePath));
+        var content = await File.ReadAllTextAsync(filePath);
+        Assert.Equal("NewKey", content);
+
+        // Cleanup
+        CleanDirectory(serviceName);
     }
 }
