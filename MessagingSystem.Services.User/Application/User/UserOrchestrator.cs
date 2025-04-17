@@ -86,8 +86,5 @@ public class UserOrchestrator(
         }
     }
     private string? GetPublicKey()
-    {
-        var publicKey = publicKeyStorage.Get("Notification");
-        return publicKey ?? null;
-    }
+        => publicKeyStorage.Get("Notification");
 }
