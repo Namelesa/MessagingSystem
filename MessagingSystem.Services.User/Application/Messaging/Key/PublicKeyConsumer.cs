@@ -1,11 +1,11 @@
+using Encryptor.Decryption;
 using MassTransit;
 using MessagingSystem.SendingModels.PublicKey;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
-using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
+using MessagingSystem.Services.User.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.User.Application.Messaging.Key
 {
-    public class PublicKeyConsumer(IEncryptInfo encryptInfo, IPublicKeyStorage storage) : IConsumer<PublicKeyMessage>
+    public class PublicKeyConsumer(IDecryptionInfo encryptInfo, IPublicKeyStorage storage) : IConsumer<PublicKeyMessage>
     {
         public async Task Consume(ConsumeContext<PublicKeyMessage> context)
         {

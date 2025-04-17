@@ -1,10 +1,10 @@
+using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.PublicKey;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
 
-namespace MessagingSystem.Services.User.Infrastructure.Keys.Publisher;
+namespace MessagingSystem.Services.Notification.Infrastructure.Key;
 
-public class KeyPublisher(IBus bus, IEncryptInfo encryptInfo)
+public class KeyPublisher(IBus bus, IEncryptionInfo encryptInfo)
 {
     public async Task PublishAsync()
     {
@@ -13,7 +13,7 @@ public class KeyPublisher(IBus bus, IEncryptInfo encryptInfo)
         var publicKeyMessage = new PublicKeyMessage
         {
             PublicKey = encryptInfo.Encrypt(publicKey),
-            ServiceName = encryptInfo.Encrypt("User")
+            ServiceName = encryptInfo.Encrypt("Notification")
         };
         await bus.Publish(publicKeyMessage);
     }

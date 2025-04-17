@@ -1,9 +1,9 @@
 using System.Text;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
+using Encryptor.Decryption;
+using Encryptor.Encryption;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
-using MessagingSystem.Services.User.Infrastructure.Keys.Publisher;
-using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
+using MessagingSystem.Services.User.Infrastructure.Keys;
 using MessagingSystem.Services.User.Infrastructure.MessageBroker;
 using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -18,11 +18,12 @@ public static class AddInfrastructure
     public static void AddInfrastructureLayer(this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddScoped<KeyPublisher>();
         services.AddScoped<IHasher, Hasher>();
         services.AddScoped<IHasherPassword, HasherPassword>();
-        services.AddSingleton<IEncryptInfo, EncryptInfo>();
+        services.AddSingleton<IEncryptionInfo, EncryptionInfo>();
+        services.AddSingleton<IDecryptionInfo, DecryptionInfo>();
         services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
+        services.AddScoped<KeyPublisher>();
         services.Configure<MessageBrokerSettings>(
             configuration.GetSection("MessageBroker"));
 
@@ -58,7 +59,7 @@ public static class AddInfrastructure
                     if (!context.Request.Cookies.ContainsKey("access_token")) 
                         return Task.CompletedTask;
                     var encryptedToken = context.Request.Cookies["access_token"];
-                    var decryptService = context.HttpContext.RequestServices.GetRequiredService<IEncryptInfo>();
+                    var decryptService = context.HttpContext.RequestServices.GetRequiredService<IDecryptionInfo>();
                     if (encryptedToken == null) 
                         return Task.CompletedTask;
                     var decryptedToken = decryptService.Decrypt(encryptedToken);

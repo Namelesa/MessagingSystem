@@ -22,6 +22,7 @@ public class RegisterController(RegisterOrchestrator registerOrchestrator, IMapp
     } 
     
     [HttpGet("confirm-email")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> ConfirmEmailAsync([FromQuery] string id)
     {
         var result = await registerOrchestrator.ConfirmEmailAsync(id);

@@ -1,6 +1,6 @@
+using Encryptor.Decryption;
 using FluentValidation;
 using MessagingSystem.Services.User.Core.User;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
 
@@ -9,7 +9,7 @@ namespace MessagingSystem.Services.User.Application.Auth.Login;
 public class LoginOrchestrator(
     IUserRepository userRepository, 
     IValidator<LoginDto> validator,
-    IEncryptInfo encryptInfo,
+    IDecryptionInfo decryptionInfo,
     IJwtService jwtService,
     IHasher hasher)
 {
@@ -26,7 +26,7 @@ public class LoginOrchestrator(
         if(!user.EmailConfirmed) return OperationResult<string>.Fail("Please confirm email");
 
         var res = user.PasswordHash != null &&
-                  await jwtService.AuthenticateAndSetCookieAsync(loginDto, encryptInfo.Decrypt(user.PasswordHash));
+                  await jwtService.AuthenticateAndSetCookieAsync(loginDto, decryptionInfo.Decrypt(user.PasswordHash));
         
         return OperationResult<string>.Ok(res.ToString());
     }

@@ -1,23 +1,23 @@
+using Encryptor.Decryption;
 using MassTransit;
 using MessagingSystem.SendingModels.PublicKey;
-using MessagingSystem.Services.Notification.Infrastructure.Encrypt;
 
 namespace MessagingSystem.Services.Notification.Application.Messaging.Key
 {
-    public class PublicKeyConsumer(IEncryptInfo encryptInfo) : IConsumer<PublicKeyMessage>
+    public class PublicKeyConsumer(IDecryptionInfo decryptInfo) : IConsumer<PublicKeyMessage>
     {
         public async Task Consume(ConsumeContext<PublicKeyMessage> context)
         {
             var message = context.Message;
             
-            var serviceName = encryptInfo.Decrypt(message.ServiceName);
+            var serviceName = decryptInfo.Decrypt(message.ServiceName);
             
             if (serviceName == "Notification") 
                 return;
 
             Console.WriteLine($"[✓]:{serviceName}");
             
-            var publicKey = encryptInfo.Decrypt(message.PublicKey);
+            var publicKey = decryptInfo.Decrypt(message.PublicKey);
             
             SavePublicKeyToServiceFolder(serviceName, publicKey);
 

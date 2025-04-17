@@ -1,6 +1,6 @@
 using MessagingSystem.Services.Notification.Application;
 using MessagingSystem.Services.Notification.Infrastructure;
-using MessagingSystem.Services.Notification.Infrastructure.KeyPublisher;
+using MessagingSystem.Services.Notification.Infrastructure.Key;
 using MessagingSystem.Services.Notification.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);

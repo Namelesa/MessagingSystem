@@ -1,13 +1,13 @@
+using Encryptor.Decryption;
 using FluentValidation;
 using FluentValidation.Results;
 using MessagingSystem.Services.Notification.Core.User;
-using MessagingSystem.Services.Notification.Infrastructure.Encrypt;
 
 namespace MessagingSystem.Services.Notification.Application.Notification;
 
 public class NotificationOrchestrator(
     INotification notification,
-    IEncryptInfo encryptInfo,
+    IDecryptionInfo decryptInfo,
     IValidator<UserDto> validator)
 {
     private async Task<OperationResult<string>> SendEmailAsync(UserDto userDto, Func<UserDto, Task<bool>> sendEmail)
@@ -38,9 +38,8 @@ public class NotificationOrchestrator(
 
     private async Task<ValidationResult> ValidateAndEncryptAsync(UserDto userDto)
     {
-        encryptInfo.DecryptRsaObjectStrings(userDto);
-        
-        encryptInfo.DecryptObjectStrings(userDto);
+        decryptInfo.DecryptRsaObjectStrings(userDto);
+        decryptInfo.DecryptObjectStrings(userDto);
         
         var validationResult = await validator.ValidateAsync(userDto);
         return validationResult;

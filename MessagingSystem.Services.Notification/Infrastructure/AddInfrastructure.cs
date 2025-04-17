@@ -1,7 +1,9 @@
+using Encryptor.Decryption;
+using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.Services.Notification.Application.Messaging.Email;
 using MessagingSystem.Services.Notification.Application.Messaging.Key;
-using MessagingSystem.Services.Notification.Infrastructure.Encrypt;
+using MessagingSystem.Services.Notification.Infrastructure.Key;
 using MessagingSystem.Services.Notification.Infrastructure.MailJet;
 using MessagingSystem.Services.Notification.Infrastructure.MessageBroker;
 using MessagingSystem.Services.Notification.Infrastructure.ReaderTemplate;
@@ -15,11 +17,11 @@ public static class AddInfrastructure
     public static void AddInfrastructureLayer(this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddScoped<KeyPublisher.KeyPublisher>();
         services.AddTransient<IEmailSender, EmailSender>();
         services.AddTransient<ITemplateReader, TemplateReader>();
-        services.AddScoped<IEncryptInfo, EncryptInfo>();
-        
+        services.AddScoped<IEncryptionInfo, EncryptionInfo>();
+        services.AddScoped<IDecryptionInfo, DecryptionInfo>();
+        services.AddScoped<KeyPublisher>();
         services.Configure<MessageBrokerSettings>(
             configuration.GetSection("MessageBroker"));
 

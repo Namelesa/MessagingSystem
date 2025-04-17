@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Encryptor\Encryptor.csproj" />
       <ProjectReference Include="..\MessagingSystem.SendingModels\MessagingSystem.SendingModels.csproj" />
     </ItemGroup>
 

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace MessagingSystem.Services.User.Infrastructure.Keys.Publisher;
+namespace Encryptor.Publisher;
 
 public class RsaKeyPair
 {

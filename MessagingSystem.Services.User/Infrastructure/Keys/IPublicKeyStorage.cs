@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.User.Infrastructure.Keys.Storage;
+namespace MessagingSystem.Services.User.Infrastructure.Keys;
 
 public interface IPublicKeyStorage
 {

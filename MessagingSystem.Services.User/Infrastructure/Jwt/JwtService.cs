@@ -1,8 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Encryptor.Encryption;
 using MessagingSystem.Services.User.Application.Auth.Login;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
@@ -11,20 +11,20 @@ namespace MessagingSystem.Services.User.Infrastructure.Jwt;
 public class JwtService(
     IConfiguration config, 
     ILogger<JwtService> logger, 
-    IEncryptInfo encryptInfo,
+    IEncryptionInfo encryptInfo,
     IHttpContextAccessor httpContextAccessor) : IJwtService
 {
     private readonly IConfiguration _config = config 
                                               ?? throw new ArgumentNullException(nameof(config));
     private readonly ILogger<JwtService> _logger = logger 
                                                    ?? throw new ArgumentNullException(nameof(logger));
-    private readonly IEncryptInfo _encryptInfo = encryptInfo 
+    private readonly IEncryptionInfo _encryptInfo = encryptInfo 
                                                  ?? throw new ArgumentNullException(nameof(encryptInfo));
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor 
                                                                  ?? throw new ArgumentNullException(nameof(httpContextAccessor));
     private readonly PasswordHasher<LoginDto> _passwordHasher = new();
-    
-    public async Task<string?> AuthenticateAsync(LoginDto? user, string passwordRequest)
+
+    private async Task<string?> AuthenticateAsync(LoginDto? user, string passwordRequest)
     {
         if (!ValidateUserCredentials(user, passwordRequest))
         {

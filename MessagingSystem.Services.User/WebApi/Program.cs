@@ -1,6 +1,6 @@
 using MessagingSystem.Services.User.Application;
 using MessagingSystem.Services.User.Infrastructure;
-using MessagingSystem.Services.User.Infrastructure.Keys.Publisher;
+using MessagingSystem.Services.User.Infrastructure.Keys;
 using MessagingSystem.Services.User.Persistence;
 using MessagingSystem.Services.User.Persistence.DbInitializer;
 using MessagingSystem.Services.User.WebApi;

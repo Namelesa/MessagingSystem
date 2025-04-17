@@ -1,11 +1,11 @@
 using AutoMapper;
+using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Core.User;
-using MessagingSystem.Services.User.Infrastructure.Encrypt;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
-using MessagingSystem.Services.User.Infrastructure.Keys.Storage;
+using MessagingSystem.Services.User.Infrastructure.Keys;
 using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
 
 namespace MessagingSystem.Services.User.Application.Auth.Register;
@@ -15,7 +15,7 @@ public class RegisterOrchestrator(
     IMapper mapper, 
     IValidator<RegisterDto> validator,
     IHasherPassword hasherPassword,
-    IEncryptInfo encryptInfo,
+    IEncryptionInfo encryptInfo,
     IHasher hasher,
     IPublishEndpoint publishEndpoint,
     IPublicKeyStorage publicKeyStorage)

@@ -1,17 +1,18 @@
 using System.Security.Cryptography;
 using System.Text;
-using MessagingSystem.Services.Notification.Infrastructure.KeyPublisher;
+using Encryptor.Publisher;
+using Microsoft.Extensions.Configuration;
 using Org.BouncyCastle.Crypto.Parameters;
 using ChaCha20Poly1305 = Org.BouncyCastle.Crypto.Modes.ChaCha20Poly1305;
 
-namespace MessagingSystem.Services.Notification.Infrastructure.Encrypt;
+namespace Encryptor.Decryption;
 
-public class EncryptInfo : IEncryptInfo
+public class DecryptionInfo : IDecryptionInfo
 {
     private readonly byte[] _key;
     private readonly RSA _rsa;
-
-    public EncryptInfo(IConfiguration configuration)
+    
+    public DecryptionInfo(IConfiguration configuration)
     {
         var key = configuration["Encryption:ChaChaKey"];
         if (string.IsNullOrWhiteSpace(key))
@@ -34,27 +35,6 @@ public class EncryptInfo : IEncryptInfo
         _rsa = RSA.Create();
         _rsa.ImportRSAPrivateKey(Convert.FromBase64String(rsaKeys.PrivateKey), out _);
     }
-
-    public string Encrypt(string plainText)
-    {
-        var nonce = RandomNumberGenerator.GetBytes(12);
-        var plaintextBytes = Encoding.UTF8.GetBytes(plainText);
-
-        var cipher = new ChaCha20Poly1305();
-        var parameters = new AeadParameters(new KeyParameter(_key), 128, nonce, null);
-        cipher.Init(true, parameters);
-
-        var output = new byte[cipher.GetOutputSize(plaintextBytes.Length)];
-        var len = cipher.ProcessBytes(plaintextBytes, 0, plaintextBytes.Length, output, 0);
-        cipher.DoFinal(output, len);
-        
-        var result = new byte[nonce.Length + output.Length];
-        Buffer.BlockCopy(nonce, 0, result, 0, nonce.Length);
-        Buffer.BlockCopy(output, 0, result, nonce.Length, output.Length);
-
-        return Convert.ToBase64String(result);
-    }
-    
     public string Decrypt(string cipherText)
     {
         var input = Convert.FromBase64String(cipherText);
@@ -71,7 +51,6 @@ public class EncryptInfo : IEncryptInfo
 
         return Encoding.UTF8.GetString(output);
     }
-
     public string DecryptRsa(string baseKey)
     {
         var encryptedBytes = Convert.FromBase64String(baseKey);
@@ -117,17 +96,5 @@ public class EncryptInfo : IEncryptInfo
                 Console.WriteLine(e);
             }
         }
-    }
-    
-    public string GetPublicKey()
-    {
-        var publicKeyPath = Path.Combine(AppContext.BaseDirectory, "Keys", "public.key");
-
-        if (!File.Exists(publicKeyPath))
-        {
-            throw new FileNotFoundException("Public key not found");
-        }
-
-        return File.ReadAllText(publicKeyPath);
     }
 }
