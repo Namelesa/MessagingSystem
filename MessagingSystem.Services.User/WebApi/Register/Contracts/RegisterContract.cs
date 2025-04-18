@@ -13,27 +13,27 @@ public class RegisterContract(
     [Required(ErrorMessage = "First name is required")]
     [RegularExpression("^[A-Za-zА-Яа-яЁё]{3,25}$", 
         ErrorMessage = "First name must be 3 to 20 characters long and include only letters")]
-    public string FirstName { get; set; } = firstName;
+    public string FirstName { get; init; } = firstName;
     
     [Required(ErrorMessage = "Last name is required")]
     [RegularExpression("^[A-Za-zА-Яа-яЁё]{3,25}$", 
         ErrorMessage = "Last name must be 3 to 20 characters long and include only letters")]
-    public string LastName { get; set; } = lastName;
+    public string LastName { get; init; } = lastName;
     
     [Required(ErrorMessage = "Login is required")]
     [RegularExpression("^(?=.*[!_@])[a-zA-Z0-9!_@]{5,20}$", 
         ErrorMessage = "Login must be 5 to 20 characters long and include at least one special character (!, _, @).")]
-    public string Login { get; set; } = login;
+    public string Login { get; init; } = login;
     
     [Required]
     [DataType(DataType.EmailAddress, ErrorMessage = "Invalid email")]
-    public string Email { get; set; } = email;
+    public string Email { get; } = email;
     
     [Required(ErrorMessage = "NickName is required")]
     [RegularExpression("^(?=.*[!_@])[a-zA-Z0-9!_@]{3,15}$", 
         ErrorMessage = "Nick name must be 3 to 15 characters long and " +
                        "include at least one special character (!, _, @).")]
-    public string NickName { get; set; } = nickName;
+    public string NickName { get; init; } = nickName;
 
     [Required(ErrorMessage = "Password is required")]
     [DataType(DataType.Password, ErrorMessage = "Invalid password format")]
@@ -41,5 +41,5 @@ public class RegisterContract(
         ErrorMessage =
             "Password must be 5 to 15 characters long and include at least one letter, " +
             "one number, and one special character (!, _, @).")]
-    public string Password { get; set; } = password;
+    public string Password { get; } = password;
 }

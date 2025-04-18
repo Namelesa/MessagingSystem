@@ -1,6 +1,7 @@
 using MessagingSystem.Services.User.Application.User;
+using MessagingSystem.Services.User.Application.User.Dto;
 
-namespace MessagingSystem.Tests.User.UnitTests.User;
+namespace MessagingSystem.Tests.User.UnitTests.Application.User;
 
 public class UserDtoTests
 {

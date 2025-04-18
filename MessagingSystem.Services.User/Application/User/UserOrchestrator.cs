@@ -3,6 +3,7 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserNotification;
+using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Keys;
@@ -16,7 +17,7 @@ public class UserOrchestrator(
     IEncryptionInfo encryptInfo,
     IHasher hasher,
     IPublishEndpoint publishEndpoint,
-    IPublicKeyStorage publicKeyStorage)
+    IPublicKeyStorage publicKeyStorage) : IUserOrchestrator
 {
     public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
     {

@@ -5,13 +5,14 @@ using FluentValidation.Results;
 using MassTransit;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.User;
+using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 using Moq;
 using ValidationResult = FluentValidation.Results.ValidationResult;
 
-namespace MessagingSystem.Tests.User.UnitTests.User;
+namespace MessagingSystem.Tests.User.UnitTests.Application.User;
 
     public class UserOrchestratorTests
     {

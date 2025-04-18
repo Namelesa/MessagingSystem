@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.User.Application.Auth.Register;
+namespace MessagingSystem.Services.User.Application.Auth.Register.Dto;
 
 public class RegisterDto(
     string email,

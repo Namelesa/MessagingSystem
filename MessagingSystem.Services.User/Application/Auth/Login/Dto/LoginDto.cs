@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.User.Application.Auth.Login;
+namespace MessagingSystem.Services.User.Application.Auth.Login.Dto;
 
 public class LoginDto(string login, string password)
 {

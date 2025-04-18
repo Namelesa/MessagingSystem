@@ -1,4 +1,5 @@
 using MessagingSystem.Services.User.Application.Auth.Login;
+using MessagingSystem.Services.User.Application.Auth.Login.Dto;
 
 namespace MessagingSystem.Services.User.Infrastructure.Jwt;
 

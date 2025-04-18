@@ -5,7 +5,7 @@ using MessagingSystem.Services.User.Application.Messaging.Key;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 using Moq;
 
-namespace MessagingSystem.Tests.User.UnitTests.Key;
+namespace MessagingSystem.Tests.User.UnitTests.Application.Key;
 
 public class PublicKeyConsumerTests
 {

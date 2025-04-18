@@ -3,12 +3,13 @@ using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
 using MessagingSystem.Services.User.Application.Auth.Login;
+using MessagingSystem.Services.User.Application.Auth.Login.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
 using Moq;
 
-namespace MessagingSystem.Tests.User.UnitTests.Auth.Login;
+namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login;
 
 public class LoginUserOrchestratorTests
 {

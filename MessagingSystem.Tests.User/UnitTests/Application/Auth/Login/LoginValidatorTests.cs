@@ -1,8 +1,9 @@
 using FluentAssertions;
 using MessagingSystem.Services.User.Application.Auth.Login;
+using MessagingSystem.Services.User.Application.Auth.Login.Dto;
 using Xunit.Abstractions;
 
-namespace MessagingSystem.Tests.User.UnitTests.Auth.Login;
+namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login;
 
 public class LoginValidatorTests(ITestOutputHelper output)
 {

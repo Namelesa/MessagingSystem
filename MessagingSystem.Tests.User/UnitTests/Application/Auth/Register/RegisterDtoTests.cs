@@ -1,6 +1,7 @@
 using MessagingSystem.Services.User.Application.Auth.Register;
+using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 
-namespace MessagingSystem.Tests.User.UnitTests.Auth.Register;
+namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Register;
 
 public class RegisterDtoTests
 {

@@ -6,6 +6,7 @@ using FluentValidation.Results;
 using MassTransit;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.Auth.Register;
+using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Keys;
@@ -14,7 +15,7 @@ using Moq;
 using ValidationResult = FluentValidation.Results.ValidationResult;
 using UserModel = MessagingSystem.Services.User.Core.User.User;
 
-namespace MessagingSystem.Tests.User.UnitTests.Auth.Register;
+namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Register;
 
 public class RegisterUserOrchestratorTests
 {
@@ -131,12 +132,14 @@ public class RegisterUserOrchestratorTests
         _hasherPassword.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
 
-        var user = new UserModel("login123456", "CoolNickName");
-        user.Email = "test@gmail.com";
-        user.UserName = "TestValidUser";
-        user.NormalizedEmail = "TEST@GMAIL.COM";
-        user.NormalizedUserName = "TESTVALIDUSER";
-        
+        var user = new UserModel("login123456", "CoolNickName")
+        {
+            Email = "test@gmail.com",
+            UserName = "TestValidUser",
+            NormalizedEmail = "TEST@GMAIL.COM",
+            NormalizedUserName = "TESTVALIDUSER"
+        };
+
         _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
         _userRepository.Setup(r => r.AddUserAsync(user)).Returns(Task.CompletedTask);
         _publishEndpoint.Setup(p => p.Publish(It.IsAny<ConfirmUserEmail>(), default)).Returns(Task.CompletedTask);

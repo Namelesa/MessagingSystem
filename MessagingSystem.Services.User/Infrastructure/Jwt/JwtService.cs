@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Encryptor.Encryption;
 using MessagingSystem.Services.User.Application.Auth.Login;
+using MessagingSystem.Services.User.Application.Auth.Login.Dto;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 

@@ -1,5 +1,6 @@
 using Encryptor.Decryption;
 using FluentValidation;
+using MessagingSystem.Services.User.Application.Auth.Login.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
@@ -11,7 +12,7 @@ public class LoginOrchestrator(
     IValidator<LoginDto> validator,
     IDecryptionInfo decryptionInfo,
     IJwtService jwtService,
-    IHasher hasher)
+    IHasher hasher) : ILoginOrchestrator
 {
     public async Task<OperationResult<string>> LoginUserAsync(LoginDto loginDto)
     {

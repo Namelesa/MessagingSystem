@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.User.Application.User;
+namespace MessagingSystem.Services.User.Application.User.Dto;
 
 public class UserDto(
     string firstName, 

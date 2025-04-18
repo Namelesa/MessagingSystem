@@ -3,6 +3,7 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserNotification;
+using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.Keys;
@@ -18,7 +19,7 @@ public class RegisterOrchestrator(
     IEncryptionInfo encryptInfo,
     IHasher hasher,
     IPublishEndpoint publishEndpoint,
-    IPublicKeyStorage publicKeyStorage)
+    IPublicKeyStorage publicKeyStorage) : IRegisterOrchestrator
 {
     public async Task<OperationResult<string>> RegisterUserAsync(RegisterDto registerDto)
     {

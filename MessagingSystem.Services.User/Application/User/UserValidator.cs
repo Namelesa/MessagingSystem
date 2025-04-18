@@ -1,4 +1,5 @@
 using FluentValidation;
+using MessagingSystem.Services.User.Application.User.Dto;
 
 namespace MessagingSystem.Services.User.Application.User;
 
