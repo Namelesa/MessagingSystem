@@ -5,7 +5,7 @@ using MessagingSystem.Services.Notification.Core.User;
 
 namespace MessagingSystem.Services.Notification.Application.Messaging.Email;
 
-public class ConfirmEmailConsumer(NotificationOrchestrator notificationOrchestrator) : IConsumer<ConfirmUserEmail>
+public class ConfirmEmailConsumer(INotificationOrchestrator notificationOrchestrator, ILogger<ConfirmEmailConsumer> logger) : IConsumer<ConfirmUserEmail>
 {
     public async Task Consume(ConsumeContext<ConfirmUserEmail> context)
     {
@@ -15,11 +15,11 @@ public class ConfirmEmailConsumer(NotificationOrchestrator notificationOrchestra
         try
         {
             var result = await notificationOrchestrator.SendConfirmEmailAsync(userDto, info.NickName);
-            Console.WriteLine(result.Data);
+            logger.LogInformation(result.Data);
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
+            logger.LogError(e.Message);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace MessagingSystem.Services.Notification.Application.Notification;
 public class NotificationOrchestrator(
     INotification notification,
     IDecryptionInfo decryptInfo,
-    IValidator<UserDto> validator)
+    IValidator<UserDto> validator) : INotificationOrchestrator
 {
     private async Task<OperationResult<string>> SendEmailAsync(UserDto userDto, Func<UserDto, Task<bool>> sendEmail)
     {

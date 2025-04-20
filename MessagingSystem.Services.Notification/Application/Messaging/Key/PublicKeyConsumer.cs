@@ -14,8 +14,6 @@ namespace MessagingSystem.Services.Notification.Application.Messaging.Key
             
             if (serviceName == "Notification") 
                 return;
-
-            Console.WriteLine($"[✓]:{serviceName}");
             
             var publicKey = decryptInfo.Decrypt(message.PublicKey);
             

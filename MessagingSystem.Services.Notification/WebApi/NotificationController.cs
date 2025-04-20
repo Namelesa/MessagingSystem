@@ -7,7 +7,7 @@ namespace MessagingSystem.Services.Notification.WebApi;
 
 [ApiController]
 [Route("api/notification")]
-public class NotificationController(NotificationOrchestrator notificationOrchestrator): ControllerBase
+public class NotificationController(INotificationOrchestrator notificationOrchestrator): ControllerBase
 {
     [HttpPost("confirmRegister")]
     public async Task<IActionResult> SendConfirmEmailAsync([FromBody]UserDto userDto, [Required]string nickName)

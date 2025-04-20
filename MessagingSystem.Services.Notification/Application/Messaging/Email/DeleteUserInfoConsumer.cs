@@ -5,7 +5,7 @@ using MessagingSystem.Services.Notification.Core.User;
 
 namespace MessagingSystem.Services.Notification.Application.Messaging.Email;
 
-public class DeleteUserInfoConsumer(NotificationOrchestrator notificationOrchestrator) : IConsumer<DeleteUserEmail>
+public class DeleteUserInfoConsumer(INotificationOrchestrator notificationOrchestrator) : IConsumer<DeleteUserEmail>
 {
     public async Task Consume(ConsumeContext<DeleteUserEmail> context)
     {
@@ -15,8 +15,7 @@ public class DeleteUserInfoConsumer(NotificationOrchestrator notificationOrchest
         
         try
         {
-            var result = await notificationOrchestrator.SendDeleteUserInfoEmailAsync(userDto);
-            Console.WriteLine(result.Data);
+            await notificationOrchestrator.SendDeleteUserInfoEmailAsync(userDto);
         }
         catch (Exception e)
         {

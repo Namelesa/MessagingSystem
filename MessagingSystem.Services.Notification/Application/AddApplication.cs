@@ -10,6 +10,6 @@ public static class AddApplication
         IConfiguration configuration)
     {
         services.AddScoped<IValidator<UserDto>, UserValidator>();
-        services.AddScoped<NotificationOrchestrator>();
+        services.AddScoped<INotificationOrchestrator, NotificationOrchestrator>();
     }
 }

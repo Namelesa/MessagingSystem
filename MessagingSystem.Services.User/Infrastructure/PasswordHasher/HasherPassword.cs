@@ -13,7 +13,18 @@ public class HasherPassword : IHasherPassword
     
     public bool Verify(string hash, string password)
     {
-        var result = _passwordHasher.VerifyHashedPassword(null, hash, password);
-        return result == PasswordVerificationResult.Success;
+        try
+        {
+            var result = _passwordHasher.VerifyHashedPassword(null, hash, password);
+            return result == PasswordVerificationResult.Success;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 }

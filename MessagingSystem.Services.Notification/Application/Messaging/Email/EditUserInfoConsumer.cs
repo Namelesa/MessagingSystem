@@ -5,7 +5,7 @@ using MessagingSystem.Services.Notification.Core.User;
 
 namespace MessagingSystem.Services.Notification.Application.Messaging.Email;
 
-public class EditUserInfoConsumer(NotificationOrchestrator notificationOrchestrator) : IConsumer<EditUserEmail>
+public class EditUserInfoConsumer(INotificationOrchestrator notificationOrchestrator) : IConsumer<EditUserEmail>
 {
     public async Task Consume(ConsumeContext<EditUserEmail> context)
     {

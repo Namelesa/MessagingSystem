@@ -1,9 +1,9 @@
+using MessagingSystem.Services.User.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MessagingSystem.Services.User.Persistence;
 
-namespace MessagingSystem.Tests.User.UnitTests.Persistence.DbInitializer
+namespace MessagingSystem.Tests.User.IntegrationTests.DbInitializer
 {
     public interface ITestDbContext
     {
