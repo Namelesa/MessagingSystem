@@ -14,5 +14,6 @@ public static class AddPersistence
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IDbInitializer, DbInitializer.DbInitializer>();
+        services.AddLogging();
     }
 }

@@ -1,9 +1,9 @@
 using Moq;
 using MessagingSystem.Services.Notification.Core.User;
-using MessagingSystem.Services.Notification.Infrastructure.MailJet;
 using MessagingSystem.Services.Notification.Infrastructure.ReaderTemplate;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using FluentAssertions;
+using MessagingSystem.Services.Notification.Infrastructure.MailJet;
 
 namespace MessagingSystem.Tests.Notification.UnitTests.Persistence
 {
