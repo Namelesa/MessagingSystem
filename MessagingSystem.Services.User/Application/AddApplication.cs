@@ -16,6 +16,8 @@ public static class AddApplication
     public static void AddApplicationLayer(this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.Configure<MessageBrokerSettings>(configuration.GetSection("MessageBrokerSettings"));
+        
         services.AddScoped<IRegisterOrchestrator, RegisterOrchestrator>();
         services.AddScoped<ILoginOrchestrator, LoginOrchestrator>(); 
         services.AddScoped<IUserOrchestrator, UserOrchestrator>();
@@ -43,6 +45,5 @@ public static class AddApplication
                 });
             });
         });
-
     }
 }
