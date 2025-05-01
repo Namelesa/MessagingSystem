@@ -109,5 +109,4 @@ public class JwtService(
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
-
 }

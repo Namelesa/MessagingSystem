@@ -64,11 +64,14 @@ public static class AddInfrastructure
                         return Task.CompletedTask;
                     var decryptedToken = decryptService.Decrypt(encryptedToken);
                     context.Token = decryptedToken;
-
+                    
+                    Console.WriteLine("OnMessageReceived triggered, token set.");
+                    
                     return Task.CompletedTask;
                 }
             };
         });
+        
         services.AddSwaggerGen(options =>
         {
             var jwtSecurityScheme = new OpenApiSecurityScheme

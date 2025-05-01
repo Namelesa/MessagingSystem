@@ -71,7 +71,7 @@ public class EncryptionInfoTests
         // Arrange
         var info = new EncryptionInfo(_config);
         var publicKey = info.GetPublicKey();
-        var plainText = "test";
+        const string plainText = "test";
 
         // Act
         var encrypted = info.EncryptRsa(plainText, publicKey);
