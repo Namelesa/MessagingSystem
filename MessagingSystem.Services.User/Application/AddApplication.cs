@@ -5,6 +5,7 @@ using MessagingSystem.Services.User.Application.Auth.Login.Dto;
 using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 using MessagingSystem.Services.User.Application.Messaging.Key;
+using MessagingSystem.Services.User.Application.Messaging.UserChecker;
 using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Infrastructure.MessageBroker;
@@ -28,6 +29,7 @@ public static class AddApplication
         services.AddMassTransit(busConfiguration =>
         {
             busConfiguration.AddConsumer<PublicKeyConsumer>();
+            busConfiguration.AddConsumer<UserCheckerConsumer>();
     
             busConfiguration.UsingRabbitMq((context, configurator) =>
             {
@@ -42,6 +44,11 @@ public static class AddApplication
                 configurator.ReceiveEndpoint("public-key-notification-queue", e =>
                 {
                     e.ConfigureConsumer<PublicKeyConsumer>(context);
+                });
+                
+                configurator.ReceiveEndpoint("existing-user-request", e =>
+                {
+                    e.ConfigureConsumer<UserCheckerConsumer>(context);
                 });
             });
         });

@@ -3,7 +3,6 @@ using MessagingSystem.Services.User.Infrastructure;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 using MessagingSystem.Services.User.Persistence;
 using MessagingSystem.Services.User.Persistence.DbInitializer;
-using Microsoft.AspNetCore.Authorization;
 
 namespace MessagingSystem.Services.User.WebApi;
 
@@ -47,8 +46,6 @@ public class Program
         app.UseAuthorization();
 
         app.MapControllers();
-        
-        //app.MapGet("/api/test/protected", [Authorize]() => Results.Ok("Protected endpoint reached successfully!"));
         
         await app.RunAsync();
     }
