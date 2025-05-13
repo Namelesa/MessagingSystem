@@ -26,7 +26,7 @@ public class LoginMapTests
     public void Should_Map_LoginContract_To_LoginDto_Correctly()
     {
         // Arrange
-        var contract = new LoginContract("testUser@", "Pass123@");
+        var contract = new LoginContract("testUser@", "Pass123@", "Pass1@");
 
         // Act
         var dto = _mapper.Map<LoginDto>(contract);

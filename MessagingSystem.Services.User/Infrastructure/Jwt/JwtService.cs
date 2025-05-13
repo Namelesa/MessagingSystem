@@ -54,7 +54,7 @@ public class JwtService(
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Expires = DateTimeOffset.UtcNow.AddMinutes(_config.GetValue<int>("JWTConfig:TokenValidityMinutes"))
         };
 
@@ -91,7 +91,8 @@ public class JwtService(
         {
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new (JwtRegisteredClaimNames.Iat, EpochTime.GetIntDate(issuedAt).ToString(), ClaimValueTypes.Integer64),
-            new (ClaimTypes.Name, user.Login)
+            new (ClaimTypes.Name, user.Login),
+            new (ClaimTypes.UserData, user.NickName)
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor

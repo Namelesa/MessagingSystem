@@ -13,7 +13,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void LoginContract_ShouldValidateCorrectly(string login, string password, bool isValid)
         {
             // Arrange
-            var contract = new LoginContract(login, password);
+            var contract = new LoginContract(login, password, "Pass1@");
             var validationResults = new List<ValidationResult>();
             var validationContext = new ValidationContext(contract, serviceProvider: null, items: null);
 
@@ -32,7 +32,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void LoginContract_ValidatesPasswordAndLogin(string login, string password, bool expectedIsValid)
         {
             // Arrange
-            var contract = new LoginContract(login, password);
+            var contract = new LoginContract(login, password, "Pass1@");
             var validationResults = new List<ValidationResult>();
             var validationContext = new ValidationContext(contract);
 
@@ -50,7 +50,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void LoginContract_ShouldFailWithEmptyFields(string login, string password, bool expectedIsValid)
         {
             // Arrange
-            var contract = new LoginContract(login, password);
+            var contract = new LoginContract(login, password, "Pass1@");
             var validationResults = new List<ValidationResult>();
             var validationContext = new ValidationContext(contract);
 
@@ -67,7 +67,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
             // Arrange
             var invalidLogin = "us";
             var password = "ValidPass1!";
-            var contract = new LoginContract(invalidLogin, password);
+            var contract = new LoginContract(invalidLogin, password, "Pass1@");
 
             var validationResults = new List<ValidationResult>();
             var validationContext = new ValidationContext(contract);
@@ -86,7 +86,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
             // Arrange
             var login = "validLogin";
             var invalidPassword = "short";
-            var contract = new LoginContract(login, invalidPassword);
+            var contract = new LoginContract(login, invalidPassword, "Pass1@");
 
             var validationResults = new List<ValidationResult>();
             var validationContext = new ValidationContext(contract);
@@ -103,7 +103,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void LoginSetter_ShouldBeValid_WhenValidLoginIsSet()
         {
             // Arrange
-            var contract = new LoginContract("user123", "validPassword1!")
+            var contract = new LoginContract("user123", "validPassword1!", "Pass1@")
             {
                 Login = "newLogin_123"
             };
@@ -122,7 +122,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void PasswordSetter_ShouldBeValid_WhenValidPasswordIsSet()
         {
             // Arrange
-            var contract = new LoginContract("validLogin!", "validPassword123!")
+            var contract = new LoginContract("validLogin!", "validPassword123!", "Pass1@")
             {
                 Password = "newValidPass1@"
             };
@@ -141,7 +141,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void LoginSetter_ShouldFail_WhenInvalidLoginIsSet()
         {
             // Arrange
-            var contract = new LoginContract("user123", "validPassword123!")
+            var contract = new LoginContract("user123", "validPassword123!", "Pass1@")
             {
                 Login = "us"
             };
@@ -161,7 +161,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void PasswordSetter_ShouldFail_WhenInvalidPasswordIsSet()
         {
             // Arrange
-            var contract = new LoginContract("validLogin", "validPassword123!")
+            var contract = new LoginContract("validLogin", "validPassword123!", "Pass1@")
             {
                 Password = "short"
             };
@@ -181,7 +181,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void LoginSetter_ShouldFail_WhenLoginDoesNotMatchRegex()
         {
             // Arrange
-            var contract = new LoginContract("user123", "validPassword123!");
+            var contract = new LoginContract("user123", "validPassword123!", "Pass1@");
             
             var validationResults = new List<ValidationResult>();
             var validationContext = new ValidationContext(contract);
@@ -198,7 +198,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         public void PasswordSetter_ShouldFail_WhenPasswordDoesNotMatchRegex()
         {
             // Arrange
-            var contract = new LoginContract("validLogin", "validPassword123!")
+            var contract = new LoginContract("validLogin", "validPassword123!", "Pass1@")
             {
                 Password = "12345"
             };

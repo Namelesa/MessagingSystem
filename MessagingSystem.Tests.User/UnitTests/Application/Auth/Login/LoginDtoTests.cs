@@ -10,9 +10,10 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login
             // Arrange
             const string login = "testuser";
             const string password = "Password123!";
+            const string nickName = "Password123!";
 
             // Act
-            var loginDto = new LoginDto(login, password);
+            var loginDto = new LoginDto(login, password, nickName);
 
             // Assert
             Assert.Equal(login, loginDto.Login);
@@ -39,7 +40,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login
         public void Constructor_WithNullParameters_ShouldNotThrowException()
         {
             // Act & Assert
-            var exception = Record.Exception(() => new LoginDto("", ""));
+            var exception = Record.Exception(() => new LoginDto("", "", ""));
             Assert.Null(exception);
         }
         
@@ -47,7 +48,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login
         public void ObjectInitialization_ShouldWork()
         {
             // Arrange & Act
-            var loginDto = new LoginDto("originaluser", "originalpassword")
+            var loginDto = new LoginDto("originaluser", "originalpassword", "originalNickName")
             {
                 Login = "testuser",
                 Password = "Password123!"
@@ -64,9 +65,10 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login
             // Arrange
             const string login = "testuser";
             const string password = "Password123!";
+            const string nickName = "Password123!";
             
             // Act
-            var loginDto = new LoginDto(login, password);
+            var loginDto = new LoginDto(login, password, nickName);
             
             // Assert
             Assert.Equal(login, loginDto.Login);
@@ -77,7 +79,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Login
         public void Properties_CannotBeChanged_AfterInitialization()
         {
             // Arrange
-            var loginDto = new LoginDto("testuser", "Password123!");
+            var loginDto = new LoginDto("testuser", "Password123!", "Password123!");
             
             // Assert
             Assert.Equal("testuser", loginDto.Login);

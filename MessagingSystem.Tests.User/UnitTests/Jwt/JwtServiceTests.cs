@@ -44,7 +44,7 @@ public class JwtServiceTests
     {
         // Arrange
         var service = CreateService();
-        var user = new LoginDto("test", null);
+        var user = new LoginDto("test", null, null);
 
         // Act
         var result = InvokeValidateUserCredentials(service, user, "anyPassword");
@@ -64,7 +64,7 @@ public class JwtServiceTests
         _mockPasswordHasher.Setup(m => m.VerifyHashedPassword(It.IsAny<LoginDto>(), It.IsAny<string>(), correctHashedPassword))
             .Returns(PasswordVerificationResult.Failed);
 
-        var user = new LoginDto("test", correctHashedPassword);
+        var user = new LoginDto("test", correctHashedPassword, "Pass1@");
         
         var incorrectPassword = "AQAAAAIAAYagAAAAEKaQL0wve0+cWn37VV/GpD7Ie9LnIJvx4NxiGGF7HJ9FSdosaL5jvWW59hF4FspeDC==";
 
@@ -82,7 +82,7 @@ public class JwtServiceTests
         // Arrange
         var token = "mockedToken";
         var passwordRequest = "Test123!4987654";
-        var user = new LoginDto("user", passwordRequest);
+        var user = new LoginDto("user", passwordRequest, "Pass1@");
         
         var passwordHasher = new PasswordHasher<LoginDto>();
         var hashedPassword = passwordHasher.HashPassword(user, passwordRequest); 
@@ -121,7 +121,7 @@ public class JwtServiceTests
     {
         // Arrange
         var passwordRequest = "Test123!4987654";
-        var user = new LoginDto("user", passwordRequest);
+        var user = new LoginDto("user", passwordRequest, "Pass1@");
         
         var passwordHasher = new PasswordHasher<LoginDto>();
         var hashedPassword = passwordHasher.HashPassword(user, passwordRequest); 
@@ -146,7 +146,7 @@ public class JwtServiceTests
     public async Task AuthenticateAsync_ShouldReturnToken_WhenPasswordIsCorrect()
     {
         var passwordRequest = "Test123!4987654";
-        var user = new LoginDto("user", passwordRequest);
+        var user = new LoginDto("user", passwordRequest, "Pass1@");
         
         var passwordHasher = new PasswordHasher<LoginDto>();
         var hashedPassword = passwordHasher.HashPassword(user, passwordRequest); 
@@ -208,7 +208,7 @@ public class JwtServiceTests
     public async Task AuthenticateAsync_ShouldLogWarning_WhenCredentialsAreInvalid()
     {
         // Arrange
-        var user = new LoginDto("testUser", null);
+        var user = new LoginDto("testUser", null, null);
         var service = CreateService();
 
         // Act
@@ -232,7 +232,7 @@ public class JwtServiceTests
     {
         // Arrange
         var passwordRequest = "Test123!4987654";
-        var user = new LoginDto("testUser", passwordRequest);
+        var user = new LoginDto("testUser", passwordRequest, "Pass1@");
 
         var passwordHasher = new PasswordHasher<LoginDto>();
         var hashedPassword = passwordHasher.HashPassword(user, passwordRequest);
@@ -283,7 +283,7 @@ public class JwtServiceTests
             _mockEncryptor.Object,
             new Mock<IHttpContextAccessor>().Object);;
 
-        var loginDto = new LoginDto("user", "password");
+        var loginDto = new LoginDto("user", "password", "Pass1@");
 
         var method = typeof(JwtService).GetMethod("GenerateJwtToken", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -318,7 +318,7 @@ public class JwtServiceTests
         var method = typeof(JwtService).GetMethod("GenerateJwtToken", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var ex = Assert.Throws<TargetInvocationException>(() =>
-            method!.Invoke(service, [new LoginDto("user", "pass")]));
+            method!.Invoke(service, [new LoginDto("user", "pass", "Pass1@")]));
 
         Assert.IsType<InvalidOperationException>(ex.InnerException);
         Assert.Equal("JWT key is not configured properly.", ex.InnerException!.Message);
@@ -344,7 +344,7 @@ public class JwtServiceTests
         var method = typeof(JwtService).GetMethod("GenerateJwtToken", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var ex = Assert.Throws<TargetInvocationException>(() =>
-            method!.Invoke(service, [new LoginDto("user", "pass")]));
+            method!.Invoke(service, [new LoginDto("user", "pass", "Pass1@")]));
 
         Assert.IsType<InvalidOperationException>(ex.InnerException);
         Assert.Equal("JWT key is not configured properly.", ex.InnerException!.Message);
@@ -358,7 +358,7 @@ public class JwtServiceTests
     
     private LoginDto CreateUser()
     {
-        return new LoginDto("testUser", "AQAAAAIAAYagAAAAEKaQL0wve0+cWn37VV/GpD7Ie9LnIJvx4NxiGGF7HJ9FSdosaL5jvWW59hF4FspeDQ==");
+        return new LoginDto("testUser", "AQAAAAIAAYagAAAAEKaQL0wve0+cWn37VV/GpD7Ie9LnIJvx4NxiGGF7HJ9FSdosaL5jvWW59hF4FspeDQ==", "Pass1@");
     }
 
     private void SetupPasswordHasher(PasswordVerificationResult passwordVerificationResult)

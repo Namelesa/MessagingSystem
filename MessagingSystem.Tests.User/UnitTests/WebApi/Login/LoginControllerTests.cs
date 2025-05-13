@@ -27,8 +27,8 @@ public class LoginControllerTests
     public async Task LoginAsync_WithValidCredentials_ReturnsOkResult()
     {
         // Arrange
-        var loginContract = new LoginContract("testuser", "password");
-        var loginDto = new LoginDto("testuser", "password");
+        var loginContract = new LoginContract("testuser", "password", "Pass1@");
+        var loginDto = new LoginDto("testuser", "password", "Pass1@");
         var operationResult = OperationResult<string>.Ok("True");
 
         _mapperMock
@@ -51,8 +51,8 @@ public class LoginControllerTests
     public async Task LoginAsync_WithInvalidCredentials_ReturnsBadRequestResult()
     {
         // Arrange
-        var loginContract = new LoginContract("", "");
-        var loginDto = new LoginDto("", "");
+        var loginContract = new LoginContract("", "", "");
+        var loginDto = new LoginDto("", "", "");
         var operationResult = OperationResult<string>.Fail("Invalid credentials");
 
         _mapperMock
@@ -75,8 +75,8 @@ public class LoginControllerTests
     public async Task LoginAsync_WithUserNotFound_ReturnsBadRequestResult()
     {
         // Arrange
-        var loginContract = new LoginContract("nonexistent", "password");
-        var loginDto = new LoginDto("nonexistent", "password");
+        var loginContract = new LoginContract("nonexistent", "password", "Pass1@");
+        var loginDto = new LoginDto("nonexistent", "password", "Pass1@");
         var operationResult = OperationResult<string>.Fail("User not found");
 
         _mapperMock
@@ -99,8 +99,8 @@ public class LoginControllerTests
     public async Task LoginAsync_WithEmailNotConfirmed_ReturnsBadRequestResult()
     {
         // Arrange
-        var loginContract = new LoginContract("testuser", "password");
-        var loginDto = new LoginDto("testuser", "password");
+        var loginContract = new LoginContract("testuser", "password", "Pass1@");
+        var loginDto = new LoginDto("testuser", "password", "Pass1@");
         var operationResult = OperationResult<string>.Fail("Please confirm email");
 
         _mapperMock
@@ -123,8 +123,8 @@ public class LoginControllerTests
     public async Task LoginAsync_WithFailedAuthentication_ReturnsOkResultWithFalse()
     {
         // Arrange
-        var loginContract = new LoginContract("testuser", "wrongpassword");
-        var loginDto = new LoginDto("testuser", "wrongpassword");
+        var loginContract = new LoginContract("testuser", "wrongpassword", "Pass1@");
+        var loginDto = new LoginDto("testuser", "wrongpassword", "Pass1@");
         var operationResult = OperationResult<string>.Ok("False");
 
         _mapperMock

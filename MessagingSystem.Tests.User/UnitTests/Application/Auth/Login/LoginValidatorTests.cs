@@ -13,7 +13,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     public void Validate_ValidLoginDto_ShouldPassValidation()
     {
         // Arrange
-        var loginDto = new LoginDto("user@1", "Pass1@");
+        var loginDto = new LoginDto("user@1", "Pass1@", "Pass1@");
 
         // Act
         var result = _validator.Validate(loginDto);
@@ -32,7 +32,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     {
         // Arrange
         output.WriteLine($"Testing scenario: {testName}");
-        var loginDto = new LoginDto(login, "Valid1@");
+        var loginDto = new LoginDto(login, "Valid1@", "Valid@1");
 
         // Act
         var result = _validator.Validate(loginDto);
@@ -53,7 +53,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     {
         // Arrange
         output.WriteLine($"Testing scenario: {testName}");
-        var loginDto = new LoginDto("valid@user", password);
+        var loginDto = new LoginDto("valid@user", password, "validUser@123");
 
         // Act
         var result = _validator.Validate(loginDto);
@@ -67,7 +67,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     public void Validate_InvalidLoginAndPassword_ShouldFailValidationWithMultipleErrors()
     {
         // Arrange
-        var loginDto = new LoginDto("usr", "pass");
+        var loginDto = new LoginDto("usr", "pass", "pass");
         
         // Act
         var result = _validator.Validate(loginDto);
@@ -90,7 +90,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     {
         // Arrange
         output.WriteLine($"Testing scenario: {testName}");
-        var loginDto = new LoginDto(login, password);
+        var loginDto = new LoginDto(login, password, "sjubviubweoub");
 
         // Act
         var result = _validator.Validate(loginDto);
@@ -103,7 +103,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     public void Validate_LoginWithSpecialCharacters_ShouldPassValidation()
     {
         // Arrange
-        var loginDto = new LoginDto("user@_!", "Pass1@");
+        var loginDto = new LoginDto("user@_!", "Pass1@", "Pass1@");
 
         // Act
         var result = _validator.Validate(loginDto);
@@ -116,7 +116,7 @@ public class LoginValidatorTests(ITestOutputHelper output)
     public void Validate_LoginWithAlphanumericAndSpecialChar_ShouldPassValidation()
     {
         // Arrange
-        var loginDto = new LoginDto("user123@", "Pass1@");
+        var loginDto = new LoginDto("user123@", "Pass1@", "Pass1@");
 
         // Act
         var result = _validator.Validate(loginDto);
@@ -129,8 +129,8 @@ public class LoginValidatorTests(ITestOutputHelper output)
     public void Validate_PasswordWithExactLengthLimits_ShouldValidateCorrectly()
     {
         // Arrange
-        var loginDto1 = new LoginDto("valid@user", "P@ss1");
-        var loginDto2 = new LoginDto("valid@user", "P@ssword12345!@");
+        var loginDto1 = new LoginDto("valid@user", "P@ss1", "Pass1@");
+        var loginDto2 = new LoginDto("valid@user", "P@ssword12345!@", "Pass1@");
 
         // Act
         var result1 = _validator.Validate(loginDto1);
@@ -145,8 +145,8 @@ public class LoginValidatorTests(ITestOutputHelper output)
     public void Validate_LoginWithExactLengthLimits_ShouldValidateCorrectly()
     {
         // Arrange
-        var loginDto1 = new LoginDto("usr@1", "P@ss1");
-        var loginDto2 = new LoginDto("user123456789012345@", "P@ss1");
+        var loginDto1 = new LoginDto("usr@1", "P@ss1", "Pass1@");
+        var loginDto2 = new LoginDto("user123456789012345@", "P@ss1", "Pass1@");
 
         // Act
         var result1 = _validator.Validate(loginDto1);

@@ -36,7 +36,7 @@ public class LoginUserOrchestratorTests
     public async Task LoginUserAsync_ShouldReturnToken_WhenLoginSuccessful()
     {
         // Arrange
-        var dto = new LoginDto("test", "pass");
+        var dto = new LoginDto("test", "pass", "pass");
         var user = new Services.User.Core.User.User("test", "nick")
         {
             PasswordHash = "encrypted-password",
@@ -70,7 +70,7 @@ public class LoginUserOrchestratorTests
     public async Task LoginUserAsync_ShouldFail_WhenValidationFails()
     {
         // Arrange
-        var dto = new LoginDto("", "");
+        var dto = new LoginDto("", "", "");
         var failures = new ValidationResult(new List<ValidationFailure>
         {
             new("Login", "Login is required")
@@ -90,7 +90,7 @@ public class LoginUserOrchestratorTests
     [Fact]
     public async Task LoginUserAsync_ShouldFail_WhenUserNotFound()
     {
-        var dto = new LoginDto("ghost", "any");
+        var dto = new LoginDto("ghost", "any", "any");
 
         _validatorMock.Setup(x => x.ValidateAsync(dto, default))
             .ReturnsAsync(new ValidationResult());
@@ -109,7 +109,7 @@ public class LoginUserOrchestratorTests
     [Fact]
     public async Task LoginUserAsync_ShouldFail_WhenEmailNotConfirmed()
     {
-        var dto = new LoginDto("user", "pass");
+        var dto = new LoginDto("user", "pass", "pass");
         var user = new Services.User.Core.User.User("user", "nick") { EmailConfirmed = false };
 
         _validatorMock.Setup(x => x.ValidateAsync(dto, default))
@@ -129,7 +129,7 @@ public class LoginUserOrchestratorTests
     [Fact]
     public async Task LoginUserAsync_ShouldReturnFalse_WhenAuthenticationFails()
     {
-        var dto = new LoginDto("user", "wrong-pass");
+        var dto = new LoginDto("user", "wrong-pass", "wrong-nick");
         var user = new Services.User.Core.User.User("user", "nick")
         {
             PasswordHash = "some-encrypted-hash",
