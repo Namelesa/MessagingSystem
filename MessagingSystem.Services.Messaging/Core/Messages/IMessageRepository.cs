@@ -2,10 +2,8 @@ namespace MessagingSystem.Services.Messaging.Core.Messages;
 
 public interface IMessageRepository
 {
-    Task<List<Message>> FindMessageByTimeAsync(DateTime dateTime);
-    Task<List<Message>> FindMessagesByContentAsync(string pathContent);
-    Task<List<Message>> FindMessageByRecipientAsync(string recipientName);
-    Task<List<Message>> FindMessageBySenderAsync(string senderName);
+    Task<List<Message>?> FindMessagesAsync(MessageFilter filter);
+    Task<Message> ReplyMessageAsync(Guid replyId, Message message);
     Task<Message?> FindMessageByIdAsync(Guid id);
     Task<Message?> CreateMessageAsync(Message message);
     Task<Message> EditMessageAsync(Message message);

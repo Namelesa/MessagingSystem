@@ -3,6 +3,7 @@ namespace MessagingSystem.Services.Messaging.Core.Messages;
 public class Message(string sender, string recipient, string content)
 {
     public Guid Id { get; init; }
+    public Guid? ReplyFor { get; private set; }
     public string Sender { get; init; } = sender;
     public string Recipient { get; init; } = recipient;
     public string Content { get; private set; } = content;
@@ -22,5 +23,10 @@ public class Message(string sender, string recipient, string content)
         IsEdited = true;
         Content = content;
         EditDate = DateTime.UtcNow;
+    }
+
+    public void Reply(Guid replyId)
+    {
+        ReplyFor = replyId;
     }
 }

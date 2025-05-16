@@ -70,11 +70,13 @@
         .message {
             position: relative;
             max-width: 70%;
-            padding: 10px 14px;
-            border-radius: 16px;
-            font-size: 14px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 16px;
             background: #f3f4f6;
             align-self: flex-start;
+            display: flex;
+            flex-direction: column;
         }
 
         .message.self {
@@ -82,19 +84,77 @@
             align-self: flex-end;
         }
 
-        .message .edit-button {
+        /* Dark theme message styling */
+        .message.dark {
+            background-color: #121212;
+            color: #e0e0e0;
+            border: 1px solid #333;
+        }
+
+        .message .content {
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .message .timestamp {
+            font-size: 12px;
+            color: #666;
+            align-self: flex-end;
+            margin-top: 4px;
+        }
+
+        .message.dark .timestamp {
+            color: #aaa;
+        }
+
+        .message .edited-label {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .message.dark .edited-label {
+            color: #aaa;
+        }
+
+        .message .message-buttons {
             position: absolute;
-            top: 4px;
-            right: 8px;
+            top: 8px;
+            right: 12px;
+            display: none;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 2px 6px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .message.dark .message-buttons {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+
+        .message:hover .message-buttons {
+            display: inline-flex;
+            gap: 8px;
+        }
+
+        .message-buttons button {
             border: none;
             background: transparent;
             cursor: pointer;
-            display: none;
-            font-size: 14px;
+            font-size: 16px;
+            padding: 4px;
+            transition: transform 0.2s;
         }
 
-        .message.self:hover .edit-button {
-            display: inline;
+        .message-buttons button:hover {
+            transform: scale(1.2);
+        }
+
+        .message.deleted {
+            background-color: #f5f5f5;
+            font-style: italic;
+            color: #888;
         }
 
         .input-container {
@@ -107,7 +167,7 @@
             display: flex;
         }
         .input-message {
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             font-size: 14px;
@@ -116,9 +176,13 @@
             background-color: #4CAF50;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .send-button:hover {
+            background-color: #45a049;
         }
         .search-controls input {
             padding: 8px;
@@ -135,25 +199,163 @@
             width: 100%;
         }
 
-        .timestamp {
-            font-size: 12px;
-            color: #6b7280;
-            text-align: right;
-            margin-top: 4px;
+        .chat-type-toggle {
+            display: flex;
+            margin-bottom: 16px;
+            background-color: #f3f4f6;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        .edited-label {
-            font-size: 12px;
-            color: #9ca3af;
-            margin-top: 2px;
-            font-style: italic;
+        .chat-type-toggle button {
+            flex: 1;
+            padding: 8px 0;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
         }
 
+        .chat-type-toggle button.active {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: 600;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 350px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .modal-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .modal-option {
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            border: none;
+        }
+
+        .modal-button.cancel {
+            background-color: #f3f4f6;
+        }
+
+        .modal-button.confirm {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        /* Reply styling */
+        .reply-container {
+            display: none;
+            background-color: #f8f9fa;
+            border-left: 4px solid #4CAF50;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+
+        .reply-container.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .reply-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .reply-content {
+            font-size: 14px;
+            color: #444;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .reply-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #888;
+        }
+
+        .reply-close:hover {
+            color: #444;
+        }
+
+        .reply-indicator {
+            background-color: #e6f7ff;
+            border-left: 3px solid #1890ff;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #555;
+        }
     </style>
 </head>
 <body>
 <div class="sidebar">
     <h2>Chats</h2>
+
+    <div class="chat-type-toggle">
+        <button id="personalChatsBtn" class="active" onclick="switchChatType('personal')">Personal</button>
+        <button id="groupChatsBtn" onclick="switchChatType('group')">Group</button>
+    </div>
 
     <div class="search-controls">
         <label for="searchInput"></label><input type="text" id="searchInput" placeholder="Search user..." />
@@ -171,8 +373,33 @@
     <div class="chat-box" id="chatBox"></div>
 
     <div class="input-container" id="inputContainer">
+        <div id="replyContainer" class="reply-container">
+            <div class="reply-header">
+                <span>Replying to <span id="replyToUser"></span></span>
+                <button class="reply-close" onclick="cancelReply()">×</button>
+            </div>
+            <div id="replyContent" class="reply-content"></div>
+        </div>
         <label for="messageInput"></label><input type="text" id="messageInput" class="input-message" placeholder="Type a message..." />
         <button class="send-button" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <div class="modal-title">Delete Message</div>
+        <div class="modal-options">
+            <div class="modal-option" onclick="selectDeleteOption('everyone')">
+                Delete only for me (the other user will still see it)
+            </div>
+            <div class="modal-option" onclick="selectDeleteOption('personal')">
+                Delete for everyone
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-button cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button class="modal-button confirm" id="confirmDeleteBtn">Delete</button>
+        </div>
     </div>
 </div>
 
@@ -183,18 +410,45 @@
     const chatBox = document.getElementById("chatBox");
     const inputContainer = document.getElementById("inputContainer");
     const messageInput = document.getElementById("messageInput");
+    const deleteModal = document.getElementById("deleteModal");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    const replyContainer = document.getElementById("replyContainer");
+    const replyToUser = document.getElementById("replyToUser");
+    const replyContent = document.getElementById("replyContent");
 
     let currentUserName = null;
     let activeChatUser = null;
+    let currentChatType = "personal";
 
     let editingMessageId = null;
     let editingMessageDiv = null;
+    let deletingMessageId = null;
+    let selectedDeleteType = null;
+
+    // New variables for reply functionality
+    let replyingToMessageId = null;
+    let replyMessageCache = {};
 
     const connection = new signalR.HubConnectionBuilder()
         .withUrl(`${BASE_URL}/chatHub`, { withCredentials: true })
         .withAutomaticReconnect([0, 2000, 5000])
         .configureLogging(signalR.LogLevel.Information)
         .build();
+
+    function switchChatType(type) {
+        currentChatType = type;
+
+        document.getElementById("personalChatsBtn").classList.toggle("active", type === "personal");
+        document.getElementById("groupChatsBtn").classList.toggle("active", type === "group");
+
+        chatBox.innerHTML = "";
+        selectedUser.innerText = "Select a " + (type === "personal" ? "user" : "group") + " to chat";
+        inputContainer.classList.remove("active");
+
+        document.getElementById("searchInput").placeholder = "Search " + (type === "personal" ? "user" : "group") + "...";
+
+        fetchChats();
+    }
 
     async function fetchCurrentUser() {
         try {
@@ -215,22 +469,77 @@
         }
     }
 
-    connection.on("ReceivePrivateMessage", ({ messageId, sender, content }) => {
-        if (sender === activeChatUser || sender === currentUserName) {
-            addOrUpdateMessage(messageId, sender, content, sender === currentUserName);
+    function persistDeletedMessages(messageId, type) {
+        if (type === "hard") {
+            const deletedMessages = JSON.parse(localStorage.getItem('deletedMessages_' + currentUserName) || '[]');
+            if (!deletedMessages.includes(messageId)) {
+                deletedMessages.push(messageId);
+                localStorage.setItem('deletedMessages_' + currentUserName, JSON.stringify(deletedMessages));
+            }
+        }
+    }
+
+    function isMessageDeletedLocally(messageId) {
+        const deletedMessages = JSON.parse(localStorage.getItem('deletedMessages_' + currentUserName) || '[]');
+        return deletedMessages.includes(messageId);
+    }
+
+    connection.on("ReceivePrivateMessage", (message) => {
+        if (message.sender === activeChatUser || message.sender === currentUserName) {
+            if (isMessageDeletedLocally(message.messageId)) {
+                return;
+            }
+
+            const sentAtDate = new Date(message.sentAt);
+
+            // Check if this is a reply message
+            if (message.replyTo) {
+                addOrUpdateMessage(
+                    message.messageId,
+                    message.sender,
+                    message.content,
+                    message.sender === currentUserName,
+                    sentAtDate,
+                    null,
+                    false,
+                    message.replyTo
+                );
+            } else {
+                addOrUpdateMessage(
+                    message.messageId,
+                    message.sender,
+                    message.content,
+                    message.sender === currentUserName,
+                    sentAtDate
+                );
+            }
+
+            // Cache message content for future reference in replies
+            replyMessageCache[message.messageId] = {
+                sender: message.sender,
+                content: message.content
+            };
+
+            sortMessagesByTimestamp();
         }
     });
 
-    connection.on("MessageEdited", ({ messageId, newContent }) => {
-        const messageDiv = document.querySelector(`.message[data-message-id="${messageId}"]`);
+    connection.on("MessageEdited", (editInfo) => {
+        const messageDiv = document.querySelector(`.message[data-message-id="${editInfo.messageId}"]`);
         if (messageDiv) {
             const contentSpan = messageDiv.querySelector(".content");
             if (contentSpan) {
-                contentSpan.textContent = newContent;
+                contentSpan.textContent = editInfo.newContent;
+
+                // Update the cache for replies
+                if (replyMessageCache[editInfo.messageId]) {
+                    replyMessageCache[editInfo.messageId].content = editInfo.newContent;
+                }
             }
 
             let editedLabel = messageDiv.querySelector(".edited-label");
-            const now = new Date().toLocaleString();
+            const editTimestamp = new Date(editInfo.editedAt);
+            const formattedEditTime = formatFullTimestamp(editTimestamp);
 
             if (!editedLabel) {
                 editedLabel = document.createElement("div");
@@ -238,7 +547,42 @@
                 messageDiv.appendChild(editedLabel);
             }
 
-            editedLabel.textContent = `edited ${now}`;
+            editedLabel.textContent = `edited ${formattedEditTime}`;
+        }
+    });
+
+    connection.on("MessageDeleted", (deleteInfo) => {
+        const messageDiv = document.querySelector(`.message[data-message-id="${deleteInfo.messageId}"]`);
+        if (!messageDiv) return;
+
+        const isSoftDelete = deleteInfo.type === "soft";
+        const isHardDelete = deleteInfo.type === "hard";
+
+        persistDeletedMessages(deleteInfo.messageId, deleteInfo.type);
+
+        if (isSoftDelete) {
+            const contentSpan = messageDiv.querySelector(".content");
+            if (contentSpan) {
+                contentSpan.textContent = "This message has been deleted";
+            }
+            messageDiv.classList.add("deleted");
+
+            const messageButtons = messageDiv.querySelector(".message-buttons");
+            if (messageButtons) {
+                messageButtons.remove();
+            }
+
+            // Update cache
+            if (replyMessageCache[deleteInfo.messageId]) {
+                replyMessageCache[deleteInfo.messageId].content = "This message has been deleted";
+            }
+        } else if (isHardDelete) {
+            chatBox.removeChild(messageDiv);
+
+            // Remove from cache
+            if (replyMessageCache[deleteInfo.messageId]) {
+                delete replyMessageCache[deleteInfo.messageId];
+            }
         }
     });
 
@@ -250,53 +594,156 @@
         loadChatHistory(user);
     }
 
-    function addOrUpdateMessage(messageId, sender, content, isSelf, sentAt = new Date(), editedAt = null) {
+    function formatTimeOnly(date) {
+        if (!(date instanceof Date) || isNaN(date)) {
+            return "";
+        }
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatFullTimestamp(date) {
+        if (!(date instanceof Date) || isNaN(date)) {
+            return "";
+        }
+        return date.toLocaleString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).replace(/\//g, '/');
+    }
+
+    function addOrUpdateMessage(messageId, sender, content, isSelf, sentAt, editedAt = null, isDeleted = false, replyToId = null) {
+        if (isMessageDeletedLocally(messageId)) {
+            return;
+        }
+
         let existing = document.querySelector(`.message[data-message-id="${messageId}"]`);
-        if (existing) return; // avoid duplicates
+        if (existing) return;
+
+        const sentAtDate = sentAt instanceof Date ? sentAt : new Date(sentAt);
 
         const messageDiv = document.createElement("div");
         messageDiv.classList.add("message");
-        if (isSelf) messageDiv.classList.add("self");
+        if (isSelf) {
+            messageDiv.classList.add("self");
+        }
+        if (isDeleted) messageDiv.classList.add("deleted");
         messageDiv.dataset.messageId = messageId;
+        messageDiv.dataset.timestamp = sentAtDate.toISOString();
+
+        // Add reply indicator if this is a reply to another message
+        if (replyToId) {
+            const replyIndicator = document.createElement("div");
+            replyIndicator.className = "reply-indicator";
+
+            // Try to get the original message details
+            const replyingTo = replyMessageCache[replyToId];
+            if (replyingTo) {
+                const truncatedContent = replyingTo.content.length > 30
+                    ? replyingTo.content.substring(0, 30) + "..."
+                    : replyingTo.content;
+                replyIndicator.textContent = `↩️ ${replyingTo.sender}: ${truncatedContent}`;
+            } else {
+                replyIndicator.textContent = "↩️ In reply to a message";
+            }
+
+            messageDiv.appendChild(replyIndicator);
+        }
 
         const contentSpan = document.createElement("span");
         contentSpan.className = "content";
-        contentSpan.textContent = content;
+        contentSpan.textContent = isDeleted ? "This message has been deleted" : content;
         messageDiv.appendChild(contentSpan);
 
-        // Время отправки
         const timestamp = document.createElement("div");
         timestamp.className = "timestamp";
-        const timeStr = new Date(sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        timestamp.textContent = timeStr;
+        timestamp.textContent = formatTimeOnly(sentAtDate);
         messageDiv.appendChild(timestamp);
 
-        // Если есть дата редактирования — добавим ее
         if (editedAt) {
             const editedLabel = document.createElement("div");
             editedLabel.className = "edited-label";
-            const editTime = new Date(editedAt).toLocaleString();
-            editedLabel.textContent = `edited ${editTime}`;
+            const editedAtDate = editedAt instanceof Date ? editedAt : new Date(editedAt);
+            editedLabel.textContent = `edited ${formatFullTimestamp(editedAtDate)}`;
             messageDiv.appendChild(editedLabel);
         }
 
-        if (isSelf) {
-            const editBtn = document.createElement("button");
-            editBtn.className = "edit-button";
-            editBtn.textContent = "✏️";
-            editBtn.onclick = () => {
-                messageInput.value = content;
-                editingMessageId = messageId;
-                editingMessageDiv = contentSpan;
-                messageInput.focus();
+        // Add message to cache for replies
+        replyMessageCache[messageId] = {
+            sender: sender,
+            content: content
+        };
+
+        if (!isDeleted) {
+            const buttonsDiv = document.createElement("div");
+            buttonsDiv.className = "message-buttons";
+
+            // Everyone can reply to any message
+            const replyBtn = document.createElement("button");
+            replyBtn.textContent = "↩️";
+            replyBtn.title = "Reply to message";
+            replyBtn.onclick = () => {
+                setReplyTo(messageId, sender, content);
             };
-            messageDiv.appendChild(editBtn);
+
+            buttonsDiv.appendChild(replyBtn);
+
+            // Only the message sender can edit or delete
+            if (isSelf) {
+                const editBtn = document.createElement("button");
+                editBtn.textContent = "✏️";
+                editBtn.title = "Edit message";
+                editBtn.onclick = () => {
+                    cancelReply(); // Cancel any ongoing reply
+                    messageInput.value = content;
+                    editingMessageId = messageId;
+                    editingMessageDiv = contentSpan;
+                    messageInput.focus();
+                };
+
+                const deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "🗑️";
+                deleteBtn.title = "Delete message";
+                deleteBtn.onclick = () => {
+                    openDeleteModal(messageId);
+                };
+
+                buttonsDiv.appendChild(editBtn);
+                buttonsDiv.appendChild(deleteBtn);
+            }
+
+            messageDiv.appendChild(buttonsDiv);
         }
 
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    function setReplyTo(messageId, sender, content) {
+        // Set up the reply UI
+        replyingToMessageId = messageId;
+        replyToUser.textContent = sender;
+
+        // Truncate content if too long
+        const truncatedContent = content.length > 50
+            ? content.substring(0, 50) + "..."
+            : content;
+        replyContent.textContent = truncatedContent;
+
+        // Show the reply container
+        replyContainer.classList.add("active");
+
+        // Focus the input field
+        messageInput.focus();
+    }
+
+    function cancelReply() {
+        replyingToMessageId = null;
+        replyContainer.classList.remove("active");
+    }
 
     function sendMessage() {
         const message = messageInput.value.trim();
@@ -310,19 +757,114 @@
                     messageInput.value = "";
                 })
                 .catch(err => alert("Error editing message: " + err.message));
+        } else if (replyingToMessageId) {
+            // Send as a reply
+            if (currentChatType === "personal") {
+                connection.invoke("ReplyToMessageAsync", activeChatUser, message, replyingToMessageId)
+                    .then(() => {
+                        messageInput.value = "";
+                        cancelReply(); // Reset reply state
+                    })
+                    .catch(err => alert("Error sending reply: " + err.message));
+            }
         } else {
-            connection.invoke("SendPrivateMessage", activeChatUser, message)
-                .then(() => {
-                    messageInput.value = "";
-                })
-                .catch(err => alert("Error sending message: " + err.message));
+            // Send as a regular message
+            if (currentChatType === "personal") {
+                connection.invoke("SendMessageAsync", activeChatUser, message)
+                    .then(() => {
+                        messageInput.value = "";
+                    })
+                    .catch(err => alert("Error sending message: " + err.message));
+            }
         }
+    }
+
+    function sortMessagesByTimestamp() {
+        const messages = Array.from(chatBox.children);
+
+        messages.sort((a, b) => {
+            const timestampA = new Date(a.dataset.timestamp);
+            const timestampB = new Date(b.dataset.timestamp);
+            return timestampA - timestampB;
+        });
+
+        chatBox.innerHTML = "";
+
+        messages.forEach(message => {
+            chatBox.appendChild(message);
+        });
+    }
+
+    function openDeleteModal(messageId) {
+        deletingMessageId = messageId;
+        selectedDeleteType = null;
+        deleteModal.style.display = "flex";
+
+        document.querySelectorAll(".modal-option").forEach(option => {
+            option.style.backgroundColor = "";
+        });
+        confirmDeleteBtn.disabled = true;
+    }
+
+    function closeDeleteModal() {
+        deleteModal.style.display = "none";
+        deletingMessageId = null;
+    }
+
+    function selectDeleteOption(type) {
+        selectedDeleteType = type;
+
+        document.querySelectorAll(".modal-option").forEach(option => {
+            option.style.backgroundColor = "";
+        });
+
+        event.currentTarget.style.backgroundColor = "#e0f2fe";
+        confirmDeleteBtn.disabled = false;
+    }
+
+    confirmDeleteBtn.addEventListener("click", () => {
+        if (deletingMessageId && selectedDeleteType) {
+            deleteMessage(deletingMessageId, selectedDeleteType);
+            closeDeleteModal();
+        }
+    });
+
+    function deleteMessage(messageId, deleteScope) {
+        const typeOfDeleting = deleteScope === "everyone" ? "soft" : "hard";
+
+        const invokeMethod = currentChatType === "personal"
+            ? "DeleteMessageAsync"
+            : "DeleteGroupMessageAsync";
+
+        connection.invoke(invokeMethod, messageId, typeOfDeleting)
+            .then(() => {
+                console.log(`Message ${messageId} deletion requested with type: ${typeOfDeleting}`);
+
+                if (typeOfDeleting === "hard") {
+                    const messageDiv = document.querySelector(`.message[data-message-id="${messageId}"]`);
+                    if (messageDiv) {
+                        chatBox.removeChild(messageDiv);
+                    }
+
+                    persistDeletedMessages(messageId, typeOfDeleting);
+                }
+            })
+            .catch(err => alert("Error deleting message: " + err.message));
     }
 
     async function fetchChats() {
         try {
+            chatList.innerHTML = "<div style='text-align:center;padding:10px;'>Loading chats...</div>";
+
             const chats = await connection.invoke('GetChatsAsync');
+
             chatList.innerHTML = "";
+
+            if (!chats || chats.length === 0) {
+                chatList.innerHTML = "<div style='text-align:center;padding:10px;color:#666;'>No chats found</div>";
+                return;
+            }
+
             chats.forEach(chat => {
                 const chatButton = document.createElement("button");
                 chatButton.classList.add("chat-button");
@@ -336,17 +878,43 @@
             });
         } catch (error) {
             console.error("Error fetching chats:", error);
+            chatList.innerHTML = "<div style='text-align:center;padding:10px;color:red;'>Failed to load chats</div>";
         }
     }
 
     async function loadChatHistory(user) {
         try {
-            const history = await connection.invoke("LoadPrivateChatHistory", user, 50);
+            let history;
+            if (currentChatType === "personal") {
+                history = await connection.invoke("LoadChatHistoryAsync", user, 50);
+            }
+
             chatBox.innerHTML = "";
 
-            history.forEach(({ messageId, sender, content, sentAt, editedAt }) => {
-                const isSelf = sender === currentUserName;
-                addOrUpdateMessage(messageId, sender, content, isSelf, sentAt, editedAt);
+            history.sort((a, b) => new Date(a.sentAt) - new Date(b.sentAt));
+            
+            const deletedMessages = JSON.parse(localStorage.getItem('deletedMessages_' + currentUserName) || '[]');
+
+            history.forEach(message => {
+                if (deletedMessages.includes(message.messageId)) {
+                    return;
+                }
+
+                const isSelf = message.sender === currentUserName;
+
+                const sentAtDate = new Date(message.sentAt);
+                const editedAtDate = message.isEdited ? new Date(message.editedAt) : null;
+                const isDeleted = message.isDeleted || false;
+
+                addOrUpdateMessage(
+                    message.messageId,
+                    message.sender,
+                    message.content,
+                    isSelf,
+                    sentAtDate,
+                    editedAtDate,
+                    isDeleted
+                );
             });
 
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -355,7 +923,6 @@
             alert("Could not load chat history.");
         }
     }
-
 
     async function searchUser() {
         const nickName = document.getElementById("searchInput").value.trim();
@@ -417,6 +984,12 @@
         const authenticated = await fetchCurrentUser();
         if (authenticated) {
             await startConnection();
+        }
+    });
+
+    messageInput.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
         }
     });
 </script>

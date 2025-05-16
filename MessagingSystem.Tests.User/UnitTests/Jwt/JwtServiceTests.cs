@@ -112,7 +112,7 @@ public class JwtServiceTests
             It.Is<CookieOptions>(opt =>
                 opt.HttpOnly &&
                 opt.Secure &&
-                opt.SameSite == SameSiteMode.Strict &&
+                opt.SameSite == SameSiteMode.None &&
                 opt.Expires.HasValue)), Times.Once);
     }
 

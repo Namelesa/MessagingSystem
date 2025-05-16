@@ -1,7 +1,7 @@
 namespace MessagingSystem.Services.Messaging.Application.Messages.Dto;
 
-public class CreatedMessageResult(string recipient, Guid messageId)
+public class CreatedMessageResult(Guid messageId, DateTime sentTime)
 {
-    public string Recipient { get; set; } = recipient;
-    public Guid MessageId { get; set; } = messageId;
+    public Guid MessageId { get; init; } = messageId;
+    public DateTime SentTime { get; init; } = sentTime;
 }

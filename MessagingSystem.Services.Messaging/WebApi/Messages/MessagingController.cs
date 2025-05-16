@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Application.User;
+using MessagingSystem.Services.Messaging.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,9 +12,11 @@ namespace MessagingSystem.Services.Messaging.WebApi.Messages;
 [ApiController]
 [Route("api/messaging")]
 public class MessagingController(
-    IUserOrchestrator userOrchestrator
+    IUserOrchestrator userOrchestrator,
+    IMessageOrchestrator messageOrchestrator
     ) : ControllerBase
 {
+    
     [HttpGet("find-user")]
     public async Task<IActionResult> CheckUserAsync([Required] string nickName)
     {
@@ -30,5 +34,13 @@ public class MessagingController(
             return Unauthorized("Nickname not found in token");
 
         return Ok(new { nick });
+    }
+
+    [HttpGet("by-time")]
+    public async Task<IActionResult> FindMessageAsync([Required, FromQuery] MessageFilter filter)
+    {
+        var messages = await messageOrchestrator.FindMessagesAsync(filter);
+        
+        return Ok(messages);
     }
 }

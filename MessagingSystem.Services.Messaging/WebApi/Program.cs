@@ -1,10 +1,12 @@
 using System.Text;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
+using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.Services.Messaging.Application.Chats;
 using MessagingSystem.Services.Messaging.Application.Messages;
+using MessagingSystem.Services.Messaging.Application.Messages.Dto;
 using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Core.Messages;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
@@ -30,10 +32,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+
 builder.Services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
-
 builder.Services.AddScoped<IUserOrchestrator, UserOrchestrator>();
+builder.Services.AddScoped<IValidator<MessagesDto>, MessageCreateValidator>();
+builder.Services.AddScoped<IValidator<EditMessageDto>, MessageEditValidator>();
+
 builder.Services.AddScoped<IHasher, Hasher>();
 builder.Services.AddScoped<IEncryptionInfo, EncryptionInfo>();
 builder.Services.AddScoped<IDecryptionInfo, DecryptionInfo>();
@@ -174,6 +179,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<PrivateChatHub>("/chatHub").RequireAuthorization();
+app.MapHub<OtoChatHub>("/chatHub").RequireAuthorization();
 
 app.Run();
