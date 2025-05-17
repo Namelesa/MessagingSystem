@@ -4,19 +4,22 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Validators;
 using MessagingSystem.Services.Messaging.Application.User;
+using MessagingSystem.Services.Messaging.Core.Groups.Group;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
-using MessagingSystem.Services.Messaging.Persistence;
+using MessagingSystem.Services.Messaging.Persistence.Group;
+using MessagingSystem.Services.Messaging.Persistence.Group.GroupInformation;
 using MessagingSystem.Services.Messaging.Persistence.Oto;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoMessages;
@@ -37,12 +40,17 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<OtoAppDbContext>(options => 
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddDbContext<GroupAppDbContext>(options => 
+    options.UseNpgsql(builder.Configuration.GetConnectionString("GroupDefaultConnection")));
+
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IGroupInfoRepository, GroupInfoRepository>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 
 builder.Services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<IUserOrchestrator, UserOrchestrator>();
+builder.Services.AddScoped<IGroupInfoOrchestrator, GroupInfoOrchestrator>();
 builder.Services.AddScoped<IValidator<MessagesDto>, MessageCreateValidator>();
 builder.Services.AddScoped<IValidator<EditMessageDto>, MessageEditValidator>();
 

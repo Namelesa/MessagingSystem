@@ -1,0 +1,33 @@
+﻿services:
+  postgres:
+    image: postgres:latest
+    container_name: user_db
+    restart: always
+    environment:
+      POSTGRES_DB: user
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5556:5432"
+        
+  postgres1:
+    image: postgres:latest
+    container_name: privateMessage_db
+    restart: always
+    environment:
+      POSTGRES_DB: message
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5557:5432"
+  
+  postgres2:
+    image: postgres:latest
+    container_name: groupMessage_db
+    restart: always
+    environment:
+      POSTGRES_DB: groupMessages
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5558:5432"
