@@ -1,8 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using MessagingSystem.Services.Messaging.Application.Messages;
+using AutoMapper;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Core;
+using MessagingSystem.Services.Messaging.WebApi.Messages.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +16,8 @@ namespace MessagingSystem.Services.Messaging.WebApi.Messages;
 [Route("api/messaging")]
 public class MessagingController(
     IUserOrchestrator userOrchestrator,
-    IMessageOrchestrator messageOrchestrator
+    IMessageOrchestrator messageOrchestrator,
+    IMapper mapper
     ) : ControllerBase
 {
     
@@ -21,8 +25,9 @@ public class MessagingController(
     public async Task<IActionResult> CheckUserAsync([Required] string nickName)
     {
         var user = await userOrchestrator.CheckUserAsync(nickName);
-
-        return Content(user, "text/plain");
+        return Content(user.Success 
+            ? nickName 
+            : user.Message, "text/plain");
     }
     
     [HttpGet("me")]
@@ -42,5 +47,14 @@ public class MessagingController(
         var messages = await messageOrchestrator.FindMessagesAsync(filter);
         
         return Ok(messages);
+    }
+
+    [HttpPost("send-message")]
+    public async Task<IActionResult> SendMessageAsync([Required] CreateMessage message)
+    {
+        var messageForCreate = mapper.Map<MessagesDto>(message);
+
+        var result = await messageOrchestrator.SendMessageAsync(messageForCreate);
+        return Ok(result);
     }
 }

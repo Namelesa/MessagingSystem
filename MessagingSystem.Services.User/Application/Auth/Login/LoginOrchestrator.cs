@@ -26,6 +26,9 @@ public class LoginOrchestrator(
         
         if(!user.EmailConfirmed) return OperationResult<string>.Fail("Please confirm email");
 
+        if (user.HashNickName != hasher.Hash(loginDto.NickName))
+            return OperationResult<string>.Fail("Input your real nick name");
+
         var res = user.PasswordHash != null &&
                   await jwtService.AuthenticateAndSetCookieAsync(loginDto, decryptionInfo.Decrypt(user.PasswordHash));
         

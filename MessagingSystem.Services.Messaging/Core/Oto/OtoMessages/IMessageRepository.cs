@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.Messaging.Core.Messages;
+namespace MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 
 public interface IMessageRepository
 {

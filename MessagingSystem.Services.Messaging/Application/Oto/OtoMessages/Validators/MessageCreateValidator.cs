@@ -1,7 +1,7 @@
 using FluentValidation;
-using MessagingSystem.Services.Messaging.Application.Messages.Dto;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 
-namespace MessagingSystem.Services.Messaging.Application.Messages;
+namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Validators;
 
 public class MessageCreateValidator : AbstractValidator<MessagesDto>
 {

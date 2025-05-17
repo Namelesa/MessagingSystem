@@ -1,11 +1,13 @@
-namespace MessagingSystem.Services.Messaging.Core.Messages;
+namespace MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 
 public class Message(string sender, string recipient, string content)
 {
     public Guid Id { get; init; }
     public Guid? ReplyFor { get; private set; }
     public string Sender { get; init; } = sender;
+    public string? SenderHash { get; private set; }
     public string Recipient { get; init; } = recipient;
+    public string? RecipientHash { get; private set; }
     public string Content { get; private set; } = content;
     public DateTime Date { get; init; } = DateTime.UtcNow;
 
@@ -28,5 +30,11 @@ public class Message(string sender, string recipient, string content)
     public void Reply(Guid replyId)
     {
         ReplyFor = replyId;
+    }
+
+    public void SetHashes(string senderHash, string recipientHash)
+    {
+        SenderHash = senderHash;
+        RecipientHash = recipientHash;
     }
 }

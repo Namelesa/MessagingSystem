@@ -104,7 +104,7 @@ public class EncryptionInfo : IEncryptionInfo
 
     public void EncryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "HashLogin", "HashEmail", "HashNickName" };
+        var excludedProps = new[] { "HashLogin", "HashEmail", "HashNickName", "SenderHash", "RecipientHash" };
 
         var props = typeof(T).GetProperties()
             .Where(p => 

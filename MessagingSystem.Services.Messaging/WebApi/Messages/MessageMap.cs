@@ -1,6 +1,6 @@
 using AutoMapper;
-using MessagingSystem.Services.Messaging.Application.Messages.Dto;
-using MessagingSystem.Services.Messaging.Core.Messages;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
+using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.WebApi.Messages.Contracts;
 
 namespace MessagingSystem.Services.Messaging.WebApi.Messages;

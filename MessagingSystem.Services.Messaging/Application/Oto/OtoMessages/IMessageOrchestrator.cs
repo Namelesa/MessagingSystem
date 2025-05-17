@@ -1,8 +1,8 @@
-using MessagingSystem.Services.Messaging.Application.Messages.Dto;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core;
-using MessagingSystem.Services.Messaging.Core.Messages;
+using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 
-namespace MessagingSystem.Services.Messaging.Application.Messages;
+namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 
 public interface IMessageOrchestrator
 {

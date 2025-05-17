@@ -857,6 +857,7 @@
             chatList.innerHTML = "<div style='text-align:center;padding:10px;'>Loading chats...</div>";
 
             const chats = await connection.invoke('GetChatsAsync');
+            console.log(chats)
 
             chatList.innerHTML = "";
 

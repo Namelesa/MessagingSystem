@@ -2,8 +2,7 @@ namespace MessagingSystem.Services.Messaging.Core;
 
 public class MessageFilter
 {
-    public string? Sender { get; set; }
-    public string? Recipient { get; set; }
-    public DateTime? Date { get; set; }
-    public string? Content { get; set; }
+    public string? Sender { get; init; }
+    public string? Recipient { get; init; }
+    public DateTime? Date { get; init; }
 }

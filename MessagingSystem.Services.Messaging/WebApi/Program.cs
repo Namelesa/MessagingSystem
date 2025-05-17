@@ -4,16 +4,22 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
-using MessagingSystem.Services.Messaging.Application.Chats;
-using MessagingSystem.Services.Messaging.Application.Messages;
-using MessagingSystem.Services.Messaging.Application.Messages.Dto;
+using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Validators;
 using MessagingSystem.Services.Messaging.Application.User;
-using MessagingSystem.Services.Messaging.Core.Messages;
+using MessagingSystem.Services.Messaging.Core.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
+using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
 using MessagingSystem.Services.Messaging.Persistence;
-using MessagingSystem.Services.Messaging.Persistence.Messages;
+using MessagingSystem.Services.Messaging.Persistence.Oto;
+using MessagingSystem.Services.Messaging.Persistence.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Persistence.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.WebApi.Messages;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -28,10 +34,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<AppDbContext>(options => 
+builder.Services.AddDbContext<OtoAppDbContext>(options => 
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
 
 builder.Services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
@@ -42,6 +49,8 @@ builder.Services.AddScoped<IValidator<EditMessageDto>, MessageEditValidator>();
 builder.Services.AddScoped<IHasher, Hasher>();
 builder.Services.AddScoped<IEncryptionInfo, EncryptionInfo>();
 builder.Services.AddScoped<IDecryptionInfo, DecryptionInfo>();
+builder.Services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
+builder.Services.AddScoped<KeyPublisher>();
 
 builder.Services.AddAutoMapper(config => config.AddProfile(new MessageMap()));
 builder.Services.AddSignalR();
@@ -51,17 +60,22 @@ builder.Services.Configure<MessageBrokerSettings>(builder.Configuration.GetSecti
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IOptions<MessageBrokerSettings>>().Value);
 
-builder.Services.AddMassTransit(x =>
+builder.Services.AddMassTransit(busConfiguration =>
 {
-    x.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
-
-    x.UsingRabbitMq((context, cfg) =>
+    busConfiguration.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
+    busConfiguration.AddConsumer<PublicKeyConsumer>();
+    
+    busConfiguration.UsingRabbitMq((context, configurator) =>
     {
         var settings = context.GetRequiredService<IOptions<MessageBrokerSettings>>().Value;
-        cfg.Host(new Uri(settings.Host), h =>
+        configurator.Host(new Uri(settings.Host), h =>
         {
             h.Username(settings.UserName);
             h.Password(settings.Password);
+        });
+        configurator.ReceiveEndpoint("public-key-user-service-queue", e =>
+        {
+            e.ConfigureConsumer<PublicKeyConsumer>(context);
         });
     });
 });
@@ -166,6 +180,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var publisher = scope.ServiceProvider.GetRequiredService<KeyPublisher>();
+    await publisher.PublishAsync();
 }
 
 app.UseRouting();

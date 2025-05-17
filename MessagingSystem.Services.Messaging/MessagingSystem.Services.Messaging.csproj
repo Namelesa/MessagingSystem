@@ -30,4 +30,9 @@
       <ProjectReference Include="..\MessagingSystem.SendingModels\MessagingSystem.SendingModels.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Application\Oto\" />
+      <Folder Include="Core\Oto\" />
+    </ItemGroup>
+
 </Project>

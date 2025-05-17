@@ -86,7 +86,6 @@ public class UserOrchestrator(
             return OperationResult<string>.Fail($"Can not delete user {e}");
         }
     }
-
     public async Task<string> FindUserByNickNameAsync(string nickName)
     {
         var existingUser = await userRepository.FindUserByHashNickNameAsync(nickName);
@@ -95,7 +94,6 @@ public class UserOrchestrator(
             ? "User not Found" 
             : existingUser.NickName;
     }
-    
     private string? GetPublicKey()
         => publicKeyStorage.Get("Notification");
 }

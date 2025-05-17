@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.Messaging.Application.Messages.Dto;
+namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 
 public class MessagesDto(
     string sender,

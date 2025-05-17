@@ -1,8 +1,9 @@
+using System.Text;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
-using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
+using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.Messaging.Application.User;
 
@@ -10,18 +11,29 @@ public class UserOrchestrator(
     IEncryptionInfo encryptionInfo,
     IDecryptionInfo decryptionInfo,
     IRequestClient<ExistingUserRequest> client,
-    IHasher hasher
+    IPublicKeyStorage publicKeyStorage
     ) : IUserOrchestrator
 {
-    public async Task<string> CheckUserAsync(string nickName)
+    public async Task<OperationResult<string>> CheckUserAsync(string nickName)
     {
-        nickName = hasher.Hash(nickName);
-        var encryptNick = encryptionInfo.Encrypt(nickName);
+        var publicKey = publicKeyStorage.Get("User");
+
+        if (publicKey == null)
+            return OperationResult<string>.Fail("Public key for User service not found");
+        
+        var encryptedNickName = encryptionInfo.Encrypt(nickName);
+        var bytes = Encoding.UTF8.GetBytes(encryptedNickName);
+        Console.WriteLine($"[Length before RSA]: {bytes.Length}");
+        encryptedNickName = encryptionInfo.EncryptRsa(encryptedNickName, publicKey);
         
         var response = await client.GetResponse<ExistingUserResponse>(
-            new ExistingUserRequest(encryptNick));
-        return response.Message.IsExist == false 
-            ? response.Message.NickName 
-            : decryptionInfo.Decrypt(response.Message.NickName);
+            new ExistingUserRequest(encryptedNickName));
+        
+        decryptionInfo.DecryptRsaObjectStrings(response);
+        decryptionInfo.DecryptObjectStrings(response);
+
+        return response.Message.IsExist
+            ? OperationResult<string>.Ok(decryptionInfo.Decrypt(response.Message.NickName)) 
+            : OperationResult<string>.Fail("User not found");
     }
 }

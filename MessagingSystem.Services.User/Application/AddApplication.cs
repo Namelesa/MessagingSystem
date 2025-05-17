@@ -46,6 +46,11 @@ public static class AddApplication
                     e.ConfigureConsumer<PublicKeyConsumer>(context);
                 });
                 
+                configurator.ReceiveEndpoint("public-key-messaging-queue", e =>
+                {
+                    e.ConfigureConsumer<PublicKeyConsumer>(context);
+                });
+                
                 configurator.ReceiveEndpoint("existing-user-request", e =>
                 {
                     e.ConfigureConsumer<UserCheckerConsumer>(context);

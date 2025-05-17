@@ -60,10 +60,13 @@ public class DecryptionInfo : IDecryptionInfo
     
     public void DecryptObjectStrings<T>(T obj)
     {
+        var excludedProps = new[] { "SenderHash", "RecipientHash" };
+
         var props = typeof(T).GetProperties()
             .Where(p => 
                 p is { CanRead: true, CanWrite: true } &&
-                p.PropertyType == typeof(string));
+                p.PropertyType == typeof(string) &&
+                !excludedProps.Contains(p.Name));
 
         foreach (var prop in props)
         {

@@ -1,10 +1,10 @@
 using MessagingSystem.Services.Messaging.Core;
-using MessagingSystem.Services.Messaging.Core.Messages;
+using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using Microsoft.EntityFrameworkCore;
 
-namespace MessagingSystem.Services.Messaging.Persistence.Messages;
+namespace MessagingSystem.Services.Messaging.Persistence.Oto.OtoMessages;
 
-public class MessageRepository(AppDbContext db) : IMessageRepository
+public class MessageRepository(OtoAppDbContext db) : IMessageRepository
 {
     public async Task<Message?> FindMessageByIdAsync(Guid id) =>
         await db.UsersMessages.FirstOrDefaultAsync(u => u.Id == id);
@@ -12,10 +12,9 @@ public class MessageRepository(AppDbContext db) : IMessageRepository
     {
         return await db.UsersMessages
             .Where(m =>
-                (filter.Sender == null || m.Sender == filter.Sender) &&
-                (filter.Recipient == null || m.Recipient == filter.Recipient) &&
-                (filter.Date == null || m.Date.Date == filter.Date.Value.Date) &&
-                (filter.Content == null || EF.Functions.ILike(m.Content, $"%{filter.Content}%"))
+                (filter.Sender == null || m.SenderHash == filter.Sender) &&
+                (filter.Recipient == null || m.RecipientHash == filter.Recipient) &&
+                (filter.Date == null || m.Date.Date == filter.Date.Value.Date)
             )
             .ToListAsync();
     }
@@ -53,8 +52,8 @@ public class MessageRepository(AppDbContext db) : IMessageRepository
     {
         return await db.UsersMessages
             .Where(m =>
-                (m.Sender == sender && m.Recipient == recipient) ||
-                (m.Sender == recipient && m.Recipient == sender))
+                (m.SenderHash == sender && m.RecipientHash == recipient) ||
+                (m.SenderHash == recipient && m.RecipientHash == sender))
             .OrderByDescending(m => m.Date)
             .Take(take)
             .ToListAsync();

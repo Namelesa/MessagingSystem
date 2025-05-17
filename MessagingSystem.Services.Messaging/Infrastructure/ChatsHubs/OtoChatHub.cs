@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
-using MessagingSystem.Services.Messaging.Application.Chats;
-using MessagingSystem.Services.Messaging.Application.Messages;
-using MessagingSystem.Services.Messaging.Application.Messages.Dto;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 
 namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 
@@ -114,10 +114,10 @@ public class OtoChatHub(
             replyFor = m.ReplyFor
         }).Cast<object>().ToList();
     }
-    public Task<List<string>> GetChatsAsync()
+    public async Task<List<string>?> GetChatsAsync()
     {
         var nickname = CurrentUserNickname;
-        return chatOrchestrator.GetChatsAsync(nickname);
+        return await chatOrchestrator.GetChatsAsync(nickname);
     }
     public async Task<object> ReplyToMessageAsync(string recipientNickname, string message, Guid replyToMessageId)
     {
