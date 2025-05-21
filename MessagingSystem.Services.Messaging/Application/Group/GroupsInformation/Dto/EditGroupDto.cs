@@ -1,0 +1,9 @@
+namespace MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+
+public class EditGroupDto(string groupName, string? image, string description, byte[] rowVersion)
+{
+    public string GroupName { get; init; } = groupName;
+    public string? Image { get; init; } = image;
+    public string Description { get; init; } = description;
+    public byte[] RowVersion { get; init; } = rowVersion;
+}

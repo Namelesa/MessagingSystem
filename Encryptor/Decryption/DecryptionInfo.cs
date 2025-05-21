@@ -60,7 +60,7 @@ public class DecryptionInfo : IDecryptionInfo
     
     public void DecryptObjectStrings<T>(T obj)
     {
-        var excludedProps = new[] { "SenderHash", "RecipientHash" };
+        var excludedProps = new[] { "SenderHash", "RecipientHash", "GroupNameHash", "AdminHash", "UserNickNameHash" };
 
         var props = typeof(T).GetProperties()
             .Where(p => 

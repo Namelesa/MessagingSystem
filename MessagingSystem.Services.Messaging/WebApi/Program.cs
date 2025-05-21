@@ -5,6 +5,8 @@ using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
+using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Validator;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
@@ -23,6 +25,7 @@ using MessagingSystem.Services.Messaging.Persistence.Group.GroupInformation;
 using MessagingSystem.Services.Messaging.Persistence.Oto;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.WebApi.Group;
 using MessagingSystem.Services.Messaging.WebApi.Messages;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +56,9 @@ builder.Services.AddScoped<IUserOrchestrator, UserOrchestrator>();
 builder.Services.AddScoped<IGroupInfoOrchestrator, GroupInfoOrchestrator>();
 builder.Services.AddScoped<IValidator<MessagesDto>, MessageCreateValidator>();
 builder.Services.AddScoped<IValidator<EditMessageDto>, MessageEditValidator>();
+builder.Services.AddScoped<IValidator<GroupDto>, GroupDtoValidator>();
+builder.Services.AddScoped<IValidator<EditGroupDto>, EditGroupDtoValidator>();
+builder.Services.AddScoped<IValidator<GroupMembersDto>, GroupMembersValidator>();
 
 builder.Services.AddScoped<IHasher, Hasher>();
 builder.Services.AddScoped<IEncryptionInfo, EncryptionInfo>();
@@ -61,6 +67,7 @@ builder.Services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
 builder.Services.AddScoped<KeyPublisher>();
 
 builder.Services.AddAutoMapper(config => config.AddProfile(new MessageMap()));
+builder.Services.AddAutoMapper(config => config.AddProfile(new GroupMap()));
 builder.Services.AddSignalR();
 
 builder.Services.Configure<MessageBrokerSettings>(builder.Configuration.GetSection("MessageBroker"));

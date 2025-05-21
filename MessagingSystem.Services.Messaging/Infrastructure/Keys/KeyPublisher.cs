@@ -13,7 +13,7 @@ public class KeyPublisher(IBus bus, IEncryptionInfo encryptInfo)
         var publicKeyMessage = new PublicKeyMessage
         {
             PublicKey = encryptInfo.Encrypt(publicKey),
-            ServiceName = encryptInfo.Encrypt("MessageBroker")
+            ServiceName = encryptInfo.Encrypt("Messaging")
         };
         await bus.Publish(publicKeyMessage);
     }

@@ -33,22 +33,26 @@ public class GroupAppDbContext(DbContextOptions<GroupAppDbContext> options) : Db
                 .HasMaxLength(500)
                 .IsRequired();
             builder.Property(u => u.Image)
-                .HasMaxLength(250)
-                .IsRequired();
+                .HasMaxLength(250);
             builder.Property(u => u.Description)
-                .HasMaxLength(600)
-                .IsRequired();
+                .HasMaxLength(600);
             builder.Property(u => u.Admin)
                 .HasMaxLength(80)
                 .IsRequired();
             builder.Property(u => u.AdminHash)
                 .HasMaxLength(120)
                 .IsRequired();
+            builder.Property(u => u.GroupNameHash)
+                .HasMaxLength(200)
+                .IsRequired();
         });
         
         modelBuilder.Entity<GroupMembers>(builder =>
         {
             builder.Property(u => u.UserNickName)
+                .HasMaxLength(120)
+                .IsRequired();
+            builder.Property(u => u.UserNickNameHash)
                 .HasMaxLength(120)
                 .IsRequired();
         });
@@ -59,8 +63,17 @@ public class GroupAppDbContext(DbContextOptions<GroupAppDbContext> options) : Db
             .HasForeignKey(gm => gm.GroupId);
         
         modelBuilder.Entity<GroupInfo>()
-            .HasIndex(u => u.GroupName)
+            .HasIndex(u => u.Id)
             .IsUnique();
+        modelBuilder.Entity<GroupInfo>()
+            .HasIndex(u => u.GroupNameHash)
+            .IsUnique();
+        modelBuilder.Entity<GroupInfo>()
+            .Property(g => g.RowVersion)
+            .IsRowVersion()
+            .IsConcurrencyToken();
+
+        
         modelBuilder.Entity<GroupInfo>()
             .HasMany(g => g.Members)
             .WithOne(m => m.Group)
