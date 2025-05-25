@@ -83,6 +83,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddMassTransit(busConfiguration =>
 {
     busConfiguration.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
+    busConfiguration.AddRequestClient<EditUserInfoRequest>(new Uri("queue:edit-user-request"));
     busConfiguration.AddConsumer<PublicKeyConsumer>();
     busConfiguration.AddConsumer<EditUserInfoConsumer>();
     
@@ -98,7 +99,7 @@ builder.Services.AddMassTransit(busConfiguration =>
         {
             e.ConfigureConsumer<PublicKeyConsumer>(context);
         });
-        configurator.ReceiveEndpoint("user-edit-info-queue", e =>
+        configurator.ReceiveEndpoint("edit-user-request", e =>
         {
             e.ConfigureConsumer<EditUserInfoConsumer>(context);
         });

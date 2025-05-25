@@ -1,4 +1,3 @@
-using System.Text;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;

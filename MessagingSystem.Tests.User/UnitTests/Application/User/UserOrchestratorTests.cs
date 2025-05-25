@@ -1,8 +1,10 @@
 using AutoMapper;
+using Encryptor.Decryption;
 using Encryptor.Encryption;
 using FluentValidation;
 using FluentValidation.Results;
 using MassTransit;
+using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
@@ -20,10 +22,12 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
         private readonly Mock<IValidator<UserDto>> _validatorMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<IEncryptionInfo> _encryptInfoMock;
+        private readonly Mock<IDecryptionInfo> _decncryptInfoMock;
         private readonly Mock<IHasher> _hasherMock;
         private readonly Mock<IPublishEndpoint> _publishEndpointMock;
         private readonly Mock<IPublicKeyStorage> _publicKeyStorageMock;
         private readonly UserOrchestrator _orchestrator;
+        private readonly Mock<IRequestClient<EditUserInfoRequest>> _client;
 
         private const string UserId = "user123";
         private const string PublicKey = "test-public-key";
@@ -35,18 +39,23 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             _validatorMock = new Mock<IValidator<UserDto>>();
             _userRepositoryMock = new Mock<IUserRepository>();
             _encryptInfoMock = new Mock<IEncryptionInfo>();
+            _decncryptInfoMock = new Mock<IDecryptionInfo>();
             _hasherMock = new Mock<IHasher>();
             _publishEndpointMock = new Mock<IPublishEndpoint>();
             _publicKeyStorageMock = new Mock<IPublicKeyStorage>();
+            _client = new Mock<IRequestClient<EditUserInfoRequest>>();
 
             _orchestrator = new UserOrchestrator(
                 _mapperMock.Object,
                 _validatorMock.Object,
                 _userRepositoryMock.Object,
                 _encryptInfoMock.Object,
+                _decncryptInfoMock.Object,
                 _hasherMock.Object,
                 _publishEndpointMock.Object,
-                _publicKeyStorageMock.Object);
+                _client.Object,
+                _publicKeyStorageMock.Object
+                );
             
             _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
             
