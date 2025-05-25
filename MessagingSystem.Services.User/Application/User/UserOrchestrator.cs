@@ -2,6 +2,7 @@ using AutoMapper;
 using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
+using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
@@ -21,16 +22,18 @@ public class UserOrchestrator(
 {
     public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
     {
-        var publicKey = GetPublicKey();
+        var publicKeyNotification = GetPublicKeyNotification();
+        var publicKeyMessaging = GetPublicKeyMessaging();
         
         var validationResult = await validator.ValidateAsync(userDto);
         if (!validationResult.IsValid) 
             return OperationResult<string>.Fail(string.Join("; ", validationResult.Errors));
 
         var existingUser = await userRepository.FindUserByIdAsync(userId);
-        if (existingUser == null || publicKey == null)
+        if (existingUser == null || publicKeyNotification == null || publicKeyMessaging == null)
             return OperationResult<string>.Fail("User not found");
 
+        var oldHashNick = existingUser.HashNickName;
         var hashLogin = hasher.Hash(userDto.Login);
         var hashEmail = hasher.Hash(userDto.Email);
         var hashNickName = hasher.Hash(userDto.NickName);
@@ -42,13 +45,20 @@ public class UserOrchestrator(
         
         try
         {
-            if (existingUser.UserName == null || existingUser.Email == null) 
+            if (existingUser.UserName == null 
+                || existingUser.Email == null 
+                || existingUser.HashNickName == null
+                || oldHashNick == null) 
                 return OperationResult<string>.Fail("User can not have null properties");
             
             await userRepository.UpdateUserAsync(existingUser);
+
+            var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick), existingUser.NickName);
+            encryptInfo.EncryptRsaObjectStrings(updateUserChats, publicKeyMessaging);
+            await publishEndpoint.Publish(updateUserChats);
             
             var editUserInfo = new EditUserEmail(existingUser.Email, existingUser.UserName);
-            encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKey);
+            encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKeyNotification);
             await publishEndpoint.Publish(editUserInfo);
             
             return OperationResult<string>.Ok("Update user info");
@@ -62,9 +72,9 @@ public class UserOrchestrator(
     }
     public async Task<OperationResult<string>> DeleteUserAsync(string userId)
     {
-        var publicKey = GetPublicKey();
+        var publicKeyNotification = GetPublicKeyNotification();
         var user = await userRepository.FindUserByIdAsync(userId);
-        if (user == null || publicKey == null)
+        if (user == null || publicKeyNotification == null)
             return OperationResult<string>.Fail("Not found user");
         
         try
@@ -75,7 +85,7 @@ public class UserOrchestrator(
             await userRepository.DeleteUserAsync(user);
             
             var editUserInfo = new DeleteUserEmail(user.Email, user.UserName);
-            encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKey);
+            encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKeyNotification);
             await publishEndpoint.Publish(editUserInfo);
             
             return OperationResult<string>.Ok("Delete user");
@@ -94,6 +104,8 @@ public class UserOrchestrator(
             ? "User not Found" 
             : existingUser.NickName;
     }
-    private string? GetPublicKey()
+    private string? GetPublicKeyNotification()
         => publicKeyStorage.Get("Notification");
+    private string? GetPublicKeyMessaging()
+        => publicKeyStorage.Get("Messaging");
 }

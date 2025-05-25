@@ -18,7 +18,7 @@ public class UserCheckerConsumer(
 {
     public async Task Consume(ConsumeContext<ExistingUserRequest> context)
     {
-        var publicKey = publicKeyStorage.Get("MessageBroker");
+        var publicKey = publicKeyStorage.Get("Messaging");
 
         if (publicKey == null)
         {

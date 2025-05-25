@@ -4,10 +4,12 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Validator;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
+using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
@@ -22,6 +24,7 @@ using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
 using MessagingSystem.Services.Messaging.Persistence.Group;
 using MessagingSystem.Services.Messaging.Persistence.Group.GroupInformation;
+using MessagingSystem.Services.Messaging.Persistence.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Persistence.Oto;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoMessages;
@@ -49,11 +52,13 @@ builder.Services.AddDbContext<GroupAppDbContext>(options =>
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<IGroupInfoRepository, GroupInfoRepository>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IGroupMembersRepository, GroupMemberRepository>();
 
 builder.Services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<IUserOrchestrator, UserOrchestrator>();
 builder.Services.AddScoped<IGroupInfoOrchestrator, GroupInfoOrchestrator>();
+builder.Services.AddScoped<IGroupMemberOrchestrator, GroupMemberOrchestrator>();
 builder.Services.AddScoped<IValidator<MessagesDto>, MessageCreateValidator>();
 builder.Services.AddScoped<IValidator<EditMessageDto>, MessageEditValidator>();
 builder.Services.AddScoped<IValidator<GroupDto>, GroupDtoValidator>();
@@ -79,6 +84,7 @@ builder.Services.AddMassTransit(busConfiguration =>
 {
     busConfiguration.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
     busConfiguration.AddConsumer<PublicKeyConsumer>();
+    busConfiguration.AddConsumer<EditUserInfoConsumer>();
     
     busConfiguration.UsingRabbitMq((context, configurator) =>
     {
@@ -91,6 +97,10 @@ builder.Services.AddMassTransit(busConfiguration =>
         configurator.ReceiveEndpoint("public-key-user-service-queue", e =>
         {
             e.ConfigureConsumer<PublicKeyConsumer>(context);
+        });
+        configurator.ReceiveEndpoint("user-edit-info-queue", e =>
+        {
+            e.ConfigureConsumer<EditUserInfoConsumer>(context);
         });
     });
 });

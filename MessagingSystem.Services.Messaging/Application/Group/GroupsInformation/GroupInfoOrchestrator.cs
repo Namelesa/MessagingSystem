@@ -95,6 +95,22 @@ public class GroupInfoOrchestrator(
             return OperationResult<GroupDto>.Fail("Failed to update group: " + e.Message);
         }
     }
+    public async Task<OperationResult<string>> EditGroupsAdminAsync(string adminHash, string newAdminNick)
+    {
+        var groupsAdmin = await groupInfoRepository.FindGroupByAdminHashAsync(adminHash);
+        if(groupsAdmin == null)
+            return OperationResult<string>.Fail("Groups not found");
+
+        var newAdminHash = hasher.Hash(newAdminNick);
+        
+        foreach (var admin in groupsAdmin)
+        {
+            admin.SetAdminHash(newAdminHash);
+            admin.EditAdminNick(encryptionInfo.Encrypt(newAdminNick));
+            await groupInfoRepository.EditGroupInfoAsync(admin);
+        }
+        return OperationResult<string>.Ok("Update is ok");
+    }
     public async Task<OperationResult<string>> DeleteGroupInfoAsync(Guid id, string adminHash)
     {
         var group = await groupInfoRepository.FindGroupByIdAsync(id);
@@ -122,7 +138,6 @@ public class GroupInfoOrchestrator(
     public async Task<OperationResult<List<GroupDto>>> GetGroupsForUserAsync(string userNick)
     {
         var userHash = hasher.Hash(userNick);
-        Console.WriteLine(userHash);
         var groups = await groupInfoRepository.GetGroupsByUserAsync(userHash);
 
         if (groups.Count == 0)

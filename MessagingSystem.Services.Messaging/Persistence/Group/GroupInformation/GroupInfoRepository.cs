@@ -13,6 +13,9 @@ public class GroupInfoRepository(GroupAppDbContext db) : IGroupInfoRepository
         await db.GroupInfos
             .Include(u => u.Members)
             .FirstOrDefaultAsync(u => u.GroupNameHash == groupName);
+    public async Task<List<GroupInfo>?> FindGroupByAdminHashAsync(string adminHash) =>
+        await db.GroupInfos.Where(m => m.AdminHash == adminHash)
+            .ToListAsync();
     public async Task<GroupInfo> EditGroupInfoAsync(GroupInfo groupInfo)
     {
         db.GroupInfos.Update(groupInfo);

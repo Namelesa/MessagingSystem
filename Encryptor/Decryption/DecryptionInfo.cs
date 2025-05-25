@@ -57,7 +57,6 @@ public class DecryptionInfo : IDecryptionInfo
         var decrypted = _rsa.Decrypt(encryptedBytes, RSAEncryptionPadding.OaepSHA256);
         return Encoding.UTF8.GetString(decrypted);
     }
-    
     public void DecryptObjectStrings<T>(T obj)
     {
         var excludedProps = new[] { "SenderHash", "RecipientHash", "GroupNameHash", "AdminHash", "UserNickNameHash" };
@@ -77,7 +76,6 @@ public class DecryptionInfo : IDecryptionInfo
             }
         }
     }
-    
     public void DecryptRsaObjectStrings<T>(T obj)
     {
         var props = typeof(T).GetProperties()

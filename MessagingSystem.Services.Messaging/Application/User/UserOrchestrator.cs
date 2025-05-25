@@ -22,8 +22,6 @@ public class UserOrchestrator(
             return OperationResult<string>.Fail("Public key for User service not found");
         
         var encryptedNickName = encryptionInfo.Encrypt(nickName);
-        var bytes = Encoding.UTF8.GetBytes(encryptedNickName);
-        Console.WriteLine($"[Length before RSA]: {bytes.Length}");
         encryptedNickName = encryptionInfo.EncryptRsa(encryptedNickName, publicKey);
         
         var response = await client.GetResponse<ExistingUserResponse>(

@@ -32,6 +32,7 @@
 
     <ItemGroup>
       <Folder Include="Application\Oto\" />
+      <Folder Include="Core\Groups\GroupMember\" />
       <Folder Include="Core\Oto\" />
     </ItemGroup>
 

@@ -35,7 +35,6 @@ public class EncryptionInfo : IEncryptionInfo
         _rsa = RSA.Create();
         _rsa.ImportRSAPrivateKey(Convert.FromBase64String(rsaKeys.PrivateKey), out _);
     }
-    
     public string Encrypt(string plainText)
     {
         var nonce = RandomNumberGenerator.GetBytes(12);
@@ -62,16 +61,15 @@ public class EncryptionInfo : IEncryptionInfo
         var encrypted = rsa.Encrypt(Encoding.UTF8.GetBytes(plainText), RSAEncryptionPadding.OaepSHA256);
         return Convert.ToBase64String(encrypted);
     }
-
     public void EncryptObjectStringsForUpdate<T>(T obj)
     {
-        var excludedProps = new[] { "UserName", "Login", "Email", "NickName" };
+        var excludedProps = new[] { "Id" };
 
         var props = typeof(T).GetProperties()
             .Where(p => 
                 p is { CanRead: true, CanWrite: true } &&
                 p.PropertyType == typeof(string) &&
-                excludedProps.Contains(p.Name));
+                !excludedProps.Contains(p.Name));
 
         foreach (var prop in props)
         {
@@ -82,7 +80,6 @@ public class EncryptionInfo : IEncryptionInfo
             }
         }
     }
-    
     public void EncryptRsaObjectStrings<T>(T obj, string baseKey)
     {
         var excludedProps = new[] { "NickName" };
@@ -101,7 +98,6 @@ public class EncryptionInfo : IEncryptionInfo
             }
         }
     }
-
     public void EncryptObjectStrings<T>(T obj)
     {
         var excludedProps = new[]

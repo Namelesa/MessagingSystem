@@ -9,7 +9,15 @@ public class GroupMap : Profile
 {
     public GroupMap()
     {
-        CreateMap<CreateGroup, GroupDto>();
+        CreateMap<CreateGroup, GroupDto>()
+            .ConstructUsing(src => new GroupDto(
+                src.GroupName,
+                src.Image,
+                src.Description,
+                src.Admin,
+                src.Users,
+                new byte[0]
+            ));
         CreateMap<GroupDto, GroupInfo>()
             .ForMember(dest => dest.Members, opt => 
                 opt.MapFrom(src =>
@@ -22,7 +30,8 @@ public class GroupMap : Profile
             .ForMember(dest => dest.Id, opt => 
                 opt.Ignore())
             .ForMember(dest => dest.AdminHash, opt => 
-                opt.Ignore()); 
+                opt.Ignore())
+            .ForMember(dest => dest.RowVersion, opt => opt.Ignore()); 
         CreateMap<GroupInfo, GroupDto>()
             .ConstructUsing(src => new GroupDto(
                 src.GroupName,

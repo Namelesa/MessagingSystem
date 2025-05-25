@@ -9,7 +9,7 @@ public sealed class GroupInfo(string groupName, string? image, string descriptio
     public string? GroupNameHash { get; private set; }
     public string? Image { get; private set; } = image;
     public string Description { get; private set; } = description;
-    public string Admin { get; init; } = admin;
+    public string Admin { get; private set; } = admin;
     public string? AdminHash { get; private set; }
     public List<GroupMembers> Members { get; private set; } = [];
     [Timestamp] public byte[] RowVersion { get; set; } = [];
@@ -90,5 +90,13 @@ public sealed class GroupInfo(string groupName, string? image, string descriptio
     {
         AdminHash = adminHash;
         GroupNameHash = groupNameHash;
+    }
+    public void SetAdminHash(string adminHash)
+    {
+        AdminHash = adminHash;
+    }
+    public void EditAdminNick(string adminNick)
+    {
+        Admin = adminNick;
     }
 }
