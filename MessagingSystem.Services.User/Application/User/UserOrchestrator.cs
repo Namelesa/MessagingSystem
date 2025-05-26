@@ -56,7 +56,6 @@ public class UserOrchestrator(
         {
             var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick), existingUser.NickName);
             encryptInfo.EncryptRsaObjectStrings(updateUserChats, publicKeyMessaging);
-            await publishEndpoint.Publish(updateUserChats);
         
             var response = await client.GetResponse<EditUserRollBack>(
                 updateUserChats);
@@ -64,7 +63,9 @@ public class UserOrchestrator(
             decryptionInfo.DecryptRsaObjectStrings(response);
             decryptionInfo.DecryptObjectStrings(response);
 
-            if (!response.Message.IsSuccess) return OperationResult<string>.Fail("Can't update user info");
+            if (!response.Message.IsSuccess) 
+                return OperationResult<string>.Fail("Can't update user info");
+            
             await userRepository.UpdateUserAsync(existingUser);
             
             var editUserInfo = new EditUserEmail(existingUser.Email, existingUser.UserName);
@@ -78,7 +79,6 @@ public class UserOrchestrator(
             Console.WriteLine(e);
             return OperationResult<string>.Fail($"Can not update user info {e}");
         }
-        
     }
     public async Task<OperationResult<string>> DeleteUserAsync(string userId)
     {
