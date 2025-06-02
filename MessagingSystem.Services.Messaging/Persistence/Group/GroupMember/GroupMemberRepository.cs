@@ -34,6 +34,10 @@ public class GroupMemberRepository(GroupAppDbContext db) : IGroupMembersReposito
         DELETE FROM ""GroupMembers""
         WHERE ""UserNickNameHash"" = {0}", userHashName);
         
+        affectedRows += await db.Database.ExecuteSqlRawAsync(@"
+        DELETE FROM ""GroupInfos""
+        WHERE ""AdminHash"" = {0}", userHashName);
+        
         return affectedRows;
     }
 }

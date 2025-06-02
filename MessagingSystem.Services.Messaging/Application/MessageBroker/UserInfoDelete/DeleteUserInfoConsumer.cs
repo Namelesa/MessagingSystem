@@ -3,7 +3,6 @@ using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
-using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
@@ -15,7 +14,6 @@ public class DeleteUserInfoConsumer(
     IPublicKeyStorage publicKeyStorage,
     ILogger<DeleteUserInfoConsumer> logger,
     IMessageOrchestrator messageOrchestrator,
-    IGroupInfoOrchestrator groupInfoOrchestrator,
     IGroupMemberOrchestrator groupMemberOrchestrator
     ) : IConsumer<DeleteUserInfoRequest>
 {
@@ -37,7 +35,6 @@ public class DeleteUserInfoConsumer(
             
             var (memberTask, messageTask) = (
                 groupMemberOrchestrator.DeleteMemberInfoAsync(nickName),
-                //groupInfoOrchestrator.EditGroupsAdminAsync(nickName),
                 messageOrchestrator.DeleteUserInfoInMessageAsync(nickName)
             );
 
@@ -51,16 +48,24 @@ public class DeleteUserInfoConsumer(
             if (!string.IsNullOrWhiteSpace(memberTask.Result.Data))
                 logger.LogInformation("Result: {Data}", memberTask.Result.Data);
 
+            var isSuccess = results.All(r => r.Success);
+
             var response = new DeleteUserInfoRollback(nickName)
             {
-                IsSuccess = true
+                IsSuccess = isSuccess
             };
+            
             encryptionInfo.EncryptObjectStrings(response);
             encryptionInfo.EncryptRsaObjectStrings(response, publicKey);
             await context.RespondAsync(response);
         }
         catch (Exception e)
-        {
+        { 
+            var fallbackResponse = new DeleteUserInfoRollback("Unknown")
+            {
+                IsSuccess = false
+            };
+            await context.RespondAsync(fallbackResponse);
             logger.LogError(e, "Unhandled exception in DeleteUserInfoConsumer");
         }
     }

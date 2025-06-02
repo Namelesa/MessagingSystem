@@ -124,7 +124,7 @@ public class MessageOrchestrator(
         try
         {
             var affectedRows = await messageRepository.UpdateUserHashesAsync(oldUserHashName, newEncryptedNickName, newUserHash);
-            return affectedRows > 0 
+            return affectedRows >= 0 
                 ? OperationResult<string>.Ok($"Update successful. Rows affected: {affectedRows}") 
                 : OperationResult<string>.Fail("No rows were updated. Possibly invalid user hash.");
         }
@@ -139,7 +139,7 @@ public class MessageOrchestrator(
         try
         {
             var result = await messageRepository.DeleteUserHashesAsync(userHash);
-            return result > 0 
+            return result >= 0 
                 ? OperationResult<string>.Ok($"Delete successful. Rows affected: {result}") 
                 : OperationResult<string>.Fail("No rows were deleted. Possibly invalid user hash.");
         }

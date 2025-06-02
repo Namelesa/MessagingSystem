@@ -58,8 +58,12 @@ public class EditUserInfoConsumer(
         }
         catch (Exception ex)
         {
+            var fallbackResponse = new DeleteUserInfoRollback("Unknown")
+            {
+                IsSuccess = false
+            };
+            await context.RespondAsync(fallbackResponse);
             logger.LogError(ex, "Unhandled exception in EditUserInfoConsumer");
-            throw;
         }
     }
 }

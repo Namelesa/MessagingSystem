@@ -33,7 +33,7 @@ public class GroupMemberOrchestrator(
         try
         {
             var result = await groupMembersRepository.DeleteUserInfoAsync(hashNickName);
-            return result > 0 
+            return result >= 0 
                 ? OperationResult<string>.Ok($"Delete successful. Rows affected: {result}") 
                 : OperationResult<string>.Fail("No rows were deleted. Possibly invalid user hash.");
         }
