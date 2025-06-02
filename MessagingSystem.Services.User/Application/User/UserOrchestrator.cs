@@ -20,7 +20,8 @@ public class UserOrchestrator(
     IDecryptionInfo decryptionInfo,
     IHasher hasher,
     IPublishEndpoint publishEndpoint,
-    IRequestClient<EditUserInfoRequest> client,
+    IRequestClient<EditUserInfoRequest> editClient,
+    IRequestClient<DeleteUserInfoRequest> deleteClient,
     IPublicKeyStorage publicKeyStorage) : IUserOrchestrator
 {
     public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
@@ -57,7 +58,7 @@ public class UserOrchestrator(
             var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick), existingUser.NickName);
             encryptInfo.EncryptRsaObjectStrings(updateUserChats, publicKeyMessaging);
         
-            var response = await client.GetResponse<EditUserRollBack>(
+            var response = await editClient.GetResponse<EditUserRollBack>(
                 updateUserChats);
             
             decryptionInfo.DecryptRsaObjectStrings(response);
@@ -83,14 +84,27 @@ public class UserOrchestrator(
     public async Task<OperationResult<string>> DeleteUserAsync(string userId)
     {
         var publicKeyNotification = GetPublicKeyNotification();
+        var publicKeyMessaging = GetPublicKeyMessaging();
+        
         var user = await userRepository.FindUserByIdAsync(userId);
-        if (user == null || publicKeyNotification == null)
+        if (user == null || publicKeyNotification == null || publicKeyMessaging == null)
             return OperationResult<string>.Fail("Not found user");
         
         try
         {
-            if (user.UserName == null || user.Email == null) 
+            if (user.UserName == null || user.Email == null || user.HashNickName == null) 
                 return OperationResult<string>.Fail("User can not have null properties");
+            
+            var deleteUserChats = new DeleteUserInfoRequest(encryptInfo.Encrypt(user.HashNickName));
+            encryptInfo.EncryptRsaObjectStrings(deleteUserChats, publicKeyMessaging);
+        
+            var response = await deleteClient.GetResponse<DeleteUserInfoRollback>(deleteUserChats);
+            
+            decryptionInfo.DecryptRsaObjectStrings(response);
+            decryptionInfo.DecryptObjectStrings(response);
+
+            if (!response.Message.IsSuccess) 
+                return OperationResult<string>.Fail("Can't delete user info");
             
             await userRepository.DeleteUserAsync(user);
             

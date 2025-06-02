@@ -10,4 +10,6 @@ public interface IMessageRepository
     Task<Message> DeleteMessageAsync(Message message);
     Task<Message> SoftDeleteMessageAsync(Message message);
     Task<List<Message>> GetMessageStoryAsync(string sender, string recipient, int take);
+    Task<int> UpdateUserHashesAsync(string oldHash, string newNick, string newHash);
+    Task<int> DeleteUserHashesAsync(string userHash);
 }

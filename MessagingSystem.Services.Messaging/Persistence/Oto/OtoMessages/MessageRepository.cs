@@ -58,4 +58,29 @@ public class MessageRepository(OtoAppDbContext db) : IMessageRepository
             .Take(take)
             .ToListAsync();
     }
+    public async Task<int> UpdateUserHashesAsync(string oldHash, string newNick, string newHash)
+    {
+        var senderUpdated = await db.Database.ExecuteSqlRawAsync(@"
+        UPDATE ""UsersMessages""
+        SET ""Sender"" = {0}, ""SenderHash"" = {1}
+        WHERE ""SenderHash"" = {2}",
+            newNick, newHash, oldHash);
+
+        var recipientUpdated = await db.Database.ExecuteSqlRawAsync(@"
+        UPDATE ""UsersMessages""
+        SET ""Recipient"" = {0}, ""RecipientHash"" = {1}
+        WHERE ""RecipientHash"" = {2}",
+            newNick, newHash, oldHash);
+        
+        return senderUpdated + recipientUpdated;
+    }
+
+    public async Task<int> DeleteUserHashesAsync(string userHash)
+    {
+        var deleted = await db.Database.ExecuteSqlRawAsync(@"
+        DELETE FROM ""UsersMessages""
+        WHERE ""SenderHash"" = {0} OR ""RecipientHash"" = {0}", userHash);
+
+        return deleted;
+    }
 }

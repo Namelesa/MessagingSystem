@@ -117,6 +117,38 @@ public class MessageOrchestrator(
         var result = await messageRepository.FindMessagesAsync(filterCopy);
         return result == null ? [] : DecryptListOfMessage(result);
     }
+    public async Task<OperationResult<string>> UpdateUserInfoInMessageAsync(string newNickName, string oldUserHashName)
+    {
+        var newUserHash = hasher.Hash(newNickName);
+        var newEncryptedNickName = encryptionInfo.Encrypt(newNickName);
+        try
+        {
+            var affectedRows = await messageRepository.UpdateUserHashesAsync(oldUserHashName, newEncryptedNickName, newUserHash);
+            return affectedRows > 0 
+                ? OperationResult<string>.Ok($"Update successful. Rows affected: {affectedRows}") 
+                : OperationResult<string>.Fail("No rows were updated. Possibly invalid user hash.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return OperationResult<string>.Fail($"Exception occurred: {e.Message}");
+        }
+    }
+    public async Task<OperationResult<string>> DeleteUserInfoInMessageAsync(string userHash)
+    {
+        try
+        {
+            var result = await messageRepository.DeleteUserHashesAsync(userHash);
+            return result > 0 
+                ? OperationResult<string>.Ok($"Delete successful. Rows affected: {result}") 
+                : OperationResult<string>.Fail("No rows were deleted. Possibly invalid user hash.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return OperationResult<string>.Fail($"Exception occurred: {e.Message}");
+        }
+    }
     private List<Message> DecryptListOfMessage(List<Message> encryptedMessages)
     {
         encryptedMessages.ForEach(decryptionInfo.DecryptObjectStrings);

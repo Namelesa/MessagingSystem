@@ -9,6 +9,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Validator;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
+using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
@@ -84,9 +85,13 @@ builder.Services.AddMassTransit(busConfiguration =>
 {
     busConfiguration.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
     busConfiguration.AddRequestClient<EditUserInfoRequest>(new Uri("queue:edit-user-request"));
+    busConfiguration.AddRequestClient<DeleteUserInfoRequest>(new Uri("queue:delete-user-request"));
+
     busConfiguration.AddConsumer<PublicKeyConsumer>();
     busConfiguration.AddConsumer<EditUserInfoConsumer>();
-    
+    busConfiguration.AddConsumer<DeleteUserInfoConsumer>();
+
+
     busConfiguration.UsingRabbitMq((context, configurator) =>
     {
         var settings = context.GetRequiredService<IOptions<MessageBrokerSettings>>().Value;
@@ -102,6 +107,10 @@ builder.Services.AddMassTransit(busConfiguration =>
         configurator.ReceiveEndpoint("edit-user-request", e =>
         {
             e.ConfigureConsumer<EditUserInfoConsumer>(context);
+        });
+        configurator.ReceiveEndpoint("delete-user-request", e =>
+        {
+            e.ConfigureConsumer<DeleteUserInfoConsumer>(context);
         });
     });
 });

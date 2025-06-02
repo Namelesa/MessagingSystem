@@ -4,9 +4,9 @@ public class Message(string sender, string recipient, string content)
 {
     public Guid Id { get; init; }
     public Guid? ReplyFor { get; private set; }
-    public string Sender { get; init; } = sender;
+    public string Sender { get; private set; } = sender;
     public string? SenderHash { get; private set; }
-    public string Recipient { get; init; } = recipient;
+    public string Recipient { get; private set; } = recipient;
     public string? RecipientHash { get; private set; }
     public string Content { get; private set; } = content;
     public DateTime Date { get; init; } = DateTime.UtcNow;
@@ -26,7 +26,7 @@ public class Message(string sender, string recipient, string content)
         Content = content;
         EditDate = DateTime.UtcNow;
     }
-
+    
     public void Reply(Guid replyId)
     {
         ReplyFor = replyId;

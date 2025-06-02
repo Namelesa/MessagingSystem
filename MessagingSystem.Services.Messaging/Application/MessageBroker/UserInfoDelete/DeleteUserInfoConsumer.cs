@@ -7,19 +7,19 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
-namespace MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
+namespace MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
 
-public class EditUserInfoConsumer(
-    IGroupMemberOrchestrator groupMemberOrchestrator,
-    IGroupInfoOrchestrator groupInfoOrchestrator,
-    IMessageOrchestrator messageOrchestrator,
+public class DeleteUserInfoConsumer(
     IDecryptionInfo decryptionInfo,
     IEncryptionInfo encryptionInfo,
     IPublicKeyStorage publicKeyStorage,
-    ILogger<EditUserInfoConsumer> logger
-        ) : IConsumer<EditUserInfoRequest>
+    ILogger<DeleteUserInfoConsumer> logger,
+    IMessageOrchestrator messageOrchestrator,
+    IGroupInfoOrchestrator groupInfoOrchestrator,
+    IGroupMemberOrchestrator groupMemberOrchestrator
+    ) : IConsumer<DeleteUserInfoRequest>
 {
-    public async Task Consume(ConsumeContext<EditUserInfoRequest> context)
+    public async Task Consume(ConsumeContext<DeleteUserInfoRequest> context)
     {
         try
         {
@@ -33,17 +33,17 @@ public class EditUserInfoConsumer(
             var msg = context.Message;
 
             decryptionInfo.DecryptRsaObjectStrings(msg);
-            decryptionInfo.DecryptObjectStrings(msg);
-
-            var (memberTask, groupTask, messageTask) = (
-                groupMemberOrchestrator.UpdateMemberInfoAsync(msg.UserHash, msg.UserNickName),
-                groupInfoOrchestrator.EditGroupsAdminAsync(msg.UserHash, msg.UserNickName),
-                messageOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash)
+            var nickName = decryptionInfo.Decrypt(msg.UserNickNameHash);
+            
+            var (memberTask, messageTask) = (
+                groupMemberOrchestrator.DeleteMemberInfoAsync(nickName),
+                //groupInfoOrchestrator.EditGroupsAdminAsync(nickName),
+                messageOrchestrator.DeleteUserInfoInMessageAsync(nickName)
             );
 
-            await Task.WhenAll(memberTask, groupTask, messageTask);
+            await Task.WhenAll(memberTask, messageTask);
 
-            var results = new[] { memberTask.Result, groupTask.Result, messageTask.Result };
+            var results = new[] { memberTask.Result, messageTask.Result };
 
             foreach (var result in results.Where(r => !r.Success))
                 logger.LogError("{Message}", result.Message);
@@ -51,15 +51,17 @@ public class EditUserInfoConsumer(
             if (!string.IsNullOrWhiteSpace(memberTask.Result.Data))
                 logger.LogInformation("Result: {Data}", memberTask.Result.Data);
 
-            var response = new EditUserRollBack(results.All(r => r.Success));
+            var response = new DeleteUserInfoRollback(nickName)
+            {
+                IsSuccess = true
+            };
             encryptionInfo.EncryptObjectStrings(response);
             encryptionInfo.EncryptRsaObjectStrings(response, publicKey);
             await context.RespondAsync(response);
         }
-        catch (Exception ex)
+        catch (Exception e)
         {
-            logger.LogError(ex, "Unhandled exception in EditUserInfoConsumer");
-            throw;
+            logger.LogError(e, "Unhandled exception in DeleteUserInfoConsumer");
         }
     }
 }

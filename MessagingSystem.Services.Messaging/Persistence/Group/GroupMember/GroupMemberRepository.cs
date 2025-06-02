@@ -14,7 +14,6 @@ public class GroupMemberRepository(GroupAppDbContext db) : IGroupMembersReposito
             .Where(m => m.UserNickNameHash == userHash)
             .ToListAsync();
     }
-
     public async Task<string> EditUserInfoAsync(GroupMembers groupMembers)
     {
         try
@@ -27,5 +26,14 @@ public class GroupMemberRepository(GroupAppDbContext db) : IGroupMembersReposito
         {
             return e.ToString();
         }
+    }
+    public async Task<int> DeleteUserInfoAsync(string userHashName)
+    {
+        var affectedRows = 0;
+        affectedRows += await db.Database.ExecuteSqlRawAsync(@"
+        DELETE FROM ""GroupMembers""
+        WHERE ""UserNickNameHash"" = {0}", userHashName);
+        
+        return affectedRows;
     }
 }

@@ -28,4 +28,19 @@ public class GroupMemberOrchestrator(
 
         return OperationResult<string>.Ok("User info is updated");
     }
+    public async Task<OperationResult<string>> DeleteMemberInfoAsync(string hashNickName)
+    {
+        try
+        {
+            var result = await groupMembersRepository.DeleteUserInfoAsync(hashNickName);
+            return result > 0 
+                ? OperationResult<string>.Ok($"Delete successful. Rows affected: {result}") 
+                : OperationResult<string>.Fail("No rows were deleted. Possibly invalid user hash.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return OperationResult<string>.Fail($"Exception occurred: {e.Message}");
+        }
+    }
 }

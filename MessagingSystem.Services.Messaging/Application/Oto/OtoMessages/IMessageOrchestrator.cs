@@ -14,4 +14,6 @@ public interface IMessageOrchestrator
     Task<List<Message>> LoadChatHistory(string sender, string recipient, int take);
     Task<OperationResult<Message>> ReplyForMessageAsync(Guid messageId, Guid replyId);
     Task<List<Message>?> FindMessagesAsync(MessageFilter messageFilter);
+    Task<OperationResult<string>> UpdateUserInfoInMessageAsync(string newNickName, string oldUserHashName);
+    Task<OperationResult<string>> DeleteUserInfoInMessageAsync(string userHash);
 }

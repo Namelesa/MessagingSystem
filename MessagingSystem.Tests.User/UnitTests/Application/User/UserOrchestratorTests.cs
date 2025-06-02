@@ -27,7 +27,8 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
         private readonly Mock<IPublishEndpoint> _publishEndpointMock;
         private readonly Mock<IPublicKeyStorage> _publicKeyStorageMock;
         private readonly UserOrchestrator _orchestrator;
-        private readonly Mock<IRequestClient<EditUserInfoRequest>> _client;
+        private readonly Mock<IRequestClient<EditUserInfoRequest>> _clientEdit;
+        private readonly Mock<IRequestClient<DeleteUserInfoRequest>> _clientDelete;
 
         private const string UserId = "user123";
         private const string PublicKey = "test-public-key";
@@ -43,7 +44,8 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             _hasherMock = new Mock<IHasher>();
             _publishEndpointMock = new Mock<IPublishEndpoint>();
             _publicKeyStorageMock = new Mock<IPublicKeyStorage>();
-            _client = new Mock<IRequestClient<EditUserInfoRequest>>();
+            _clientEdit = new Mock<IRequestClient<EditUserInfoRequest>>();
+            _clientDelete = new Mock<IRequestClient<DeleteUserInfoRequest>>();
 
             _orchestrator = new UserOrchestrator(
                 _mapperMock.Object,
@@ -53,7 +55,8 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
                 _decncryptInfoMock.Object,
                 _hasherMock.Object,
                 _publishEndpointMock.Object,
-                _client.Object,
+                _clientEdit.Object,
+                _clientDelete.Object,
                 _publicKeyStorageMock.Object
                 );
             

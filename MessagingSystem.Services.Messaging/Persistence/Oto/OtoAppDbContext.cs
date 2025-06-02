@@ -29,5 +29,12 @@ public class OtoAppDbContext(DbContextOptions<OtoAppDbContext> options) : DbCont
                 .HasMaxLength(120)
                 .IsRequired();
         });
+
+        modelBuilder.Entity<Message>()
+            .HasIndex(u => u.Id);
+        modelBuilder.Entity<Message>()
+            .HasIndex(u => u.RecipientHash);
+        modelBuilder.Entity<Message>()
+            .HasIndex(u => u.SenderHash);
     }
 }
