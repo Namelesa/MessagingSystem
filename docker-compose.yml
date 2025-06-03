@@ -31,3 +31,19 @@
       POSTGRES_PASSWORD: postgres
     ports:
       - "5558:5432"
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "5672:5672"
+      - "15672:15672"

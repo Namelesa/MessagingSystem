@@ -15,8 +15,6 @@ namespace MessagingSystem.Services.User.Application.Messaging.Key
             
             if (serviceName == "User") 
                 return;
-
-            Console.WriteLine($"[✓]:{serviceName}");
             
             var publicKey = encryptInfo.Decrypt(message.PublicKey);
             
