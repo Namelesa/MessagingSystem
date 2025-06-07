@@ -1,4 +1,3 @@
-using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 
 namespace MessagingSystem.Tests.User.UnitTests.Application.Auth.Register;
@@ -15,9 +14,10 @@ public class RegisterDtoTests
         const string lastName = "User";
         const string nickName = "testy";
         const string password = "Password123!";
+        const string image = "image";
 
         // Act
-        var registerDto = new RegisterDto(email, login, firstName, lastName, nickName, password);
+        var registerDto = new RegisterDto(email, login, firstName, lastName, nickName, password, image);
 
         // Assert
         Assert.Equal(email, registerDto.Email);
@@ -38,7 +38,9 @@ public class RegisterDtoTests
             "Test",
             "User",
             "testy",
-            "OldPassword123!");
+            "OldPassword123!",
+            "test"
+            );
 
         // Act
         const string newPassword = "NewPassword123!";
@@ -85,7 +87,7 @@ public class RegisterDtoTests
     public void Constructor_WithNullParameters_ShouldNotThrowException()
     {
         // Act & Assert
-        var exception = Record.Exception(() => new RegisterDto("", "", "", "", "", ""));
+        var exception = Record.Exception(() => new RegisterDto("", "", "", "", "", "", ""));
         Assert.Null(exception);
     }
         
@@ -99,7 +101,8 @@ public class RegisterDtoTests
                 "Test", 
                 "User", 
                 "testy", 
-                "Password123!")
+                "Password123!",
+                "tets")
         {
             Email = "new@example.com",
             Login = "newlogin",

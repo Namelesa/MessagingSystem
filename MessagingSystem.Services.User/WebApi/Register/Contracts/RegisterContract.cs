@@ -8,7 +8,8 @@ public class RegisterContract(
     string login, 
     string email, 
     string nickName, 
-    string password)
+    string password,
+    string image)
 {
     [Required(ErrorMessage = "First name is required")]
     [RegularExpression("^[A-Za-zА-Яа-яЁё]{3,25}$", 
@@ -42,4 +43,6 @@ public class RegisterContract(
             "Password must be 5 to 15 characters long and include at least one letter, " +
             "one number, and one special character (!, _, @).")]
     public string Password { get; } = password;
+
+    public string Image { get; set; } = image;
 }

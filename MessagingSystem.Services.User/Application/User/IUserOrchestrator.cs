@@ -6,5 +6,6 @@ public interface IUserOrchestrator
 {
     Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId);
     Task<OperationResult<string>> DeleteUserAsync(string userId);
-    Task<string> FindUserByNickNameAsync(string nickName);
+    Task<OperationResult<UserFoundDto>> FindUserByNickNameAsync(string nickName);
+    Task<OperationResult<List<UserFoundDto>>> FindUsersByNickNamesAsync(List<string> nickNames);
 }

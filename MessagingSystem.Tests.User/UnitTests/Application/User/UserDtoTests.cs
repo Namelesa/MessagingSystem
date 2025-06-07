@@ -1,4 +1,3 @@
-using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
 
 namespace MessagingSystem.Tests.User.UnitTests.Application.User;
@@ -15,9 +14,10 @@ public class UserDtoTests
         const string firstName = "Test";
         const string lastName = "User";
         const string nickName = "testy";
+        const string image = "testy";
 
         // Act
-        var userDto = new UserDto(firstName, lastName, login, email, nickName);
+        var userDto = new UserDto(firstName, lastName, login, email, nickName, image);
 
         // Assert
         Assert.Equal(email, userDto.Email);
@@ -59,7 +59,7 @@ public class UserDtoTests
     public void Constructor_WithNullParameters_ShouldNotThrowException()
     {
         // Act & Assert
-        var exception = Record.Exception(() => new UserDto("", "", "", "", ""));
+        var exception = Record.Exception(() => new UserDto("", "", "", "", "", ""));
         Assert.Null(exception);
     }
         
@@ -72,7 +72,8 @@ public class UserDtoTests
             "User", 
             "testy",
             "test@example.com",
-            "testNick")
+            "testNick",
+            "testImage")
         {
             Email = "new@example.com",
             Login = "newlogin",

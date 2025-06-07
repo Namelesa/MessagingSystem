@@ -1,5 +1,5 @@
 using Encryptor.Encryption;
-using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Group.GroupMember;
@@ -10,19 +10,17 @@ public class GroupMemberOrchestrator(
     IEncryptionInfo encryptionInfo
     ) : IGroupMemberOrchestrator
 {
-    public async Task<OperationResult<string>> UpdateMemberInfoAsync(string userHash, string newNickName)
+    public async Task<OperationResult<string>> UpdateMemberInfoAsync(string userHash, string newNickName, string image)
     {
         var members = await groupMembersRepository.FindUserByHashAsync(userHash);
-        
-        if(members == null)
-            return OperationResult<string>.Fail("User not found");
-        
+
         var newHash = hasher.Hash(newNickName);
 
         foreach (var member in members)
         {
             member.SetHash(newHash);
             member.UserNickName = encryptionInfo.Encrypt(member.UserNickName);
+            member.SetImage(encryptionInfo.Encrypt(image));
             await groupMembersRepository.EditUserInfoAsync(member);
         }
 

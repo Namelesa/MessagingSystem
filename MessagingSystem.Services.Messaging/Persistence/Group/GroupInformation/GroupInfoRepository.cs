@@ -3,43 +3,61 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MessagingSystem.Services.Messaging.Persistence.Group.GroupInformation;
 
-public class GroupInfoRepository(GroupAppDbContext db) : IGroupInfoRepository
+public class GroupInfoRepository(IDbContextFactory<GroupAppDbContext> dbContextFactory) : IGroupInfoRepository
 {
-    public async Task<GroupInfo?> FindGroupByIdAsync(Guid id) =>
-        await db.GroupInfos
-            .Include(u => u.Members)
-            .FirstOrDefaultAsync(u => u.Id == id);
-    public async Task<GroupInfo?> FindGroupByNameHashAsync(string groupName) =>
-        await db.GroupInfos
-            .Include(u => u.Members)
-            .FirstOrDefaultAsync(u => u.GroupNameHash == groupName);
-    public async Task<List<GroupInfo>?> FindGroupByAdminHashAsync(string adminHash) =>
-        await db.GroupInfos.Where(m => m.AdminHash == adminHash)
-            .ToListAsync();
-    public async Task<GroupInfo> EditGroupInfoAsync(GroupInfo groupInfo)
+    private async Task<TResult> WithContextAsync<TResult>(Func<GroupAppDbContext, Task<TResult>> action)
     {
-        db.GroupInfos.Update(groupInfo);
-        await db.SaveChangesAsync();
-        return groupInfo;
+        await using var context = await dbContextFactory.CreateDbContextAsync();
+        return await action(context);
     }
-    public async Task<GroupInfo> DeleteGroupAsync(GroupInfo groupInfo)
-    {
-        db.GroupInfos.Remove(groupInfo);
-        await db.SaveChangesAsync();
-        return groupInfo;
-    }
-    public async Task<GroupInfo> CreateGroupAsync(GroupInfo groupInfo)
-    {
-        await db.GroupInfos.AddAsync(groupInfo);
-        await db.SaveChangesAsync();
-        return groupInfo;
-    }
-    public async Task<List<GroupInfo>> GetGroupsByUserAsync(string userHash)
-    {
-        return await db.GroupInfos
-            .Include(g => g.Members)
-            .Where(g =>
-                g.Members.Any(m => m.UserNickNameHash == userHash) || g.AdminHash == userHash)
-            .ToListAsync();
-    }
+
+    public Task<GroupInfo?> FindGroupByIdAsync(Guid id) =>
+        WithContextAsync(context =>
+            context.GroupInfos
+                .Include(u => u.Members)
+                .FirstOrDefaultAsync(u => u.Id == id));
+
+    public Task<GroupInfo?> FindGroupByNameHashAsync(string groupName) =>
+        WithContextAsync(context =>
+            context.GroupInfos
+                .Include(u => u.Members)
+                .FirstOrDefaultAsync(u => u.GroupNameHash == groupName));
+
+    public Task<List<GroupInfo>> FindGroupByAdminHashAsync(string adminHash) =>
+        WithContextAsync(context =>
+            context.GroupInfos
+                .Where(m => m.AdminHash == adminHash)
+                .ToListAsync());
+
+    public Task<GroupInfo> EditGroupInfoAsync(GroupInfo groupInfo) =>
+        WithContextAsync(async context =>
+        {
+            context.GroupInfos.Update(groupInfo);
+            await context.SaveChangesAsync();
+            return groupInfo;
+        });
+
+    public Task<GroupInfo> DeleteGroupAsync(GroupInfo groupInfo) =>
+        WithContextAsync(async context =>
+        {
+            context.GroupInfos.Remove(groupInfo);
+            await context.SaveChangesAsync();
+            return groupInfo;
+        });
+
+    public Task<GroupInfo> CreateGroupAsync(GroupInfo groupInfo) =>
+        WithContextAsync(async context =>
+        {
+            await context.GroupInfos.AddAsync(groupInfo);
+            await context.SaveChangesAsync();
+            return groupInfo;
+        });
+
+    public Task<List<GroupInfo>> GetGroupsByUserAsync(string userHash) =>
+        WithContextAsync(context =>
+            context.GroupInfos
+                .Include(g => g.Members)
+                .Where(g =>
+                    g.Members.Any(m => m.UserNickNameHash == userHash) || g.AdminHash == userHash)
+                .ToListAsync());
 }

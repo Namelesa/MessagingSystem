@@ -1,4 +1,4 @@
-namespace MessagingSystem.SendingModels.UserMessaging;
+namespace MessagingSystem.SendingModels.UserMessaging.IsExist.User;
 
 public class ExistingUserRequest(string nickName)
 {

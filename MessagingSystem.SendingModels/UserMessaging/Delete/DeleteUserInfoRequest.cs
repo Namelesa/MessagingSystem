@@ -1,4 +1,4 @@
-namespace MessagingSystem.SendingModels.UserMessaging;
+namespace MessagingSystem.SendingModels.UserMessaging.Delete;
 
 public class DeleteUserInfoRequest(string userNickNameHash)
 {

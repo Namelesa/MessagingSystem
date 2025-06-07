@@ -4,6 +4,8 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.SendingModels.UserMessaging.Delete;
+using MessagingSystem.SendingModels.UserMessaging.Edit;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
@@ -50,12 +52,13 @@ public class UserOrchestrator(
         if (existingUser.UserName == null 
             || existingUser.Email == null 
             || existingUser.HashNickName == null
+            || existingUser.Image == null
             || oldHashNick == null) 
             return OperationResult<string>.Fail("User can not have null properties");
         
         try
         {
-            var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick), existingUser.NickName);
+            var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick), existingUser.NickName, existingUser.Image);
             encryptInfo.EncryptRsaObjectStrings(updateUserChats, publicKeyMessaging);
         
             var response = await editClient.GetResponse<EditUserRollBack>(
@@ -120,13 +123,22 @@ public class UserOrchestrator(
             return OperationResult<string>.Fail($"Can not delete user {e}");
         }
     }
-    public async Task<string> FindUserByNickNameAsync(string nickName)
+    public async Task<OperationResult<UserFoundDto>> FindUserByNickNameAsync(string nickName)
     {
         var existingUser = await userRepository.FindUserByHashNickNameAsync(nickName);
         
         return existingUser == null 
-            ? "User not Found" 
-            : existingUser.NickName;
+            ? OperationResult<UserFoundDto>.Fail("User not found") 
+            : OperationResult<UserFoundDto>.Ok(new UserFoundDto(existingUser.NickName, existingUser.Image));
+    }
+    public async Task<OperationResult<List<UserFoundDto>>> FindUsersByNickNamesAsync(List<string> hashNickNames)
+    {
+        var users = await userRepository.FindUsersByHashNickNamesAsync(hashNickNames);
+        
+        return users == null 
+            ? OperationResult<List<UserFoundDto>>.Fail("Users not found") 
+            : OperationResult<List<UserFoundDto>>.Ok(users
+                .Select(u => new UserFoundDto(u.NickName, u.Image)).ToList());
     }
     private string? GetPublicKeyNotification()
         => publicKeyStorage.Get("Notification");

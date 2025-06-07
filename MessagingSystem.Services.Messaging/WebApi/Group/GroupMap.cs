@@ -1,6 +1,7 @@
 using AutoMapper;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.WebApi.Group.Contracts;
 
 namespace MessagingSystem.Services.Messaging.WebApi.Group;
@@ -41,12 +42,11 @@ public class GroupMap : Profile
                 src.Members.Select(m => m.UserNickName).ToList(),
                 src.RowVersion
             ));
-        
+
         CreateMap<EditGroup, EditGroupDto>()
             .ForCtorParam("groupName", opt => opt.MapFrom(src => src.GroupName))
             .ForCtorParam("image", opt => opt.MapFrom(src => src.Image))
-            .ForCtorParam("description", opt => opt.MapFrom(src => src.Description ?? string.Empty))
-            .ForCtorParam("rowVersion", opt => opt.MapFrom(src => Convert.FromBase64String(src.RowVersion)));
+            .ForCtorParam("description", opt => opt.MapFrom(src => src.Description ?? string.Empty));
 
         CreateMap<AddMembers, GroupMembersDto>();
     }

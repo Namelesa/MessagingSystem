@@ -78,46 +78,37 @@
             display: flex;
             flex-direction: column;
         }
-
         .message.self {
             background-color: #d1e7fd;
             align-self: flex-end;
         }
-
-        /* Dark theme message styling */
         .message.dark {
             background-color: #121212;
             color: #e0e0e0;
             border: 1px solid #333;
         }
-
         .message .content {
             margin-bottom: 5px;
             word-break: break-word;
         }
-
         .message .timestamp {
             font-size: 12px;
             color: #666;
             align-self: flex-end;
             margin-top: 4px;
         }
-
         .message.dark .timestamp {
             color: #aaa;
         }
-
         .message .edited-label {
             font-size: 12px;
             color: #666;
             font-style: italic;
             margin-top: 4px;
         }
-
         .message.dark .edited-label {
             color: #aaa;
         }
-
         .message .message-buttons {
             position: absolute;
             top: 8px;
@@ -128,16 +119,13 @@
             padding: 2px 6px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
-
         .message.dark .message-buttons {
             background-color: rgba(0, 0, 0, 0.6);
         }
-
         .message:hover .message-buttons {
             display: inline-flex;
             gap: 8px;
         }
-
         .message-buttons button {
             border: none;
             background: transparent;
@@ -146,17 +134,14 @@
             padding: 4px;
             transition: transform 0.2s;
         }
-
         .message-buttons button:hover {
             transform: scale(1.2);
         }
-
         .message.deleted {
             background-color: #f5f5f5;
             font-style: italic;
             color: #888;
         }
-
         .input-container {
             display: none;
             margin-top: 12px;
@@ -198,7 +183,6 @@
             border-radius: 6px;
             width: 100%;
         }
-
         .chat-type-toggle {
             display: flex;
             margin-bottom: 16px;
@@ -206,7 +190,6 @@
             border-radius: 8px;
             overflow: hidden;
         }
-
         .chat-type-toggle button {
             flex: 1;
             padding: 8px 0;
@@ -216,13 +199,11 @@
             font-size: 14px;
             transition: all 0.2s;
         }
-
         .chat-type-toggle button.active {
             background-color: #4CAF50;
             color: white;
             font-weight: 600;
         }
-
         .modal-overlay {
             display: none;
             position: fixed;
@@ -235,7 +216,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .modal {
             background-color: white;
             padding: 20px;
@@ -243,20 +223,17 @@
             width: 350px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
         .modal-title {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 15px;
         }
-
         .modal-options {
             display: flex;
             flex-direction: column;
             gap: 10px;
             margin-bottom: 20px;
         }
-
         .modal-option {
             padding: 10px;
             border: 1px solid #e5e7eb;
@@ -264,17 +241,14 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-
         .modal-option:hover {
             background-color: #f3f4f6;
         }
-
         .modal-buttons {
             display: flex;
             justify-content: flex-end;
             gap: 10px;
         }
-
         .modal-button {
             padding: 8px 16px;
             border-radius: 6px;
@@ -282,17 +256,13 @@
             font-size: 14px;
             border: none;
         }
-
         .modal-button.cancel {
             background-color: #f3f4f6;
         }
-
         .modal-button.confirm {
             background-color: #ef4444;
             color: white;
         }
-
-        /* Reply styling */
         .reply-container {
             display: none;
             background-color: #f8f9fa;
@@ -301,12 +271,10 @@
             padding: 8px 12px;
             margin-bottom: 8px;
         }
-
         .reply-container.active {
             display: flex;
             flex-direction: column;
         }
-
         .reply-header {
             display: flex;
             justify-content: space-between;
@@ -315,7 +283,6 @@
             font-size: 12px;
             color: #666;
         }
-
         .reply-content {
             font-size: 14px;
             color: #444;
@@ -324,7 +291,6 @@
             text-overflow: ellipsis;
             max-width: 100%;
         }
-
         .reply-close {
             background: none;
             border: none;
@@ -332,11 +298,9 @@
             font-size: 16px;
             color: #888;
         }
-
         .reply-close:hover {
             color: #444;
         }
-
         .reply-indicator {
             background-color: #e6f7ff;
             border-left: 3px solid #1890ff;
@@ -345,6 +309,263 @@
             border-radius: 4px;
             font-size: 13px;
             color: #555;
+        }
+        .chat-button {
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .chat-button:hover {
+            background-color: #f3f4f6;
+        }
+        .chat-button.active {
+            background-color: #e0f2fe;
+            font-weight: 600;
+        }
+        .chat-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background-color: #e5e7eb;
+        }
+        .chat-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .group-header {
+            display: none;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .group-header:hover {
+            background: #f9fafb;
+        }
+
+        .group-header.active {
+            display: flex;
+        }
+
+        .group-header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+            background-color: #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .group-header-info {
+            flex: 1;
+        }
+
+        .group-header-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .group-header-members {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Стили для модального окна группы */
+        .group-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .group-modal {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 450px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .group-modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .group-modal-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 16px;
+            background-color: #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 24px;
+        }
+
+        .group-modal-info h3 {
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .group-modal-info p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .group-modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .group-action-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .group-action-btn.edit {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .group-action-btn.edit:hover {
+            background-color: #45a049;
+        }
+
+        .group-action-btn.delete {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .group-action-btn.delete:hover {
+            background-color: #dc2626;
+        }
+
+        .group-action-btn.leave {
+            background-color: #f97316;
+            color: white;
+        }
+
+        .group-action-btn.leave:hover {
+            background-color: #ea580c;
+        }
+
+        .group-members {
+            margin-bottom: 20px;
+        }
+
+        .group-members h4 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #2196F3;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .member-info {
+            flex: 1;
+        }
+
+        .member-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .member-role {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .group-modal-close {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .group-modal-close button {
+            padding: 8px 16px;
+            background-color: #f3f4f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .group-modal-close button:hover {
+            background-color: #e5e7eb;
+        }
+
+        /* Обновленные стили для chat-box с группой */
+        .chat-box.with-group-header {
+            border-radius: 0 0 12px 12px;
+            border-top: none;
         }
     </style>
 </head>
@@ -368,7 +589,39 @@
 <div class="main">
     <div class="top-bar">
         <span id="selectedUser">Select a user to chat</span>
+        <div id="groupHeader" class="group-header">
+            <div id="groupHeaderAvatar" class="group-header-avatar"></div>
+            <div class="group-header-info">
+                <div id="groupHeaderName" class="group-header-name"></div>
+                <div id="groupHeaderMembers" class="group-header-members"></div>
+            </div>
+        </div>
     </div>
+
+    <div class="group-modal-overlay" id="groupModal">
+        <div class="group-modal">
+            <div class="group-modal-header">
+                <div id="groupModalAvatar" class="group-modal-avatar"></div>
+                <div class="group-modal-info">
+                    <h3 id="groupModalName"></h3>
+                    <p id="groupModalMemberCount"></p>
+                </div>
+            </div>
+
+            <div id="groupModalActions" class="group-modal-actions">
+            </div>
+
+            <div class="group-members">
+                <h4>Members</h4>
+                <div id="groupMembersList"></div>
+            </div>
+
+            <div class="group-modal-close">
+                <button onclick="closeGroupModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
 
     <div class="chat-box" id="chatBox"></div>
 
@@ -425,15 +678,26 @@
     let deletingMessageId = null;
     let selectedDeleteType = null;
 
+    let activeGroupInfo = null;
+    let currentUserRole = null;
+
     // New variables for reply functionality
     let replyingToMessageId = null;
     let replyMessageCache = {};
 
     const connection = new signalR.HubConnectionBuilder()
-        .withUrl(`${BASE_URL}/chatHub`, { withCredentials: true })
+        .withUrl(`${BASE_URL}/otoChatHub`, { withCredentials: true })
         .withAutomaticReconnect([0, 2000, 5000])
         .configureLogging(signalR.LogLevel.Information)
         .build();
+
+    const connectionGroup = new signalR.HubConnectionBuilder()
+        .withUrl(`${BASE_URL}/groupChatHub`, { withCredentials: true })
+        .withAutomaticReconnect([0, 2000, 5000])
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+    
+    let isGroupConnectionActive = false;
 
     function switchChatType(type) {
         currentChatType = type;
@@ -444,10 +708,25 @@
         chatBox.innerHTML = "";
         selectedUser.innerText = "Select a " + (type === "personal" ? "user" : "group") + " to chat";
         inputContainer.classList.remove("active");
+        activeChatUser = null; 
 
         document.getElementById("searchInput").placeholder = "Search " + (type === "personal" ? "user" : "group") + "...";
 
-        fetchChats();
+        if (type === "group" && !isGroupConnectionActive) {
+            console.log("Попытка подключения к групповому чату...");
+
+            connectionGroup.start()
+                .then(() => {
+                    console.log("✅ Пользователь успешно подключен к групповому хабу!");
+                    isGroupConnectionActive = true;
+                    fetchChats();
+                })
+                .catch(err => {
+                    console.error("❌ Ошибка подключения к групповому хабу:", err);
+                });
+        } else {
+            fetchChats();
+        }
     }
 
     async function fetchCurrentUser() {
@@ -588,11 +867,241 @@
 
     function setActiveChat(user) {
         activeChatUser = user;
-        selectedUser.innerText = `Chatting with: ${user}`;
+
+        if (currentChatType === "group") {
+            selectedUser.innerText = `Group: ${user}`;
+            showGroupHeader(user);
+            loadGroupInfo(user);
+        } else {
+            selectedUser.innerText = `Chatting with: ${user}`;
+            hideGroupHeader();
+        }
+
         inputContainer.classList.add("active");
         chatBox.innerHTML = "";
         loadChatHistory(user);
     }
+
+    function showGroupHeader(groupName) {
+        const groupHeader = document.getElementById("groupHeader");
+        const chatBox = document.getElementById("chatBox");
+
+        groupHeader.classList.add("active");
+        chatBox.classList.add("with-group-header");
+
+        document.getElementById("groupHeaderName").textContent = groupName;
+
+        // Установить аватар
+        const avatar = document.getElementById("groupHeaderAvatar");
+        const initials = groupName
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join('');
+        avatar.textContent = initials || groupName.charAt(0).toUpperCase();
+
+        // Добавить обработчик клика
+        groupHeader.onclick = () => openGroupModal();
+    }
+
+    async function loadGroupInfo(groupName) {
+        try {
+            // Здесь должен быть запрос к серверу для получения информации о группе
+            const groupInfo = await connectionGroup.invoke('GetGroupInfoAsync', groupName);
+            activeGroupInfo = groupInfo;
+
+            // Обновить счетчик участников в header
+            document.getElementById("groupHeaderMembers").textContent =
+                `${groupInfo.members.length} members`;
+
+            // Определить роль текущего пользователя
+            const currentMember = groupInfo.members.find(m => m.userName === currentUserName);
+            currentUserRole = currentMember ? currentMember.role : 'member';
+
+        } catch (error) {
+            console.error("Failed to load group info:", error);
+            activeGroupInfo = { name: groupName, members: [], description: "" };
+            currentUserRole = 'member';
+        }
+    }
+
+    function openGroupModal() {
+        if (!activeGroupInfo) return;
+
+        const modal = document.getElementById("groupModal");
+
+        // Заполнить информацию о группе
+        document.getElementById("groupModalName").textContent = activeGroupInfo.name;
+        document.getElementById("groupModalMemberCount").textContent =
+            `${activeGroupInfo.members.length} members`;
+
+        // Установить аватар
+        const avatar = document.getElementById("groupModalAvatar");
+        const initials = activeGroupInfo.name
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join('');
+        avatar.textContent = initials || activeGroupInfo.name.charAt(0).toUpperCase();
+
+        // Создать кнопки действий
+        createGroupActionButtons();
+
+        // Показать участников
+        displayGroupMembers();
+
+        modal.style.display = "flex";
+    }
+
+    function createGroupActionButtons() {
+        const actionsContainer = document.getElementById("groupModalActions");
+        actionsContainer.innerHTML = "";
+
+        const isAdmin = currentUserRole === 'admin' || currentUserRole === 'owner';
+
+        if (isAdmin) {
+            // Кнопка редактирования для админов
+            const editBtn = document.createElement("button");
+            editBtn.className = "group-action-btn edit";
+            editBtn.textContent = "Edit Group";
+            editBtn.onclick = () => editGroup();
+            actionsContainer.appendChild(editBtn);
+
+            // Кнопка удаления для админов
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "group-action-btn delete";
+            deleteBtn.textContent = "Delete Group";
+            deleteBtn.onclick = () => deleteGroup();
+            actionsContainer.appendChild(deleteBtn);
+        } else {
+            // Кнопка выхода для обычных участников
+            const leaveBtn = document.createElement("button");
+            leaveBtn.className = "group-action-btn leave";
+            leaveBtn.textContent = "Leave Group";
+            leaveBtn.onclick = () => leaveGroup();
+            actionsContainer.appendChild(leaveBtn);
+        }
+    }
+
+    // Отображение участников группы
+    function displayGroupMembers() {
+        const membersList = document.getElementById("groupMembersList");
+        membersList.innerHTML = "";
+
+        if (!activeGroupInfo.members) return;
+
+        activeGroupInfo.members.forEach(member => {
+            const memberDiv = document.createElement("div");
+            memberDiv.className = "member-item";
+
+            const avatar = document.createElement("div");
+            avatar.className = "member-avatar";
+            const initials = member.userName
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase())
+                .slice(0, 2)
+                .join('');
+            avatar.textContent = initials || member.userName.charAt(0).toUpperCase();
+
+            const info = document.createElement("div");
+            info.className = "member-info";
+
+            const name = document.createElement("div");
+            name.className = "member-name";
+            name.textContent = member.userName;
+
+            const role = document.createElement("div");
+            role.className = "member-role";
+            role.textContent = member.role || 'member';
+
+            info.appendChild(name);
+            info.appendChild(role);
+
+            memberDiv.appendChild(avatar);
+            memberDiv.appendChild(info);
+
+            membersList.appendChild(memberDiv);
+        });
+    }
+
+    // Действия с группой
+    function editGroup() {
+        // Здесь должна быть логика редактирования группы
+        alert("Edit group functionality - to be implemented");
+        closeGroupModal();
+    }
+
+    async function deleteGroup() {
+        if (!confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            await connectionGroup.invoke('DeleteGroupAsync', activeGroupInfo.name);
+            closeGroupModal();
+
+            // Обновить список чатов
+            await fetchChats();
+
+            // Очистить активный чат
+            activeChatUser = null;
+            hideGroupHeader();
+            selectedUser.innerText = "Select a group to chat";
+            inputContainer.classList.remove("active");
+            chatBox.innerHTML = "";
+
+            alert("Group deleted successfully");
+        } catch (error) {
+            console.error("Failed to delete group:", error);
+            alert("Failed to delete group: " + error.message);
+        }
+    }
+
+    async function leaveGroup() {
+        if (!confirm("Are you sure you want to leave this group?")) {
+            return;
+        }
+
+        try {
+            await connectionGroup.invoke('LeaveGroupAsync', activeGroupInfo.name);
+            closeGroupModal();
+
+            // Обновить список чатов
+            await fetchChats();
+
+            // Очистить активный чат
+            activeChatUser = null;
+            hideGroupHeader();
+            selectedUser.innerText = "Select a group to chat";
+            inputContainer.classList.remove("active");
+            chatBox.innerHTML = "";
+
+            alert("You have left the group");
+        } catch (error) {
+            console.error("Failed to leave group:", error);
+            alert("Failed to leave group: " + error.message);
+        }
+    }
+
+    function closeGroupModal() {
+        document.getElementById("groupModal").style.display = "none";
+    }
+
+    // Закрытие модального окна при клике вне его
+    document.getElementById("groupModal").addEventListener("click", function(e) {
+        if (e.target === this) {
+            closeGroupModal();
+        }
+    });
+
+    function hideGroupHeader() {
+        const groupHeader = document.getElementById("groupHeader");
+        const chatBox = document.getElementById("chatBox");
+
+        groupHeader.classList.remove("active");
+        chatBox.classList.remove("with-group-header");
+    }
+
 
     function formatTimeOnly(date) {
         if (!(date instanceof Date) || isNaN(date)) {
@@ -856,31 +1365,97 @@
         try {
             chatList.innerHTML = "<div style='text-align:center;padding:10px;'>Loading chats...</div>";
 
-            const chats = await connection.invoke('GetChatsAsync');
-            console.log(chats)
+            let chats = [];
+
+            if (currentChatType === "personal") {
+                chats = await connection.invoke('GetChatsAsync');
+                chats = chats.map(chat => ({ name: chat, avatar: null, type: 'personal' }));
+            } else if (currentChatType === "group") {
+                const groupsData = await connectionGroup.invoke('GetAllGroupForUserAsync');
+                chats = groupsData.map(group => ({
+                    name: group.groupName || group.name || group,
+                    avatar: group.image  || group.avatar || null,
+                    type: 'group'
+                }));
+            }
 
             chatList.innerHTML = "";
 
             if (!chats || chats.length === 0) {
-                chatList.innerHTML = "<div style='text-align:center;padding:10px;color:#666;'>No chats found</div>";
+                const emptyMessage = currentChatType === "personal" ? "No chats found" : "No groups found";
+                chatList.innerHTML = `<div style='text-align:center;padding:10px;color:#666;'>${emptyMessage}</div>`;
                 return;
             }
 
             chats.forEach(chat => {
                 const chatButton = document.createElement("button");
                 chatButton.classList.add("chat-button");
-                chatButton.innerText = chat;
+                
+                const avatar = document.createElement("img");
+                avatar.classList.add("chat-avatar");
+
+                if (chat.avatar) {
+                    avatar.src = chat.avatar;
+                    avatar.alt = `${chat.name} avatar`;
+                    avatar.onerror = () => {
+                        avatar.style.display = 'none';
+                        const placeholder = createAvatarPlaceholder(chat.name, chat.type);
+                        chatButton.insertBefore(placeholder, chatButton.firstChild);
+                    };
+                } else {
+                    const placeholder = createAvatarPlaceholder(chat.name, chat.type);
+                    chatButton.appendChild(placeholder);
+                }
+
+                const nameSpan = document.createElement("span");
+                nameSpan.classList.add("chat-name");
+                nameSpan.textContent = chat.name;
+
+                if (chat.avatar) {
+                    chatButton.appendChild(avatar);
+                }
+                chatButton.appendChild(nameSpan);
+
                 chatButton.onclick = () => {
                     document.querySelectorAll(".chat-button").forEach(b => b.classList.remove("active"));
                     chatButton.classList.add("active");
-                    setActiveChat(chat);
+                    setActiveChat(chat.name);
                 };
+
                 chatList.appendChild(chatButton);
             });
         } catch (error) {
             console.error("Error fetching chats:", error);
-            chatList.innerHTML = "<div style='text-align:center;padding:10px;color:red;'>Failed to load chats</div>";
+            const errorMessage = currentChatType === "personal" ? "Failed to load chats" : "Failed to load groups";
+            chatList.innerHTML = `<div style='text-align:center;padding:10px;color:red;'>${errorMessage}</div>`;
         }
+    }
+
+    function createAvatarPlaceholder(name, type) {
+        const placeholder = document.createElement("div");
+        placeholder.classList.add("chat-avatar");
+        placeholder.style.display = "flex";
+        placeholder.style.alignItems = "center";
+        placeholder.style.justifyContent = "center";
+        placeholder.style.fontSize = "12px";
+        placeholder.style.fontWeight = "600";
+        placeholder.style.color = "white";
+        
+        if (type === 'group') {
+            placeholder.style.backgroundColor = "#4CAF50";
+        } else {
+            placeholder.style.backgroundColor = "#2196F3";
+        }
+        
+        const initials = name
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join('');
+
+        placeholder.textContent = initials || name.charAt(0).toUpperCase();
+
+        return placeholder;
     }
 
     async function loadChatHistory(user) {

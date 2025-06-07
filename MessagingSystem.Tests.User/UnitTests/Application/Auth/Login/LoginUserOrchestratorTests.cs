@@ -37,7 +37,7 @@ public class LoginUserOrchestratorTests
     {
         // Arrange
         var dto = new LoginDto("test", "pass", "pass");
-        var user = new Services.User.Core.User.User("test", "nick")
+        var user = new Services.User.Core.User.User("test", "nick", "test")
         {
             PasswordHash = "encrypted-password",
             EmailConfirmed = true
@@ -110,7 +110,7 @@ public class LoginUserOrchestratorTests
     public async Task LoginUserAsync_ShouldFail_WhenEmailNotConfirmed()
     {
         var dto = new LoginDto("user", "pass", "pass");
-        var user = new Services.User.Core.User.User("user", "nick") { EmailConfirmed = false };
+        var user = new Services.User.Core.User.User("user", "nick", "test") { EmailConfirmed = false };
 
         _validatorMock.Setup(x => x.ValidateAsync(dto, default))
             .ReturnsAsync(new ValidationResult());
@@ -130,7 +130,7 @@ public class LoginUserOrchestratorTests
     public async Task LoginUserAsync_ShouldReturnFalse_WhenAuthenticationFails()
     {
         var dto = new LoginDto("user", "wrong-pass", "wrong-nick");
-        var user = new Services.User.Core.User.User("user", "nick")
+        var user = new Services.User.Core.User.User("user", "nick", "test")
         {
             PasswordHash = "some-encrypted-hash",
             EmailConfirmed = true

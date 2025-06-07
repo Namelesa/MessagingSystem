@@ -1,6 +1,9 @@
+using MessagingSystem.Services.Messaging.Application.User.Dto;
+
 namespace MessagingSystem.Services.Messaging.Application.User;
 
 public interface IUserOrchestrator
 {
-    Task<OperationResult<string>> CheckUserAsync(string nickName);
+    Task<OperationResult<FoundedUser>> CheckUserAsync(string nickName);
+    Task<OperationResult<List<FoundedUser>>> CheckUsersAsync(List<string> nickNames);
 }

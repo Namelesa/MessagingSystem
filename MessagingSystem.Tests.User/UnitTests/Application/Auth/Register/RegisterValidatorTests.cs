@@ -14,9 +14,10 @@ public class RegisterValidatorTests
         string firstName = "Maxim",
         string lastName = "Bilyk",
         string nickName = "qwerty123@4567",
-        string password = "Test123!4987654")
+        string password = "Test123!4987654",
+        string image = "test")
     {
-        return new RegisterDto(email, login, firstName, lastName, nickName, password);
+        return new RegisterDto(email, login, firstName, lastName, nickName, password, image);
     }
     
     [Fact]

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MessagingSystem.Services.User.WebApi.User.Contracts;
 
-public class EditUserContract(string firstName, string lastName, string login, string email, string nickName)
+public class EditUserContract(string firstName, string lastName, string login, string email, string nickName, string? image = null)
 {
     [Required(ErrorMessage = "First name is required")]
     [StringLength(25, MinimumLength = 3, ErrorMessage = "First name length must be between 3 and 25 characters.")]
@@ -26,4 +26,6 @@ public class EditUserContract(string firstName, string lastName, string login, s
         ErrorMessage = "Nick name must be 3 to 15 characters long and " +
                        "include at least one special character (!, _, @).")]
     public string NickName { get; } = nickName;
+
+    public string? Image { get; set; } = image;
 }

@@ -15,7 +15,7 @@ public class OtoDbInitializer(OtoAppDbContext db) : IOtoDbInitializer
         }
         catch
         {
-            Console.WriteLine("Can not do migration");
+            Console.WriteLine("Can not do migration for oto");
         }
     }
 }

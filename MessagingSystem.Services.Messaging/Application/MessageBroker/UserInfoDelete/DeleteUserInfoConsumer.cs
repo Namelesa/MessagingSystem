@@ -2,6 +2,7 @@ using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;

@@ -116,8 +116,8 @@ public class EmailSenderTests
         // Arrange
         var inMemorySettings = new Dictionary<string, string?>
         {
-            { "MailJet:ApiKey", "" },
-            { "MailJet:SecretKey", "" }
+            { "MailJet:ApiKey", "c62afa7cb6ece5ec1bd4fd1b4ac09710" },
+            { "MailJet:SecretKey", "751c1cef9b33dc227d1c528e49b09be2" }
         };
 
         var configuration = new ConfigurationBuilder()

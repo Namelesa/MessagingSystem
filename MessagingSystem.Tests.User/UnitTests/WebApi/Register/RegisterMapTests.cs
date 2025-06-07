@@ -1,6 +1,5 @@
 using AutoMapper;
 using FluentAssertions;
-using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 using MessagingSystem.Services.User.WebApi.Register;
 using MessagingSystem.Services.User.WebApi.Register.Contracts;
@@ -32,7 +31,8 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Register
                 login: "john_doe@",
                 email: "john@example.com",
                 nickName: "j_doe@",
-                password: "Passw0rd@"
+                password: "Passw0rd@",
+                image: "test"
             );
 
             // Act
@@ -57,7 +57,8 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Register
                 firstName: "Alice",
                 lastName: "Smith",
                 nickName: "a_smith@",
-                password: "P@ssw0rd"
+                password: "P@ssw0rd",
+                image: "test"
             );
 
             // Act

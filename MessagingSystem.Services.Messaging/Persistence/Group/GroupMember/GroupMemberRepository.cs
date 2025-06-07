@@ -1,43 +1,56 @@
-using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using Microsoft.EntityFrameworkCore;
 
 namespace MessagingSystem.Services.Messaging.Persistence.Group.GroupMember;
 
-public class GroupMemberRepository(GroupAppDbContext db) : IGroupMembersRepository
+public class GroupMemberRepository(IDbContextFactory<GroupAppDbContext> dbFactory) : IGroupMembersRepository
 {
-    public async Task<List<GroupMembers>?> FindUserByHashAsync(string userHash)
+    private async Task<TResult> WithContextAsync<TResult>(Func<GroupAppDbContext, Task<TResult>> action)
+    {
+        await using var context = await dbFactory.CreateDbContextAsync();
+        return await action(context);
+    }
+    public Task<List<GroupMembers>> FindUserByHashAsync(string userHash)
     {
         if (string.IsNullOrWhiteSpace(userHash))
-            return null;
+            return Task.FromResult<List<GroupMembers>>([]);
 
-        return await db.GroupMembers
-            .Where(m => m.UserNickNameHash == userHash)
-            .ToListAsync();
+        return WithContextAsync(context =>
+            context.GroupMembers
+                .Where(m => m.UserNickNameHash == userHash)
+                .ToListAsync());
     }
-    public async Task<string> EditUserInfoAsync(GroupMembers groupMembers)
+    public Task<string> EditUserInfoAsync(GroupMembers groupMember)
     {
-        try
+        return WithContextAsync(async context =>
         {
-            db.GroupMembers.Update(groupMembers);
-            await db.SaveChangesAsync();
-            return "Edit is ok";
-        }
-        catch (Exception e)
-        {
-            return e.ToString();
-        }
+            try
+            {
+                context.GroupMembers.Update(groupMember);
+                await context.SaveChangesAsync();
+                return "Edit is ok";
+            }
+            catch (Exception e)
+            {
+                return e.ToString();
+            }
+        });
     }
-    public async Task<int> DeleteUserInfoAsync(string userHashName)
+    public Task<int> DeleteUserInfoAsync(string userHashName)
     {
-        var affectedRows = 0;
-        affectedRows += await db.Database.ExecuteSqlRawAsync(@"
-        DELETE FROM ""GroupMembers""
-        WHERE ""UserNickNameHash"" = {0}", userHashName);
-        
-        affectedRows += await db.Database.ExecuteSqlRawAsync(@"
-        DELETE FROM ""GroupInfos""
-        WHERE ""AdminHash"" = {0}", userHashName);
-        
-        return affectedRows;
+        return WithContextAsync(async context =>
+        {
+            var affectedRows = 0;
+
+            affectedRows += await context.Database.ExecuteSqlRawAsync(@"
+                DELETE FROM ""GroupMembers""
+                WHERE ""UserNickNameHash"" = {0}", userHashName);
+
+            affectedRows += await context.Database.ExecuteSqlRawAsync(@"
+                DELETE FROM ""GroupInfos""
+                WHERE ""AdminHash"" = {0}", userHashName);
+
+            return affectedRows;
+        });
     }
 }

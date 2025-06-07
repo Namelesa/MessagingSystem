@@ -15,7 +15,7 @@ public class UserRepositoryTests
 
         var context = new AppDbContext(options);
 
-        var user = new UserModel("login", "nickname");
+        var user = new UserModel("login", "nickname", "test");
         user.SetHashes("login_hash", "email_hash", "nick_hash");
         user.Id = "1";
 
@@ -70,7 +70,7 @@ public class UserRepositoryTests
         var db = new AppDbContext(options);
         var repo = new UserRepository(db);
 
-        var newUser = new UserModel("login2", "nick2");
+        var newUser = new UserModel("login2", "nick2", "test");
         newUser.Id = "2";
         newUser.SetHashes("hash2", "email2", "nickhash2");
 

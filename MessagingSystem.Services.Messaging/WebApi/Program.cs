@@ -3,7 +3,10 @@ using Encryptor.Decryption;
 using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
-using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.SendingModels.UserMessaging.Delete;
+using MessagingSystem.SendingModels.UserMessaging.Edit;
+using MessagingSystem.SendingModels.UserMessaging.IsExist.User;
+using MessagingSystem.SendingModels.UserMessaging.IsExist.Users;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
@@ -17,6 +20,7 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Validators;
 using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
@@ -24,15 +28,18 @@ using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
 using MessagingSystem.Services.Messaging.Persistence.Group;
+using MessagingSystem.Services.Messaging.Persistence.Group.GroupDbInitializer;
 using MessagingSystem.Services.Messaging.Persistence.Group.GroupInformation;
 using MessagingSystem.Services.Messaging.Persistence.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Persistence.Oto;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Persistence.Oto.OtoDbInitializer;
 using MessagingSystem.Services.Messaging.Persistence.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.WebApi.Group;
 using MessagingSystem.Services.Messaging.WebApi.Messages;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -50,10 +57,21 @@ builder.Services.AddDbContext<OtoAppDbContext>(options =>
 builder.Services.AddDbContext<GroupAppDbContext>(options => 
     options.UseNpgsql(builder.Configuration.GetConnectionString("GroupDefaultConnection")));
 
+builder.Services.AddSingleton<IDbContextFactory<GroupAppDbContext>>(_ =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("GroupDefaultConnection");
+    var optionsBuilder = new DbContextOptionsBuilder<GroupAppDbContext>();
+    optionsBuilder.UseNpgsql(connectionString);
+    return new PooledDbContextFactory<GroupAppDbContext>(optionsBuilder.Options);
+});
+
+
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<IGroupInfoRepository, GroupInfoRepository>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IGroupMembersRepository, GroupMemberRepository>();
+builder.Services.AddScoped<IOtoDbInitializer, OtoDbInitializer>();
+builder.Services.AddScoped<IGroupDbInitializer, GroupDbInitializer>();
 
 builder.Services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
@@ -84,6 +102,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddMassTransit(busConfiguration =>
 {
     busConfiguration.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
+    busConfiguration.AddRequestClient<ExistingUsersRequest>(new Uri("queue:existing-users-request"));
     busConfiguration.AddRequestClient<EditUserInfoRequest>(new Uri("queue:edit-user-request"));
     busConfiguration.AddRequestClient<DeleteUserInfoRequest>(new Uri("queue:delete-user-request"));
 
@@ -220,7 +239,11 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var publisher = scope.ServiceProvider.GetRequiredService<KeyPublisher>();
+    var otoDbInitializer = scope.ServiceProvider.GetRequiredService<IOtoDbInitializer>();
+    var groupDbInitializer = scope.ServiceProvider.GetRequiredService<IGroupDbInitializer>();
     await publisher.PublishAsync();
+    await otoDbInitializer.Initialize();
+    await groupDbInitializer.Initialize();
 }
 
 app.UseRouting();
@@ -234,6 +257,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<OtoChatHub>("/chatHub").RequireAuthorization();
+app.MapHub<OtoChatHub>("/otoChatHub").RequireAuthorization();
+app.MapHub<GroupChatHub>("/groupChatHub").RequireAuthorization();
 
 app.Run();

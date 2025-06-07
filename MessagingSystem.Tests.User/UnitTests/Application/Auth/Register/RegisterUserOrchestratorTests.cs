@@ -29,7 +29,7 @@ public class RegisterUserOrchestratorTests
     private readonly Mock<IPublicKeyStorage> _publicKeyStorage = new();
 
     private readonly RegisterDto _dto = new(
-        "user@example.com", "login123456", "Max", "Bilyk", "nick123456", "P@ssword123");
+        "user@example.com", "login123456", "Max", "Bilyk", "nick123456", "P@ssword123", "");
 
     private readonly RegisterOrchestrator _orchestrator;
 
@@ -78,7 +78,7 @@ public class RegisterUserOrchestratorTests
         _validator.Setup(v => v.ValidateAsync(_dto, default)).ReturnsAsync(new ValidationResult());
         _hasherPassword.Setup(h => h.Hash(_dto.Password)).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
-        var user = new UserModel("", "");
+        var user = new UserModel("", "","");
         _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
 
         var result = await _orchestrator.RegisterUserAsync(_dto);
@@ -95,7 +95,7 @@ public class RegisterUserOrchestratorTests
         _hasherPassword.Setup(h => h.Hash(_dto.Password)).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
 
-        var user = new UserModel("login123456", "TopNick123");
+        var user = new UserModel("login123456", "TopNick123", "testImage");
         _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
         _userRepository.Setup(r => r.AddUserAsync(user)).ThrowsAsync(new Exception("DB Error"));
 
@@ -113,7 +113,7 @@ public class RegisterUserOrchestratorTests
         _hasherPassword.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
 
-        var user = new UserModel("login123456", "CoolNickName");
+        var user = new UserModel("login123456", "CoolNickName", "testImage");
         _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
         _userRepository.Setup(r => r.AddUserAsync(user)).Returns(Task.CompletedTask);
         _publishEndpoint.Setup(p => p.Publish(It.IsAny<ConfirmUserEmail>(), default)).Returns(Task.CompletedTask);
@@ -132,7 +132,7 @@ public class RegisterUserOrchestratorTests
         _hasherPassword.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
 
-        var user = new UserModel("login123456", "CoolNickName")
+        var user = new UserModel("login123456", "CoolNickName", "testImage")
         {
             Email = "test@gmail.com",
             UserName = "TestValidUser",
@@ -165,7 +165,7 @@ public class RegisterUserOrchestratorTests
     [Fact]
     public async Task ConfirmEmailAsync_ShouldFail_WhenRepositoryThrows()
     {
-        var user = new UserModel("", "");
+        var user = new UserModel("", "", "");
         _userRepository.Setup(r => r.FindUserByHashNickNameAsync("hash")).ReturnsAsync(user);
         _userRepository.Setup(r => r.UpdateUserAsync(user)).ThrowsAsync(new Exception("DB error"));
 
@@ -178,7 +178,7 @@ public class RegisterUserOrchestratorTests
     [Fact]
     public async Task ConfirmEmailAsync_ShouldSucceed_WhenUserExists()
     {
-        var user = new UserModel("login", "nick");
+        var user = new UserModel("login", "nick", "testImage");
         _userRepository.Setup(r => r.FindUserByHashNickNameAsync("hash")).ReturnsAsync(user);
         _userRepository.Setup(r => r.UpdateUserAsync(user)).Returns(Task.CompletedTask);
 

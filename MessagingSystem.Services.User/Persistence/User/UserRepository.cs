@@ -11,6 +11,11 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public async Task<Core.User.User?> FindUserByHashNickNameAsync(string hashNickName) => 
         await db.Users.FirstOrDefaultAsync(u => u.HashNickName == hashNickName);
     
+    public async Task<List<Core.User.User>?> FindUsersByHashNickNamesAsync(List<string> hashNickNames) => 
+         await db.Users
+        .Where(u => u.HashNickName != null && hashNickNames.Contains(u.HashNickName))
+        .ToListAsync();
+    
     public async Task<Core.User.User?> FindUserByIdAsync(string id) => 
         await db.Users.FirstOrDefaultAsync(u => u.Id == id);
 

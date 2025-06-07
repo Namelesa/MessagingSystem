@@ -1,4 +1,5 @@
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,7 +34,7 @@ public class GroupAppDbContext(DbContextOptions<GroupAppDbContext> options) : Db
                 .HasMaxLength(500)
                 .IsRequired();
             builder.Property(u => u.Image)
-                .HasMaxLength(250);
+                .HasMaxLength(900);
             builder.Property(u => u.Description)
                 .HasMaxLength(600);
             builder.Property(u => u.Admin)
@@ -55,6 +56,8 @@ public class GroupAppDbContext(DbContextOptions<GroupAppDbContext> options) : Db
             builder.Property(u => u.UserNickNameHash)
                 .HasMaxLength(120)
                 .IsRequired();
+            builder.Property(u => u.Image)
+                .HasMaxLength(600);
         });
         
         modelBuilder.Entity<GroupMessage>()

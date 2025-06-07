@@ -1,4 +1,4 @@
-namespace MessagingSystem.SendingModels.UserMessaging;
+namespace MessagingSystem.SendingModels.UserMessaging.Edit;
 
 public class EditUserRollBack(bool isSuccess)
 {

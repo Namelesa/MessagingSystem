@@ -1,6 +1,5 @@
 using AutoMapper;
 using FluentAssertions;
-using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.WebApi.User;
 using MessagingSystem.Services.User.WebApi.User.Contracts;
@@ -54,7 +53,8 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.User
                 lastName: "Doe",
                 login: "john_doe@",
                 email: "john@example.com",
-                nickName: "j_doe@"
+                nickName: "j_doe@",
+                image: "test"
             );
 
             // Act
@@ -78,7 +78,8 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.User
                 lastName: "Doe",
                 login: "john_doe@",
                 email: "john@example.com",
-                nickName: "j_doe@"
+                nickName: "j_doe@",
+                image: "test"
             );
 
             var user = _mapper.Map<Services.User.Core.User.User>(userDto);

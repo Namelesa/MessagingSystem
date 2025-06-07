@@ -30,6 +30,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             builder.Property(u => u.HashNickName)
                 .HasMaxLength(120)
                 .IsRequired();
+
+            builder.Property(u => u.Image)
+                .HasMaxLength(500);
         });
         modelBuilder.Entity<Core.User.User>()
             .HasIndex(u => u.HashLogin)

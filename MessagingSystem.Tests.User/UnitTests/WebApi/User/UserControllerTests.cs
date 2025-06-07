@@ -39,7 +39,8 @@ public class UsersControllerTests
             "Bilyk",
             "qwerty123_4123456789",
             "pdo090318@gmail.com", 
-            "qwerty123@4567");
+            "qwerty123@4567",
+            "test");
         var operationResult = OperationResult<string>.Ok("User updated successfully");
 
         _mapperMock
@@ -70,7 +71,7 @@ public class UsersControllerTests
             "invalid-email",
             "nickName123!");
         
-        var userDto = new UserDto("", "", "login", "invalid-email", "nickName123!");
+        var userDto = new UserDto("", "", "login", "invalid-email", "nickName123!", "tets");
         var operationResult = OperationResult<string>.Fail("Invalid user data");
 
         _mapperMock
@@ -106,7 +107,8 @@ public class UsersControllerTests
             "Username",
             "qwerty1234!",
             "newemail@example.com",
-            "qwerty1234!");
+            "qwerty1234!",
+            "test");
         var operationResult = OperationResult<string>.Fail("Username is already taken");
 
         _mapperMock
@@ -142,7 +144,8 @@ public class UsersControllerTests
             "Username",
             "qwerty1234!",
             "newemail@example.com",
-            "qwerty1234!");
+            "qwerty1234!",
+            "test");
         var operationResult = OperationResult<string>.Fail("Email is already in use");
 
         _mapperMock

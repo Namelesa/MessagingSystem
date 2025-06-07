@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 
 namespace MessagingSystem.Services.Messaging.Core.Groups.Group;
 
@@ -98,5 +99,15 @@ public sealed class GroupInfo(string groupName, string? image, string descriptio
     public void EditAdminNick(string adminNick)
     {
         Admin = adminNick;
+    }
+    public void SetMembersImages(Dictionary<string, string> nickToImage)
+    {
+        foreach (var member in Members)
+        {
+            if (nickToImage.TryGetValue(member.UserNickName, out var image))
+            {
+                member.SetImage(image);
+            }
+        }
     }
 }

@@ -30,6 +30,7 @@ public static class AddApplication
         {
             busConfiguration.AddConsumer<PublicKeyConsumer>();
             busConfiguration.AddConsumer<UserCheckerConsumer>();
+            busConfiguration.AddConsumer<UsersCheckerConsumer>();
     
             busConfiguration.UsingRabbitMq((context, configurator) =>
             {
@@ -54,6 +55,10 @@ public static class AddApplication
                 configurator.ReceiveEndpoint("existing-user-request", e =>
                 {
                     e.ConfigureConsumer<UserCheckerConsumer>(context);
+                });
+                configurator.ReceiveEndpoint("existing-users-request", e =>
+                {
+                    e.ConfigureConsumer<UsersCheckerConsumer>(context);
                 });
             });
         });

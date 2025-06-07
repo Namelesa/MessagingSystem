@@ -5,6 +5,8 @@ using FluentValidation;
 using FluentValidation.Results;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.SendingModels.UserMessaging.Delete;
+using MessagingSystem.SendingModels.UserMessaging.Edit;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
@@ -46,6 +48,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             _publicKeyStorageMock = new Mock<IPublicKeyStorage>();
             _clientEdit = new Mock<IRequestClient<EditUserInfoRequest>>();
             _clientDelete = new Mock<IRequestClient<DeleteUserInfoRequest>>();
+            _clientDelete = new Mock<IRequestClient<DeleteUserInfoRequest>>();
 
             _orchestrator = new UserOrchestrator(
                 _mapperMock.Object,
@@ -78,6 +81,19 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             SetupExistingUser(UserId, existingUser);
             SetupMappingBehavior(userDto, existingUser);
 
+            _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
+            _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
+            
+            var mockResponse = new Mock<Response<EditUserRollBack>>();
+            var editUserRollBack = new EditUserRollBack(true);
+            mockResponse.Setup(x => x.Message).Returns(editUserRollBack);
+    
+            _clientEdit.Setup(x => x.GetResponse<EditUserRollBack>(
+                    It.IsAny<EditUserInfoRequest>(), 
+                    It.IsAny<CancellationToken>(), 
+                    It.IsAny<RequestTimeout>()))
+                .ReturnsAsync(mockResponse.Object);
+            
             // Act
             var result = await _orchestrator.EditUserInfoAsync(userDto, UserId);
 
@@ -181,6 +197,9 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             SetupExistingUser(UserId, existingUser);
             SetupMappingBehavior(userDto, existingUser);
 
+            _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
+            _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
+            
             // Act
             var result = await _orchestrator.EditUserInfoAsync(userDto, UserId);
 
@@ -209,6 +228,19 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
                 .Setup(x => x.UpdateUserAsync(It.IsAny<Services.User.Core.User.User>()))
                 .ThrowsAsync(exception);
 
+            _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
+            _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
+            
+            var mockResponse = new Mock<Response<EditUserRollBack>>();
+            var editUserRollBack = new EditUserRollBack(true);
+            mockResponse.Setup(x => x.Message).Returns(editUserRollBack);
+    
+            _clientEdit.Setup(x => x.GetResponse<EditUserRollBack>(
+                    It.IsAny<EditUserInfoRequest>(), 
+                    It.IsAny<CancellationToken>(), 
+                    It.IsAny<RequestTimeout>()))
+                .ReturnsAsync(mockResponse.Object);
+            
             // Act
             var result = await _orchestrator.EditUserInfoAsync(userDto, UserId);
 
@@ -233,6 +265,22 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             var existingUser = CreateExistingUser();
             SetupExistingUser(UserId, existingUser);
 
+            _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
+            _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
+            
+            var mockResponse = new Mock<Response<DeleteUserInfoRollback>>();
+            var deleteUserRollBack = new DeleteUserInfoRollback("pvgD3zQ83QncVIyZLKBFzadgLY/6n/NqXt8LbtvaU2U=")
+            {
+                IsSuccess = true
+            };
+            mockResponse.Setup(x => x.Message).Returns(deleteUserRollBack);
+    
+            _clientDelete.Setup(x => x.GetResponse<DeleteUserInfoRollback>(
+                    It.IsAny<DeleteUserInfoRequest>(), 
+                    It.IsAny<CancellationToken>(), 
+                    It.IsAny<RequestTimeout>()))
+                .ReturnsAsync(mockResponse.Object);
+            
             // Act
             var result = await _orchestrator.DeleteUserAsync(UserId);
 
@@ -298,6 +346,9 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             existingUser.UserName = null;
             SetupExistingUser(UserId, existingUser);
 
+            _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
+            _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
+            
             // Act
             var result = await _orchestrator.DeleteUserAsync(UserId);
 
@@ -323,6 +374,22 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
                 .Setup(x => x.DeleteUserAsync(It.IsAny<Services.User.Core.User.User>()))
                 .ThrowsAsync(exception);
 
+            _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
+            _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
+            
+            var mockResponse = new Mock<Response<DeleteUserInfoRollback>>();
+            var deleteUserRollBack = new DeleteUserInfoRollback("pvgD3zQ83QncVIyZLKBFzadgLY/6n/NqXt8LbtvaU2U=")
+                {
+                    IsSuccess = true
+                };
+            mockResponse.Setup(x => x.Message).Returns(deleteUserRollBack);
+    
+            _clientDelete.Setup(x => x.GetResponse<DeleteUserInfoRollback>(
+                    It.IsAny<DeleteUserInfoRequest>(), 
+                    It.IsAny<CancellationToken>(), 
+                    It.IsAny<RequestTimeout>()))
+                .ReturnsAsync(mockResponse.Object);
+            
             // Act
             var result = await _orchestrator.DeleteUserAsync(UserId);
 
@@ -347,18 +414,20 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
                 lastName: "Doe",
                 login: "john_doe@123",
                 email: "john.doe@example.com",
-                nickName: "johnny@123"
+                nickName: "johnny@123",
+                image: "test"
             );
         }
 
         private Services.User.Core.User.User CreateExistingUser()
         {
-            var user = new Services.User.Core.User.User("john_doe@123", "johnny@123")
+            var user = new Services.User.Core.User.User("john_doe@123", "johnny@123", "testImage")
             {
                 Id = UserId,
                 Email = "john.doe@example.com",
                 UserName = "John Doe"
             };
+            user.SetHashes("qwertyui1234567", "qwertyui1234567", "qwertyui1234567");
             return user;
         }
 

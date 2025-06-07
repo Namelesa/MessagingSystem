@@ -27,11 +27,11 @@ namespace MessagingSystem.Tests.User.UnitTests.Application
             var userRepositoryMock = new Mock<IUserRepository>();
             
             userRepositoryMock.Setup(repo => repo.FindUserByHashLoginAsync(It.IsAny<string>()))
-                .ReturnsAsync(new Services.User.Core.User.User("",""));
+                .ReturnsAsync(new Services.User.Core.User.User("","", ""));
             userRepositoryMock.Setup(repo => repo.FindUserByHashNickNameAsync(It.IsAny<string>()))
-                .ReturnsAsync(new Services.User.Core.User.User("",""));
+                .ReturnsAsync(new Services.User.Core.User.User("","", ""));
             userRepositoryMock.Setup(repo => repo.FindUserByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync(new Services.User.Core.User.User("",""));
+                .ReturnsAsync(new Services.User.Core.User.User("","", ""));
             
             var hasherPasswordMock = new Mock<IHasherPassword>();
             var encryptionInfoMock = new Mock<IEncryptionInfo>();

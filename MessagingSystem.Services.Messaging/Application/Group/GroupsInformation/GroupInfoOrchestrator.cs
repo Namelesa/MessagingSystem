@@ -4,6 +4,7 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Validator;
+using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
@@ -17,7 +18,8 @@ public class GroupInfoOrchestrator(
     IValidator<EditGroupDto> editValidator,
     IEncryptionInfo encryptionInfo,
     IDecryptionInfo decryptionInfo,
-    ILogger<GroupInfoOrchestrator> logger
+    ILogger<GroupInfoOrchestrator> logger,
+    IUserOrchestrator userOrchestrator
     ) : IGroupInfoOrchestrator
 {
     public async Task<OperationResult<GroupDto>> CreateGroupAsync(GroupDto groupInfo)
@@ -28,10 +30,32 @@ public class GroupInfoOrchestrator(
         if (!validation.Success) 
             return validation;
         
+        var checkResult = await userOrchestrator.CheckUsersAsync(groupInfo.Users);
+        
+        if (!checkResult.Success)
+            return OperationResult<GroupDto>.Fail("Failed to check users existence");
+        
+        var foundUsers = checkResult.Data;
+        if (foundUsers == null)
+            return OperationResult<GroupDto>.Fail("No users found");
+        
+        var foundNickNames = foundUsers.Select(u => u.NickName).ToHashSet();
+        var notFoundUsers = groupInfo.Users.Where(nick => !foundNickNames.Contains(nick)).ToList();
+        
+        var imageMap = foundUsers
+            .ToDictionary(u => u.NickName, u => encryptionInfo.Encrypt(u.Image ?? u.NickName));
+
+        if (notFoundUsers.Count > 0)
+        {
+            return OperationResult<GroupDto>.Fail(
+                $"These users were not found: {string.Join(", ", notFoundUsers)}");
+        }
+        
         var adminHash = hasher.Hash(groupInfo.Admin);
         var groupNameHash = hasher.Hash(groupInfo.GroupName);
         
         var group = mapper.Map<GroupInfo>(groupInfo);
+        group.SetMembersImages(imageMap);
         group.ApplyHashToMembers(hasher.Hash);
         group.SetHash(adminHash, groupNameHash);
         group.EncryptMembers(encryptionInfo.Encrypt);
@@ -98,8 +122,6 @@ public class GroupInfoOrchestrator(
     public async Task<OperationResult<string>> EditGroupsAdminAsync(string adminHash, string newAdminNick)
     {
         var groupsAdmin = await groupInfoRepository.FindGroupByAdminHashAsync(adminHash);
-        if(groupsAdmin == null)
-            return OperationResult<string>.Fail("Groups not found");
 
         var newAdminHash = hasher.Hash(newAdminNick);
         
@@ -111,8 +133,10 @@ public class GroupInfoOrchestrator(
         }
         return OperationResult<string>.Ok("Update is ok");
     }
-    public async Task<OperationResult<string>> DeleteGroupInfoAsync(Guid id, string adminHash)
+    public async Task<OperationResult<string>> DeleteGroupInfoAsync(Guid id, string adminNickName)
     {
+        var adminHash = hasher.Hash(adminNickName);
+        
         var group = await groupInfoRepository.FindGroupByIdAsync(id);
         if (group == null)
             return OperationResult<string>.Fail("Group not found");

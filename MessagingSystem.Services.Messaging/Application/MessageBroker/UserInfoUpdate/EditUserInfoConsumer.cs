@@ -2,6 +2,8 @@ using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging;
+using MessagingSystem.SendingModels.UserMessaging.Delete;
+using MessagingSystem.SendingModels.UserMessaging.Edit;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
@@ -36,7 +38,7 @@ public class EditUserInfoConsumer(
             decryptionInfo.DecryptObjectStrings(msg);
 
             var (memberTask, groupTask, messageTask) = (
-                groupMemberOrchestrator.UpdateMemberInfoAsync(msg.UserHash, msg.UserNickName),
+                groupMemberOrchestrator.UpdateMemberInfoAsync(msg.UserHash, msg.UserNickName, msg.Image),
                 groupInfoOrchestrator.EditGroupsAdminAsync(msg.UserHash, msg.UserNickName),
                 messageOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash)
             );

@@ -11,9 +11,10 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
             // Arrange
             const string login = "testLogin";
             const string nickName = "testNickName";
+            const string image = "testImage";
 
             // Act
-            var user = new UserModel(login, nickName);
+            var user = new UserModel(login, nickName, image);
 
             // Assert
             Assert.Equal(login, user.Login);
@@ -24,7 +25,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
         public void Constructor_ShouldInheritFromIdentityUser()
         {
             // Arrange & Act
-            var user = new UserModel("testLogin", "testNickName");
+            var user = new UserModel("testLogin", "testNickName", "testImage");
 
             // Assert
             Assert.IsAssignableFrom<IdentityUser>(user);
@@ -34,7 +35,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
         public void HashProperties_ShouldBeNullByDefault()
         {
             // Arrange & Act
-            var user = new UserModel("testLogin", "testNickName");
+            var user = new UserModel("testLogin", "testNickName", "testImage");
 
             // Assert
             Assert.Null(user.HashLogin);
@@ -46,7 +47,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
         public void SetHashes_ShouldSetAllHashProperties()
         {
             // Arrange
-            var user = new UserModel("testLogin", "testNickName");
+            var user = new UserModel("testLogin", "testNickName", "testImage");
             const string loginHash = "loginHashValue";
             const string emailHash = "emailHashValue";
             const string nickNameHash = "nickNameHashValue";
@@ -65,7 +66,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
         {
             // Arrange
             const string expectedLogin = "userLogin123";
-            var user = new UserModel(expectedLogin, "someNickname");
+            var user = new UserModel(expectedLogin, "someNickname", "testImage");
 
             // Act
             var actualLogin = user.Login;
@@ -79,7 +80,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
         {
             // Arrange
             const string expectedNickName = "coolUser42";
-            var user = new UserModel("someLogin", expectedNickName);
+            var user = new UserModel("someLogin", expectedNickName, "testImage");
 
             // Act
             var actualNickName = user.NickName;
@@ -94,7 +95,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
             // Arrange
             const string initialLogin = "initialLogin";
             const string newLogin = "newLogin";
-            var user = new UserModel(initialLogin, "someNickname");
+            var user = new UserModel(initialLogin, "someNickname", "testImage");
             
             // Act
             typeof(UserModel).GetProperty("Login")
@@ -110,7 +111,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
             // Arrange
             const string initialNickName = "initialNickName";
             const string newNickName = "newNickName";
-            var user = new UserModel("someLogin", initialNickName);
+            var user = new UserModel("someLogin", initialNickName, "testIamge");
             
             // Act
             typeof(UserModel).GetProperty("NickName")

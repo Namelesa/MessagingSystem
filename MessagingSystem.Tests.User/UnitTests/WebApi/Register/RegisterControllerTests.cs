@@ -27,8 +27,8 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithValidData_ReturnsOkResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!");
-        var registerDto = new RegisterDto("test@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!");
+        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!", "");
+        var registerDto = new RegisterDto("test@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!", "");
         var operationResult = OperationResult<string>.Ok("Registration successful");
 
         _mapperMock
@@ -51,8 +51,8 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithInvalidData_ReturnsBadRequestResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("", "", "", "", "", "");
-        var registerDto = new RegisterDto("", "", "", "", "", "");
+        var registerContract = new RegisterContract("", "", "", "", "", "", "");
+        var registerDto = new RegisterDto("", "", "", "", "", "", "");
         var operationResult = OperationResult<string>.Fail("Invalid registration data");
 
         _mapperMock
@@ -75,8 +75,8 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithExistingEmail_ReturnsBadRequestResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("Testt", "Users","testuser", "existing@example.com", "TestNick123!", "Password123!");
-        var registerDto = new RegisterDto("existing@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!");
+        var registerContract = new RegisterContract("Testt", "Users","testuser", "existing@example.com", "TestNick123!", "Password123!", "");
+        var registerDto = new RegisterDto("existing@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!", "");
         var operationResult = OperationResult<string>.Fail("Email is already in use");
 
         _mapperMock
@@ -99,8 +99,8 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithExistingUsername_ReturnsBadRequestResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!");
-        var registerDto = new RegisterDto("test@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!");
+        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!", "");
+        var registerDto = new RegisterDto("test@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!", "");
         var operationResult = OperationResult<string>.Fail("Username is already taken");
 
         _mapperMock

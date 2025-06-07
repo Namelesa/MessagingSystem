@@ -13,9 +13,10 @@ public class UserValidatorTests
         string login = "qwerty123_4123456789",
         string firstName = "Maxim",
         string lastName = "Bilyk",
-        string nickName = "qwerty123@4567")
+        string nickName = "qwerty123@4567",
+        string image = "test")
     {
-        return new UserDto(firstName, lastName, login, email, nickName);
+        return new UserDto(firstName, lastName, login, email, nickName, image);
     }
 
     [Fact]
