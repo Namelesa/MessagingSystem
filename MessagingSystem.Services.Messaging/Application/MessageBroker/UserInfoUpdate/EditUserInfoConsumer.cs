@@ -1,7 +1,6 @@
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
-using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.SendingModels.UserMessaging.Edit;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;

@@ -34,6 +34,7 @@ public class GroupMap : Profile
                 opt.Ignore())
             .ForMember(dest => dest.RowVersion, opt => opt.Ignore()); 
         CreateMap<GroupInfo, GroupDto>()
+            .ForMember(dest => dest.Members, opt => opt.Ignore())
             .ConstructUsing(src => new GroupDto(
                 src.GroupName,
                 src.Image,

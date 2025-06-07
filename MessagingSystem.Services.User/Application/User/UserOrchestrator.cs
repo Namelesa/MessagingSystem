@@ -3,7 +3,6 @@ using Encryptor.Decryption;
 using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
-using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.SendingModels.UserMessaging.Edit;
 using MessagingSystem.SendingModels.UserNotification;

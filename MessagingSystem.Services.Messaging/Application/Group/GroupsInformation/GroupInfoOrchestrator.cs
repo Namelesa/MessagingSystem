@@ -88,7 +88,19 @@ public class GroupInfoOrchestrator(
             return OperationResult<GroupDto>.Fail("Group not found");
         
         group.EncryptMembers(decryptionInfo.Decrypt);
-        return MapAndDecrypt(group);
+        var groupWithMembers =  MapAndDecrypt(group);
+        
+        if(!groupWithMembers.Success || groupWithMembers.Data == null)
+            return OperationResult<GroupDto>.Fail("Failed to decrypt group information");
+        
+        var membersWithImages = group.Members
+            .Select(m => new UserInGroupDto(
+                m.UserNickName,
+                string.IsNullOrWhiteSpace(m.Image) ? null : decryptionInfo.Decrypt(m.Image)))
+            .ToList();
+
+        groupWithMembers.Data.SetMembers(membersWithImages);
+        return groupWithMembers;
     }
     public async Task<OperationResult<GroupDto>> EditGroupInfoAsync(Guid id, EditGroupDto groupInfo)
     {
