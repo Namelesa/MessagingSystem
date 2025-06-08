@@ -16,7 +16,8 @@ public class GroupMessagesOrchestrator(
     IHasher hasher,
     IDecryptionInfo decryptionInfo,
     IEncryptionInfo encryptionInfo,
-    IValidator<GroupMessageDto> createValidator
+    IValidator<GroupMessageDto> createValidator,
+    IValidator<EditMessageDto> editValidator
     ) : IGroupMessagesOrchestrator
 {
     public async Task<OperationResult<CreatedMessageResult>> SendMessageAsync(GroupMessageDto messagesDto)
@@ -39,6 +40,10 @@ public class GroupMessagesOrchestrator(
     }
     public async Task<OperationResult<string>> EditMessageAsync(Guid messageId, EditMessageDto messagesDto)
     {
+        var validationResult = await editValidator.ValidateAsync(messagesDto);
+        if (!validationResult.IsValid) 
+            return OperationResult<string>.Fail(string.Join("; ", validationResult.Errors));
+        
         var message = await messageRepository.FindMessageByIdAsync(messageId);
         
         if(message == null)
