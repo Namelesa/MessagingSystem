@@ -2,11 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using AutoMapper;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
-using MessagingSystem.Services.Messaging.WebApi.Group.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MessagingSystem.Services.Messaging.WebApi.Group;
+namespace MessagingSystem.Services.Messaging.WebApi.Group.Info;
 
 [Authorize]
 [ApiController]

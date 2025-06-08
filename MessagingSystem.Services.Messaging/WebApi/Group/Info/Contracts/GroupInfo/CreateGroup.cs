@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MessagingSystem.Services.Messaging.WebApi.Group.Contracts;
+namespace MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 
 public class CreateGroup
 {

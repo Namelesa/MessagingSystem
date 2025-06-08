@@ -1,9 +1,9 @@
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
-using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
+using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
@@ -15,7 +15,8 @@ public class DeleteUserInfoConsumer(
     IPublicKeyStorage publicKeyStorage,
     ILogger<DeleteUserInfoConsumer> logger,
     IMessageOrchestrator messageOrchestrator,
-    IGroupMemberOrchestrator groupMemberOrchestrator
+    IGroupMemberOrchestrator groupMemberOrchestrator,
+    IGroupMessagesOrchestrator groupMessagesOrchestrator
     ) : IConsumer<DeleteUserInfoRequest>
 {
     public async Task Consume(ConsumeContext<DeleteUserInfoRequest> context)
@@ -34,14 +35,15 @@ public class DeleteUserInfoConsumer(
             decryptionInfo.DecryptRsaObjectStrings(msg);
             var nickName = decryptionInfo.Decrypt(msg.UserNickNameHash);
             
-            var (memberTask, messageTask) = (
+            var (memberTask, messageTask, groupMessagesTask) = (
                 groupMemberOrchestrator.DeleteMemberInfoAsync(nickName),
-                messageOrchestrator.DeleteUserInfoInMessageAsync(nickName)
+                messageOrchestrator.DeleteUserInfoInMessageAsync(nickName),
+                groupMessagesOrchestrator.DeleteUserInfoInMessageAsync(nickName)
             );
 
-            await Task.WhenAll(memberTask, messageTask);
+            await Task.WhenAll(memberTask, messageTask, groupMessagesTask);
 
-            var results = new[] { memberTask.Result, messageTask.Result };
+            var results = new[] { memberTask.Result, messageTask.Result, groupMessagesTask.Result };
 
             foreach (var result in results.Where(r => !r.Success))
                 logger.LogError("{Message}", result.Message);

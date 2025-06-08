@@ -1,4 +1,5 @@
 using FluentValidation;
+using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 
 namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Validators;

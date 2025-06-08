@@ -25,7 +25,7 @@ public class MessagingController(
     public async Task<IActionResult> CheckUserAsync([Required] string nickName)
     {
         var user = await userOrchestrator.CheckUserAsync(nickName);
-        return Ok(user.Data.NickName + " / " + user.Data.Image);
+        return Ok(user);
     }
     
     [HttpGet("me")]

@@ -1515,16 +1515,40 @@
             });
 
             if (response.ok) {
-                const userNick = await response.text();
-                if (!userNick) {
-                    alert("Empty user received from server.");
+                const result = await response.json();
+                if (!result.success || !result.data) {
+                    alert("User data not received from server.");
                     return;
                 }
 
-                if (!Array.from(chatList.children).some(btn => btn.innerText === userNick)) {
+                const userNick = result.data.nickName;
+                const userAvatar = result.data.image;
+
+                if (!Array.from(chatList.children).some(btn => btn.querySelector('.chat-name')?.textContent === userNick)) {
                     const chatButton = document.createElement("button");
                     chatButton.classList.add("chat-button");
-                    chatButton.innerText = userNick;
+                    const avatar = document.createElement("img");
+                    avatar.classList.add("chat-avatar");
+
+                    if (userAvatar) {
+                        avatar.src = userAvatar;
+                        avatar.alt = `${userNick} avatar`;
+                        avatar.onerror = () => {
+                            avatar.style.display = 'none';
+                            const placeholder = createAvatarPlaceholder(userNick, 'personal');
+                            chatButton.insertBefore(placeholder, chatButton.firstChild);
+                        };
+                        chatButton.appendChild(avatar);
+                    } else {
+                        const placeholder = createAvatarPlaceholder(userNick, 'personal');
+                        chatButton.appendChild(placeholder);
+                    }
+
+                    const nameSpan = document.createElement("span");
+                    nameSpan.classList.add("chat-name");
+                    nameSpan.textContent = userNick;
+                    chatButton.appendChild(nameSpan);
+                    
                     chatButton.onclick = () => {
                         document.querySelectorAll(".chat-button").forEach(b => b.classList.remove("active"));
                         chatButton.classList.add("active");

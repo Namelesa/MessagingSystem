@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MessagingSystem.Services.Messaging.WebApi.Group.Contracts;
+namespace MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
 
 public class EditGroup(string groupName, string? image, string? description)
 {

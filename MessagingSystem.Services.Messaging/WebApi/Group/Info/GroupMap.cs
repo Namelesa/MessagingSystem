@@ -2,9 +2,10 @@ using AutoMapper;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
-using MessagingSystem.Services.Messaging.WebApi.Group.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 
-namespace MessagingSystem.Services.Messaging.WebApi.Group;
+namespace MessagingSystem.Services.Messaging.WebApi.Group.Info;
 
 public class GroupMap : Profile
 {

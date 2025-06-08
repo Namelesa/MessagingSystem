@@ -2,53 +2,47 @@ using AutoMapper;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using FluentValidation;
+using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
-using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core;
-using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
-namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
+namespace MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 
-public class MessageOrchestrator(
-    IMessageRepository messageRepository, 
+public class GroupMessagesOrchestrator(
+    IGroupMessagesRepository messageRepository,
     IMapper mapper,
-    IValidator<MessagesDto> createValidator,
-    IValidator<EditMessageDto> editValidator,
-    IEncryptionInfo encryptionInfo,
+    IHasher hasher,
     IDecryptionInfo decryptionInfo,
-    IHasher hasher
-    ) : IMessageOrchestrator
+    IEncryptionInfo encryptionInfo,
+    IValidator<GroupMessageDto> createValidator
+    ) : IGroupMessagesOrchestrator
 {
-    public async Task<OperationResult<CreatedMessageResult>> SendMessageAsync(MessagesDto messagesDto)
+    public async Task<OperationResult<CreatedMessageResult>> SendMessageAsync(GroupMessageDto messagesDto)
     {
         var validationResult = await createValidator.ValidateAsync(messagesDto);
         if (!validationResult.IsValid) 
             return OperationResult<CreatedMessageResult>.Fail(string.Join("; ", validationResult.Errors));
         
         var hashSender = hasher.Hash(messagesDto.Sender);
-        var hashRecipient = hasher.Hash(messagesDto.Recipient);
         
-        var message = mapper.Map<Message>(messagesDto);
-        message.SetHashes(hashSender, hashRecipient);
+        var message = mapper.Map<GroupMessage>(messagesDto);
+        message.SetHashes(hashSender);
         
         encryptionInfo.EncryptObjectStrings(message);
         var result = await messageRepository.CreateMessageAsync(message);
         
         return result != null
-            ? OperationResult<CreatedMessageResult>.Ok(new CreatedMessageResult(result.Id, result.Date))
+            ? OperationResult<CreatedMessageResult>.Ok(new CreatedMessageResult(result.Id, result.SendTime))
             : OperationResult<CreatedMessageResult>.Fail("Failed to send message");
     }
     public async Task<OperationResult<string>> EditMessageAsync(Guid messageId, EditMessageDto messagesDto)
     {
-        var validationResult = await editValidator.ValidateAsync(messagesDto);
-        if (!validationResult.IsValid) 
-            return OperationResult<string>.Fail(string.Join("; ", validationResult.Errors));
-        
         var message = await messageRepository.FindMessageByIdAsync(messageId);
-
-        if (message == null)
-            return OperationResult<string>.Fail("Message was not founded");
+        
+        if(message == null)
+            return OperationResult<string>.Fail("Message not found");
         
         message.EditInfo(messagesDto.Content);
         encryptionInfo.EncryptObjectStrings(message);
@@ -86,32 +80,28 @@ public class MessageOrchestrator(
             ? OperationResult<string>.Fail("Message was not founded") 
             : OperationResult<string>.Ok(message.Sender);
     }
-    public async Task<OperationResult<Message>> ReplyForMessageAsync(Guid messageId, Guid replyId)
+    public async Task<List<GroupMessage>> LoadChatHistory(Guid groupId, int take)
+    {
+        var result =  await messageRepository.GetMessageStoryAsync(groupId, take);
+        return DecryptListOfMessage(result);
+    }
+    public async Task<OperationResult<GroupMessage>> ReplyForMessageAsync(Guid messageId, Guid replyId)
     {
         var message = await messageRepository.FindMessageByIdAsync(messageId);
 
         if (message == null)
-            return OperationResult<Message>.Fail("Can not find message");
+            return OperationResult<GroupMessage>.Fail("Can not find message");
 
         var reply = await messageRepository.ReplyMessageAsync(replyId, message);
         decryptionInfo.DecryptObjectStrings(reply);
         
-        return OperationResult<Message>.Ok(reply);
+        return OperationResult<GroupMessage>.Ok(reply);
     }
-    public async Task<List<Message>> LoadChatHistory(string sender, string recipient, int take)
-    {
-        var hashSender = hasher.Hash(sender);
-        var hashRecipient = hasher.Hash(recipient);
-        
-        var result =  await messageRepository.GetMessageStoryAsync(hashSender, hashRecipient, take);
-        return DecryptListOfMessage(result);
-    }
-    public async Task<List<Message>?> FindMessagesAsync(MessageFilter messageFilter)
+    public async Task<List<GroupMessage>?> FindMessagesAsync(MessageFilter messageFilter)
     {
         var filterCopy = new MessageFilter
         {
             Sender = messageFilter.Sender != null ? hasher.Hash(messageFilter.Sender) : null,
-            Recipient = messageFilter.Recipient != null ? hasher.Hash(messageFilter.Recipient) : null,
             Date = messageFilter.Date
         };
 
@@ -150,7 +140,7 @@ public class MessageOrchestrator(
             return OperationResult<string>.Fail($"Exception occurred: {e.Message}");
         }
     }
-    private List<Message> DecryptListOfMessage(List<Message> encryptedMessages)
+    private List<GroupMessage> DecryptListOfMessage(List<GroupMessage> encryptedMessages)
     {
         encryptedMessages.ForEach(decryptionInfo.DecryptObjectStrings);
         return encryptedMessages;

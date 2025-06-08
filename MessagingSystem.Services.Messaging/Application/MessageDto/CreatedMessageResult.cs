@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
+namespace MessagingSystem.Services.Messaging.Application.MessageDto;
 
 public class CreatedMessageResult(Guid messageId, DateTime sentTime)
 {

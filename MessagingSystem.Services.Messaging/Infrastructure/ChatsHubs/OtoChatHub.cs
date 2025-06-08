@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
+using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
