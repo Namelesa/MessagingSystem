@@ -1,20 +1,10 @@
-using MessagingSystem.Services.Messaging.Application.MessageDto;
+using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
-using MessagingSystem.Services.Messaging.Core;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 
 namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 
-public interface IMessageOrchestrator
+public interface IMessageOrchestrator : IMessageOrchestratorBase<Message, MessagesDto>
 {
-    Task<OperationResult<CreatedMessageResult>> SendMessageAsync(MessagesDto messagesDto);
-    Task<OperationResult<string>> EditMessageAsync(Guid messageId, EditMessageDto messagesDto);
-    Task<OperationResult<string>> SoftDeleteMessageAsync(Guid messageId);
-    Task<OperationResult<string>> DeleteMessageAsync(Guid messageId);
-    Task<OperationResult<string>> FindMessageByIdAsync(Guid messageId);
     Task<List<Message>> LoadChatHistory(string sender, string recipient, int take);
-    Task<OperationResult<Message>> ReplyForMessageAsync(Guid messageId, Guid replyId);
-    Task<List<Message>?> FindMessagesAsync(MessageFilter messageFilter);
-    Task<OperationResult<string>> UpdateUserInfoInMessageAsync(string newNickName, string oldUserHashName);
-    Task<OperationResult<string>> DeleteUserInfoInMessageAsync(string userHash);
 }

@@ -1,6 +1,8 @@
+using MessagingSystem.Services.Messaging.Core.Messages;
+
 namespace MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 
-public class Message(string sender, string recipient, string content)
+public class Message(string sender, string recipient, string content) : IMessageEntity
 {
     public Guid Id { get; init; }
     public Guid? ReplyFor { get; private set; }
@@ -9,7 +11,7 @@ public class Message(string sender, string recipient, string content)
     public string Recipient { get; private set; } = recipient;
     public string? RecipientHash { get; private set; }
     public string Content { get; private set; } = content;
-    public DateTime Date { get; init; } = DateTime.UtcNow;
+    public DateTime SendTime { get; init; } = DateTime.UtcNow;
 
     public bool IsDeleted { get; private set; }
     public bool IsEdited { get; private set; }

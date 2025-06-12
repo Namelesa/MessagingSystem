@@ -63,7 +63,7 @@ public class EncryptionInfo : IEncryptionInfo
     }
     public void EncryptObjectStringsForUpdate<T>(T obj)
     {
-        var excludedProps = new[] { "Id", "HashNickName"};
+        var excludedProps = new[] { "Id", "HashNickName", "HashLogin", "PasswordHash", "HashEmail" };
 
         var props = typeof(T).GetProperties()
             .Where(p => 

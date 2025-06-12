@@ -56,18 +56,13 @@ public class UserOrchestrator(
         var request = new ExistingUsersRequest(encryptedNickNames);
         var response = await clients.GetResponse<ExistingUsersResponse>(request);
 
-        var users = new List<FoundedUser>();
-
-        foreach (var user in response.Message.Users)
-        {
-            if (!user.IsExist)
-                continue;
-
-            var decryptedNick = decryptionInfo.Decrypt(decryptionInfo.DecryptRsa(user.NickName));
-            var decryptedImage = decryptionInfo.Decrypt(decryptionInfo.DecryptRsa(user.Image));
-
-            users.Add(new FoundedUser(decryptedNick, decryptedImage));
-        }
+        var rawUsers = response.Message.Users.ToList();
+        
+        var users = (from user in rawUsers 
+            where user.IsExist 
+            let decryptedNick = decryptionInfo.Decrypt(decryptionInfo.DecryptRsa(user.NickName)) 
+            let decryptedImage = decryptionInfo.Decrypt(decryptionInfo.DecryptRsa(user.Image)) 
+            select new FoundedUser(decryptedNick, decryptedImage)).ToList();
 
         return users.Count > 0
             ? OperationResult<List<FoundedUser>>.Ok(users)

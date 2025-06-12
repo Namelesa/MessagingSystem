@@ -1,8 +1,9 @@
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Messages;
 
 namespace MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 
-public class GroupMessage(string sender, string content)
+public class GroupMessage(string sender, string content) : IMessageEntity
 {
     public Guid Id { get; init; }
     public Guid GroupId { get; init; }

@@ -109,7 +109,7 @@ public class OtoChatHub(
             messageId = m.Id,
             sender = m.Sender,
             content = m.Content,
-            sentAt = m.Date,
+            sentAt = m.SendTime,
             isEdited = m.IsEdited,
             editedAt = m.EditDate,
             replyFor = m.ReplyFor
@@ -139,7 +139,7 @@ public class OtoChatHub(
             messageId = replyResult.Data.Id,
             sender,
             content = replyResult.Data.Content,
-            sentAt = replyResult.Data.Date,
+            sentAt = replyResult.Data.SendTime,
             replyTo = replyToMessageId
         };
 

@@ -12,6 +12,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Validators;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
+using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Decorator;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Validator;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
@@ -73,7 +74,7 @@ builder.Services.AddSingleton<IDbContextFactory<GroupAppDbContext>>(_ =>
 });
 
 
-builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IOtoMessageRepository, OtoMessageRepository>();
 builder.Services.AddScoped<IGroupInfoRepository, GroupInfoRepository>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IGroupMembersRepository, GroupMemberRepository>();
@@ -93,6 +94,7 @@ builder.Services.AddScoped<IValidator<GroupDto>, GroupDtoValidator>();
 builder.Services.AddScoped<IValidator<EditGroupDto>, EditGroupDtoValidator>();
 builder.Services.AddScoped<IValidator<GroupMembersDto>, GroupMembersValidator>();
 builder.Services.AddScoped<IValidator<GroupMessageDto>, GroupMessageCreateValidator>();
+builder.Services.AddScoped<IGroupEncryption, GroupEncryptionDecorator>();
 
 builder.Services.AddScoped<IHasher, Hasher>();
 builder.Services.AddScoped<IEncryptionInfo, EncryptionInfo>();

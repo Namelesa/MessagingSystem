@@ -27,6 +27,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
     
     public async Task UpdateUserAsync(Core.User.User user)
     {
+        user.EmailConfirmed = true;
         db.Users.Update(user);
         await db.SaveChangesAsync();
     }
