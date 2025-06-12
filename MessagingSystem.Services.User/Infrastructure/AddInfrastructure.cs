@@ -2,6 +2,7 @@ using System.Text;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
+using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 using MessagingSystem.Services.User.Infrastructure.MessageBroker;
@@ -23,12 +24,19 @@ public static class AddInfrastructure
         services.AddSingleton<IEncryptionInfo, EncryptionInfo>();
         services.AddSingleton<IDecryptionInfo, DecryptionInfo>();
         services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
+        services.AddSingleton<IImageLoaderService, ImageLoaderService>();
         services.AddScoped<KeyPublisher>();
         services.Configure<MessageBrokerSettings>(
             configuration.GetSection("MessageBroker"));
+        
+        services.Configure<DigitalOceanSpacesSettings>(
+            configuration.GetSection("DigitalOceanSpacesSettings"));
 
         services.AddSingleton(sp =>
             sp.GetRequiredService<IOptions<MessageBrokerSettings>>().Value);
+        
+        services.AddSingleton(sp =>
+            sp.GetRequiredService<IOptions<DigitalOceanSpacesSettings>>().Value);
         
         services.AddScoped<IJwtService, JwtService>();
         

@@ -2,6 +2,7 @@ using AutoMapper;
 using MessagingSystem.Services.User.Application;
 using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
+using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.WebApi.Register;
 using MessagingSystem.Services.User.WebApi.Register.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -19,15 +20,16 @@ public class RegisterControllerTests
     {
         _mapperMock = new Mock<IMapper>();
         _registerOrchestratorMock = new Mock<IRegisterOrchestrator>();
+        Mock<IImageLoaderService> imageLoaderServiceMock = new();
 
-        _sut = new RegisterController(_registerOrchestratorMock.Object, _mapperMock.Object);
+        _sut = new RegisterController(_registerOrchestratorMock.Object, _mapperMock.Object, imageLoaderServiceMock.Object);
     }
 
     [Fact]
     public async Task RegisterAsync_WithValidData_ReturnsOkResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!", "");
+        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!");
         var registerDto = new RegisterDto("test@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!", "");
         var operationResult = OperationResult<string>.Ok("Registration successful");
 
@@ -51,7 +53,7 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithInvalidData_ReturnsBadRequestResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("", "", "", "", "", "", "");
+        var registerContract = new RegisterContract("", "", "", "", "", "");
         var registerDto = new RegisterDto("", "", "", "", "", "", "");
         var operationResult = OperationResult<string>.Fail("Invalid registration data");
 
@@ -75,7 +77,7 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithExistingEmail_ReturnsBadRequestResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("Testt", "Users","testuser", "existing@example.com", "TestNick123!", "Password123!", "");
+        var registerContract = new RegisterContract("Testt", "Users","testuser", "existing@example.com", "TestNick123!", "Password123!");
         var registerDto = new RegisterDto("existing@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!", "");
         var operationResult = OperationResult<string>.Fail("Email is already in use");
 
@@ -99,7 +101,7 @@ public class RegisterControllerTests
     public async Task RegisterAsync_WithExistingUsername_ReturnsBadRequestResult()
     {
         // Arrange
-        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!", "");
+        var registerContract = new RegisterContract("Testt", "Users","testuser", "test@example.com", "TestNick123!", "Password123!");
         var registerDto = new RegisterDto("test@example.com", "testuser", "Testt", "Users", "TestNick123!", "Password123!", "");
         var operationResult = OperationResult<string>.Fail("Username is already taken");
 

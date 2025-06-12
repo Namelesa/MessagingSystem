@@ -31,8 +31,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Register
                 login: "john_doe@",
                 email: "john@example.com",
                 nickName: "j_doe@",
-                password: "Passw0rd@",
-                image: "test"
+                password: "Passw0rd@"
             );
 
             // Act

@@ -15,10 +15,9 @@ public class RegisterContractInitTests
         const string email = "john.doe@example.com";
         const string nickName = "nick_123";
         const string password = "Pass123@";
-        const string image = "testImage";
 
         // Act
-        var contract = new RegisterContract(firstName, lastName, login, email, nickName, password, image);
+        var contract = new RegisterContract(firstName, lastName, login, email, nickName, password);
 
         // Assert
         Assert.Equal(firstName, contract.FirstName);
@@ -34,7 +33,7 @@ public class RegisterContractInitTests
     {
         // Arrange
         var contract = new RegisterContract(
-            "John", "Doe", "@user123", "john.doe@example.com", "nick_123", "Pass123@", "")
+            "John", "Doe", "@user123", "john.doe@example.com", "nick_123", "Pass123@")
         {
             FirstName = "NewFirst",
             LastName = "NewLast",
@@ -54,7 +53,7 @@ public class RegisterContractInitTests
     {
         // Arrange
         var contract = new RegisterContract(
-            "John", "Doe", "@login1", "john@example.com", "nick@name", "Pass123@", "");
+            "John", "Doe", "@login1", "john@example.com", "nick@name", "Pass123@");
 
         // Act
         var results = new List<ValidationResult>();
@@ -71,7 +70,7 @@ public class RegisterContractInitTests
     {
         // Arrange
         var contract = new RegisterContract(
-            "Jo", "Doe", "@login1", "john@example.com", "nick@name", "Pass123@", "");
+            "Jo", "Doe", "@login1", "john@example.com", "nick@name", "Pass123@");
 
         // Act
         var results = new List<ValidationResult>();
@@ -87,7 +86,7 @@ public class RegisterContractInitTests
     {
         // Arrange
         var contract = new RegisterContract(
-            "John", "Doe", "@login1", "john@example.com", "nick@name", "Password123", "");
+            "John", "Doe", "@login1", "john@example.com", "nick@name", "Password123");
 
         // Act
         var results = new List<ValidationResult>();
@@ -103,7 +102,7 @@ public class RegisterContractInitTests
     {
         // Arrange
         var contract = new RegisterContract(
-            "John", "Doe", "@login1", "john@example.com", "@", "Pass123@", "");
+            "John", "Doe", "@login1", "john@example.com", "@", "Pass123@");
 
         // Act
         var results = new List<ValidationResult>();

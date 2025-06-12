@@ -1,5 +1,4 @@
 using AutoMapper;
-using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 using MessagingSystem.Services.User.WebApi.Register.Contracts;
 
