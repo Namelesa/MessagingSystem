@@ -1,9 +1,12 @@
+using AutoMapper;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging.IsExist.User;
 using MessagingSystem.SendingModels.UserMessaging.IsExist.Users;
 using MessagingSystem.Services.Messaging.Application.User.Dto;
+using MessagingSystem.Services.Messaging.Core.Oto.Users;
+using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.Messaging.Application.User;
@@ -13,7 +16,10 @@ public class UserOrchestrator(
     IDecryptionInfo decryptionInfo,
     IRequestClient<ExistingUserRequest> client,
     IRequestClient<ExistingUsersRequest> clients,
-    IPublicKeyStorage publicKeyStorage
+    IPublicKeyStorage publicKeyStorage,
+    IUserImageRepository userImageRepository,
+    IHasher hasher,
+    IMapper mapper
     ) : IUserOrchestrator
 {
     public async Task<OperationResult<FoundedUser>> CheckUserAsync(string nickName)
@@ -32,11 +38,18 @@ public class UserOrchestrator(
         response.Message.NickName = decryptionInfo.DecryptRsa(response.Message.NickName);
         response.Message.Image = decryptionInfo.DecryptRsa(response.Message.Image);
         
-        return response.Message.IsExist
-            ? OperationResult<FoundedUser>.Ok(
-                new FoundedUser(decryptionInfo.Decrypt(response.Message.NickName), 
-                    decryptionInfo.Decrypt(response.Message.Image))) 
-            : OperationResult<FoundedUser>.Fail("User not found");
+        if(!response.Message.IsExist)
+            return OperationResult<FoundedUser>.Fail("User not found");
+        
+        var image = new FoundedUser(hasher.Hash(
+                decryptionInfo.Decrypt(response.Message.NickName)),
+                response.Message.Image);
+        var message = mapper.Map<UserImage>(image);
+        await userImageRepository.AddUserImageAsync(message);
+
+        return OperationResult<FoundedUser>.Ok(
+            new FoundedUser(decryptionInfo.Decrypt(response.Message.NickName),
+                decryptionInfo.Decrypt(response.Message.Image)));
     }
     public async Task<OperationResult<List<FoundedUser>>> CheckUsersAsync(List<string> nickNames)
     {
@@ -67,5 +80,25 @@ public class UserOrchestrator(
         return users.Count > 0
             ? OperationResult<List<FoundedUser>>.Ok(users)
             : OperationResult<List<FoundedUser>>.Fail("No users found");
+    }
+    public async Task<OperationResult<string>> DeleteUserAsync(string nickName)
+    {
+        var user = await FindUserAsync(nickName); 
+        await userImageRepository.DeleteUserImageAsync(user);
+        return OperationResult<string>.Ok("User deleted successfully");
+    }
+    public async Task<OperationResult<string>> UpdateUserAsync(string nickName, string image)
+    {
+        var user = await FindUserAsync(nickName);
+        user.EditInfo(nickName, image);
+        await userImageRepository.EditUserImageAsync(user);
+        return OperationResult<string>.Ok("User updated successfully");
+    }
+    private async Task<UserImage> FindUserAsync(string nickName)
+    {
+        var user = await userImageRepository.FindUserImageByHashAsync(hasher.Hash(nickName));
+        if (user == null)
+            throw new Exception("User not found");
+        return user;
     }
 }

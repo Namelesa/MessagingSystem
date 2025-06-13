@@ -5,6 +5,7 @@ using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
@@ -16,7 +17,8 @@ public class DeleteUserInfoConsumer(
     ILogger<DeleteUserInfoConsumer> logger,
     IMessageOrchestrator messageOrchestrator,
     IGroupMemberOrchestrator groupMemberOrchestrator,
-    IGroupMessagesOrchestrator groupMessagesOrchestrator
+    IGroupMessagesOrchestrator groupMessagesOrchestrator,
+    IUserOrchestrator userOrchestrator
     ) : IConsumer<DeleteUserInfoRequest>
 {
     public async Task Consume(ConsumeContext<DeleteUserInfoRequest> context)
@@ -35,15 +37,16 @@ public class DeleteUserInfoConsumer(
             decryptionInfo.DecryptRsaObjectStrings(msg);
             var nickName = decryptionInfo.Decrypt(msg.UserNickNameHash);
             
-            var (memberTask, messageTask, groupMessagesTask) = (
+            var (memberTask, messageTask, groupMessagesTask, userImageTask) = (
                 groupMemberOrchestrator.DeleteMemberInfoAsync(nickName),
                 messageOrchestrator.DeleteUserInfoInMessageAsync(nickName),
-                groupMessagesOrchestrator.DeleteUserInfoInMessageAsync(nickName)
+                groupMessagesOrchestrator.DeleteUserInfoInMessageAsync(nickName),
+                userOrchestrator.DeleteUserAsync(nickName)
             );
 
-            await Task.WhenAll(memberTask, messageTask, groupMessagesTask);
+            await Task.WhenAll(memberTask, messageTask, groupMessagesTask, userImageTask);
 
-            var results = new[] { memberTask.Result, messageTask.Result, groupMessagesTask.Result };
+            var results = new[] { memberTask.Result, messageTask.Result, groupMessagesTask.Result, userImageTask.Result };
 
             foreach (var result in results.Where(r => !r.Success))
                 logger.LogError("{Message}", result.Message);

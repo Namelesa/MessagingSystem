@@ -26,12 +26,6 @@ public class ImageLoaderService : IImageLoaderService
     {
         var key = $"photos/{fileName}";
         
-        var exists = await FileExistsAsync(key);
-
-        Console.WriteLine(exists
-            ? $"[ImageLoader] File '{key}' exists — it will be replaced."
-            : $"[ImageLoader] File '{key}' does not exist — it will be created.");
-
         await _s3Client.PutObjectAsync(new PutObjectRequest
         {
             BucketName = _settings.BucketName,
@@ -41,7 +35,7 @@ public class ImageLoaderService : IImageLoaderService
             CannedACL = S3CannedACL.PublicRead
         });
         
-        return $"{_settings.Endpoint}/{_settings.BucketName}/photos/{fileName}";
+        return $"{_settings.Endpoint}/{_settings.BucketName}/{key}";
     }
     
     public async Task DeleteAsync(string key)

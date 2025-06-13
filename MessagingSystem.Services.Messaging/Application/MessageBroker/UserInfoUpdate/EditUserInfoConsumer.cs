@@ -7,6 +7,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
@@ -15,6 +16,7 @@ public class EditUserInfoConsumer(
     IGroupMemberOrchestrator groupMemberOrchestrator,
     IGroupMessagesOrchestrator groupMessagesOrchestrator,
     IGroupInfoOrchestrator groupInfoOrchestrator,
+    IUserOrchestrator userOrchestrator,
     IMessageOrchestrator messageOrchestrator,
     IDecryptionInfo decryptionInfo,
     IEncryptionInfo encryptionInfo,
@@ -38,16 +40,18 @@ public class EditUserInfoConsumer(
             decryptionInfo.DecryptRsaObjectStrings(msg);
             decryptionInfo.DecryptObjectStrings(msg);
 
-            var (memberTask, groupTask, messageTask, groupMessageTask) = (
+            var (memberTask, groupTask, messageTask, groupMessageTask, userImageTask) = (
                 groupMemberOrchestrator.UpdateMemberInfoAsync(msg.UserHash, msg.UserNickName, msg.Image),
                 groupInfoOrchestrator.EditGroupsAdminAsync(msg.UserHash, msg.UserNickName),
                 messageOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash),
-                groupMessagesOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash)
+                groupMessagesOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash),
+                userOrchestrator.UpdateUserAsync(msg.UserNickName, encryptionInfo.Encrypt(msg.Image))
             );
 
-            await Task.WhenAll(memberTask, groupTask, messageTask, groupMessageTask);
+            await Task.WhenAll(memberTask, groupTask, messageTask, groupMessageTask, userImageTask);
 
-            var results = new[] { memberTask.Result, groupTask.Result, messageTask.Result, groupMessageTask.Result };
+            var results = new[] { memberTask.Result, groupTask.Result, messageTask.Result, 
+                groupMessageTask.Result, userImageTask.Result };
 
             foreach (var result in results.Where(r => !r.Success))
                 logger.LogError("{Message}", result.Message);

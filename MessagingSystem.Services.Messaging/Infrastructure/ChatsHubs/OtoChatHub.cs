@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 
@@ -115,7 +116,7 @@ public class OtoChatHub(
             replyFor = m.ReplyFor
         }).Cast<object>().ToList();
     }
-    public async Task<List<string>?> GetChatsAsync()
+    public async Task<List<ChatDto>?> GetChatsAsync()
     {
         var nickname = CurrentUserNickname;
         return await chatOrchestrator.GetChatsAsync(nickname);

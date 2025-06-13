@@ -1368,13 +1368,18 @@
             let chats = [];
 
             if (currentChatType === "personal") {
-                chats = await connection.invoke('GetChatsAsync');
-                chats = chats.map(chat => ({ name: chat, avatar: null, type: 'personal' }));
+                const chatDtos = await connection.invoke('GetChatsAsync');
+                
+                chats = chatDtos.map(chatDto => ({
+                    name: chatDto.nickName,
+                    avatar: chatDto.avatar || chatDto.image || null, 
+                    type: 'personal'
+                }));
             } else if (currentChatType === "group") {
                 const groupsData = await connectionGroup.invoke('GetAllGroupForUserAsync');
                 chats = groupsData.map(group => ({
                     name: group.groupName || group.name || group,
-                    avatar: group.image  || group.avatar || null,
+                    avatar: group.image || group.avatar || null,
                     type: 'group'
                 }));
             }
@@ -1390,7 +1395,7 @@
             chats.forEach(chat => {
                 const chatButton = document.createElement("button");
                 chatButton.classList.add("chat-button");
-                
+
                 const avatar = document.createElement("img");
                 avatar.classList.add("chat-avatar");
 
