@@ -9,6 +9,7 @@ using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
+using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.User.Application.User;
@@ -23,7 +24,8 @@ public class UserOrchestrator(
     IPublishEndpoint publishEndpoint,
     IRequestClient<EditUserInfoRequest> editClient,
     IRequestClient<DeleteUserInfoRequest> deleteClient,
-    IPublicKeyStorage publicKeyStorage) : IUserOrchestrator
+    IPublicKeyStorage publicKeyStorage,
+    IImageLoaderService imageLoaderService) : IUserOrchestrator
 {
     public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
     {
@@ -42,6 +44,9 @@ public class UserOrchestrator(
         var hashLogin = hasher.Hash(userDto.Login);
         var hashEmail = hasher.Hash(userDto.Email);
         var hashNickName = hasher.Hash(userDto.NickName);
+        
+        if (existingUser.Image != null)
+            await DeleteImage(decryptionInfo.Decrypt(existingUser.Image));
         
         mapper.Map(userDto, existingUser);
         existingUser.SetHashes(hashLogin, hashEmail, hashNickName);
@@ -108,6 +113,9 @@ public class UserOrchestrator(
             if (!response.Message.IsSuccess) 
                 return OperationResult<string>.Fail("Can't delete user info");
             
+            if (user.Image != null)
+                await DeleteImage(decryptionInfo.Decrypt(user.Image));
+            
             await userRepository.DeleteUserAsync(user);
             
             var editUserInfo = new DeleteUserEmail(user.Email, user.UserName);
@@ -143,4 +151,14 @@ public class UserOrchestrator(
         => publicKeyStorage.Get("Notification");
     private string? GetPublicKeyMessaging()
         => publicKeyStorage.Get("Messaging");
+    private async Task DeleteImage(string image)
+    {
+        var uri = new Uri(image);
+        var path = uri.AbsolutePath.TrimStart('/');
+
+        var segments = path.Split('/', 2);
+        var key = segments.Length == 2 ? segments[1] : segments[0];
+            
+        await imageLoaderService.DeleteAsync(key);
+    }
 }

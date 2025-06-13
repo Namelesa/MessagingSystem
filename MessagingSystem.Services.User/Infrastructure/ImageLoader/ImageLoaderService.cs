@@ -44,15 +44,22 @@ public class ImageLoaderService : IImageLoaderService
         return $"{_settings.Endpoint}/{_settings.BucketName}/photos/{fileName}";
     }
     
-    public async Task DeleteAsync(string fileName)
+    public async Task DeleteAsync(string key)
     {
         var request = new DeleteObjectRequest
         {
             BucketName = _settings.BucketName,
-            Key = $"photos/{fileName}"
+            Key = key
         };
-
-        await _s3Client.DeleteObjectAsync(request);
+        if (await FileExistsAsync(key))
+        {
+            await _s3Client.DeleteObjectAsync(request);
+            Console.WriteLine("Deleted.");
+        }
+        else
+        {
+            Console.WriteLine("File does not exists.");
+        }
     }
     private async Task<bool> FileExistsAsync(string key)
     {

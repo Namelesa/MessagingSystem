@@ -27,8 +27,6 @@ public class RegisterController(
             registerContract.AvatarUrl = url;
         }
 
-        Console.WriteLine(registerContract.AvatarUrl);
-        
         var registerDto = mapper.Map<RegisterDto>(registerContract);
         registerDto.Image = registerContract.AvatarUrl;
         var result = await registerOrchestrator.RegisterUserAsync(registerDto);
