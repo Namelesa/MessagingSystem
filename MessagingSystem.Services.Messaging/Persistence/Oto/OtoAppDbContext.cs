@@ -52,6 +52,7 @@ public class OtoAppDbContext(DbContextOptions<OtoAppDbContext> options) : DbCont
         modelBuilder.Entity<UserImage>()
             .HasIndex(u => u.Id);
         modelBuilder.Entity<UserImage>()
-            .HasIndex(u => u.NickNameHash);
+            .HasIndex(u => u.NickNameHash)
+            .IsUnique();
     }
 }

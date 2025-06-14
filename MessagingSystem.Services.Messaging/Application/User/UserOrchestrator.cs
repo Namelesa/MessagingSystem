@@ -45,7 +45,16 @@ public class UserOrchestrator(
                 decryptionInfo.Decrypt(response.Message.NickName)),
                 response.Message.Image);
         var message = mapper.Map<UserImage>(image);
-        await userImageRepository.AddUserImageAsync(message);
+        
+        try
+        {
+            await userImageRepository.AddUserImageAsync(message);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return OperationResult<FoundedUser>.Fail("Error saving user image");
+        }
 
         return OperationResult<FoundedUser>.Ok(
             new FoundedUser(decryptionInfo.Decrypt(response.Message.NickName),

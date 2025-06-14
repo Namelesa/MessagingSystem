@@ -1,11 +1,12 @@
 using MessagingSystem.Services.Messaging.Core.Oto.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace MessagingSystem.Services.Messaging.Persistence.Oto.UsersImages;
 
 public class UserImageRepository(OtoAppDbContext db) : IUserImageRepository
 {
     public async Task<UserImage?> FindUserImageByHashAsync(string nicknameHash) =>
-        await db.Images.FindAsync(nicknameHash);
+        await db.Images.FirstOrDefaultAsync(u => u.NickNameHash == nicknameHash);
     public async Task<UserImage> AddUserImageAsync(UserImage usersImages)
     {
         try
