@@ -98,14 +98,15 @@ public class UserOrchestrator(
     }
     public async Task<OperationResult<string>> UpdateUserAsync(string nickName, string image)
     {
-        var user = await FindUserAsync(nickName);
+        var hashedNickName = hasher.Hash(nickName);
+        var user = await FindUserAsync(hashedNickName);
         user.EditInfo(nickName, image);
         await userImageRepository.EditUserImageAsync(user);
         return OperationResult<string>.Ok("User updated successfully");
     }
     private async Task<UserImage> FindUserAsync(string nickName)
     {
-        var user = await userImageRepository.FindUserImageByHashAsync(hasher.Hash(nickName));
+        var user = await userImageRepository.FindUserImageByHashAsync(nickName);
         if (user == null)
             throw new Exception("User not found");
         return user;

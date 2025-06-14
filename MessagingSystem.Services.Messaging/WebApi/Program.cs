@@ -77,6 +77,14 @@ builder.Services.AddSingleton<IDbContextFactory<GroupAppDbContext>>(_ =>
     return new PooledDbContextFactory<GroupAppDbContext>(optionsBuilder.Options);
 });
 
+builder.Services.AddSingleton<IDbContextFactory<OtoAppDbContext>>(_ =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    var optionsBuilder = new DbContextOptionsBuilder<OtoAppDbContext>();
+    optionsBuilder.UseNpgsql(connectionString);
+    return new PooledDbContextFactory<OtoAppDbContext>(optionsBuilder.Options);
+});
+
 
 builder.Services.AddScoped<IOtoMessageRepository, OtoMessageRepository>();
 builder.Services.AddScoped<IGroupInfoRepository, GroupInfoRepository>();
