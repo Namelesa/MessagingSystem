@@ -45,7 +45,7 @@ public class EditUserInfoConsumer(
                 groupInfoOrchestrator.EditGroupsAdminAsync(msg.UserHash, msg.UserNickName),
                 messageOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash),
                 groupMessagesOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash),
-                userOrchestrator.UpdateUserAsync(msg.UserNickName, encryptionInfo.Encrypt(msg.Image))
+                userOrchestrator.UpdateUserAsync(msg.UserHash, encryptionInfo.Encrypt(msg.Image))
             );
 
             await Task.WhenAll(memberTask, groupTask, messageTask, groupMessageTask, userImageTask);

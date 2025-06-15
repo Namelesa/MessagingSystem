@@ -59,7 +59,6 @@ public class RegisterOrchestrator(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
             return OperationResult<string>.Fail($"User can not be added {e.Message}");
         }
     }
@@ -81,7 +80,6 @@ public class RegisterOrchestrator(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
             return OperationResult<string>.Fail($"Error {e}");
         }
     }

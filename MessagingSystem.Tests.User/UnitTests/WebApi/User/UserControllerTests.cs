@@ -2,6 +2,7 @@ using AutoMapper;
 using MessagingSystem.Services.User.Application;
 using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
+using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.WebApi.User;
 using MessagingSystem.Services.User.WebApi.User.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -19,8 +20,9 @@ public class UsersControllerTests
     {
         _mapperMock = new Mock<IMapper>();
         _userOrchestratorMock = new Mock<IUserOrchestrator>();
+        Mock<IImageLoaderService> imageLoaderServiceMock = new();
 
-        _sut = new UsersController(_userOrchestratorMock.Object, _mapperMock.Object);
+        _sut = new UsersController(_userOrchestratorMock.Object, _mapperMock.Object, imageLoaderServiceMock.Object);
     }
 
     [Fact]

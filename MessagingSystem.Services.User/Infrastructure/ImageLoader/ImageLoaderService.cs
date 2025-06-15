@@ -8,9 +8,11 @@ public class ImageLoaderService : IImageLoaderService
 {
     private readonly IAmazonS3 _s3Client;
     private readonly DigitalOceanSpacesSettings _settings;
+    private readonly ILogger<ImageLoaderService> _logger;
 
-    public ImageLoaderService(IOptions<DigitalOceanSpacesSettings> options)
+    public ImageLoaderService(IOptions<DigitalOceanSpacesSettings> options, ILogger<ImageLoaderService> logger)
     {
+        _logger = logger;
         _settings = options.Value;
 
         var config = new AmazonS3Config
@@ -21,7 +23,6 @@ public class ImageLoaderService : IImageLoaderService
 
         _s3Client = new AmazonS3Client(_settings.AccessKey, _settings.SecretKey, config);
     }
-    
     public async Task<string> UploadOrReplaceAsync(Stream fileStream, string fileName)
     {
         var key = $"photos/{fileName}";
@@ -37,7 +38,6 @@ public class ImageLoaderService : IImageLoaderService
         
         return $"{_settings.Endpoint}/{_settings.BucketName}/{key}";
     }
-    
     public async Task DeleteAsync(string key)
     {
         var request = new DeleteObjectRequest
@@ -48,11 +48,11 @@ public class ImageLoaderService : IImageLoaderService
         if (await FileExistsAsync(key))
         {
             await _s3Client.DeleteObjectAsync(request);
-            Console.WriteLine("Deleted.");
+            _logger.LogInformation("Deleted.");
         }
         else
         {
-            Console.WriteLine("File does not exists.");
+            _logger.LogInformation("File does not exist, nothing to delete.");
         }
     }
     private async Task<bool> FileExistsAsync(string key)

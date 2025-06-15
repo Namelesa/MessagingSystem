@@ -98,8 +98,7 @@ public class UserOrchestrator(
     }
     public async Task<OperationResult<string>> UpdateUserAsync(string nickName, string image)
     {
-        var hashedNickName = hasher.Hash(nickName);
-        var user = await FindUserAsync(hashedNickName);
+        var user = await FindUserAsync(nickName);
         user.EditInfo(nickName, image);
         await userImageRepository.EditUserImageAsync(user);
         return OperationResult<string>.Ok("User updated successfully");

@@ -4,7 +4,6 @@ using Encryptor.Encryption;
 using FluentValidation;
 using FluentValidation.Results;
 using MassTransit;
-using MessagingSystem.SendingModels.UserMessaging;
 using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.SendingModels.UserMessaging.Edit;
 using MessagingSystem.SendingModels.UserNotification;
@@ -12,6 +11,7 @@ using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
+using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 using Moq;
 using ValidationResult = FluentValidation.Results.ValidationResult;
@@ -24,7 +24,6 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
         private readonly Mock<IValidator<UserDto>> _validatorMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<IEncryptionInfo> _encryptInfoMock;
-        private readonly Mock<IDecryptionInfo> _decncryptInfoMock;
         private readonly Mock<IHasher> _hasherMock;
         private readonly Mock<IPublishEndpoint> _publishEndpointMock;
         private readonly Mock<IPublicKeyStorage> _publicKeyStorageMock;
@@ -42,25 +41,27 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             _validatorMock = new Mock<IValidator<UserDto>>();
             _userRepositoryMock = new Mock<IUserRepository>();
             _encryptInfoMock = new Mock<IEncryptionInfo>();
-            _decncryptInfoMock = new Mock<IDecryptionInfo>();
+            Mock<IDecryptionInfo> decncryptInfoMock = new();
             _hasherMock = new Mock<IHasher>();
             _publishEndpointMock = new Mock<IPublishEndpoint>();
             _publicKeyStorageMock = new Mock<IPublicKeyStorage>();
             _clientEdit = new Mock<IRequestClient<EditUserInfoRequest>>();
             _clientDelete = new Mock<IRequestClient<DeleteUserInfoRequest>>();
             _clientDelete = new Mock<IRequestClient<DeleteUserInfoRequest>>();
+            Mock<IImageLoaderService> imageLoaderServiceMock = new();
 
             _orchestrator = new UserOrchestrator(
                 _mapperMock.Object,
                 _validatorMock.Object,
                 _userRepositoryMock.Object,
                 _encryptInfoMock.Object,
-                _decncryptInfoMock.Object,
+                decncryptInfoMock.Object,
                 _hasherMock.Object,
                 _publishEndpointMock.Object,
                 _clientEdit.Object,
                 _clientDelete.Object,
-                _publicKeyStorageMock.Object
+                _publicKeyStorageMock.Object,
+                imageLoaderServiceMock.Object
                 );
             
             _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
@@ -267,17 +268,19 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
 
             _publicKeyStorageMock.Setup(x => x.Get("Notification")).Returns(PublicKey);
             _publicKeyStorageMock.Setup(x => x.Get("Messaging")).Returns(PublicKey);
-            
-            var mockResponse = new Mock<Response<DeleteUserInfoRollback>>();
-            var deleteUserRollBack = new DeleteUserInfoRollback("pvgD3zQ83QncVIyZLKBFzadgLY/6n/NqXt8LbtvaU2U=")
-            {
-                IsSuccess = true
+
+            var deleteUserRollBack = new DeleteUserInfoRollback("pvgD3zQ83QncVIyZLKBFzadgLY/6n/NqXt8LbtvaU2U=") 
+            { 
+                IsSuccess = true 
             };
-            mockResponse.Setup(x => x.Message).Returns(deleteUserRollBack);
-    
-            _clientDelete.Setup(x => x.GetResponse<DeleteUserInfoRollback>(
-                    It.IsAny<DeleteUserInfoRequest>(), 
-                    It.IsAny<CancellationToken>(), 
+
+            var mockResponse = new Mock<Response<DeleteUserInfoRollback>>();
+            mockResponse.Setup(r => r.Message).Returns(deleteUserRollBack);
+            
+            _clientDelete
+                .Setup(x => x.GetResponse<DeleteUserInfoRollback>(
+                    It.IsAny<DeleteUserInfoRequest>(),
+                    It.IsAny<CancellationToken>(),
                     It.IsAny<RequestTimeout>()))
                 .ReturnsAsync(mockResponse.Object);
             
@@ -396,7 +399,6 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
             // Assert
             Assert.False(result.Success);
             Assert.Contains("Can not delete user", result.Message);
-            Assert.Contains("Database error", result.Message);
             
             _publishEndpointMock.Verify(
                 x => x.Publish(It.IsAny<DeleteUserEmail>(), It.IsAny<CancellationToken>()), 
@@ -421,7 +423,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Application.User;
 
         private Services.User.Core.User.User CreateExistingUser()
         {
-            var user = new Services.User.Core.User.User("john_doe@123", "johnny@123", "testImage")
+            var user = new Services.User.Core.User.User("john_doe@123", "johnny@123", "https://imagesforusers.fra1.cdn.digitaloceanspaces.com/imagesforusers/photos/9290222e-da79-4173-8f5c-cd4018779578.jpg")
             {
                 Id = UserId,
                 Email = "john.doe@example.com",

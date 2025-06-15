@@ -29,8 +29,8 @@ public class UserOrchestrator(
 {
     public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
     {
-        var publicKeyNotification = GetPublicKeyNotification();
-        var publicKeyMessaging = GetPublicKeyMessaging();
+        var publicKeyNotification = GetPublicKey("Notification");
+        var publicKeyMessaging = GetPublicKey("Messaging");
         
         var validationResult = await validator.ValidateAsync(userDto);
         if (!validationResult.IsValid) 
@@ -84,14 +84,13 @@ public class UserOrchestrator(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
             return OperationResult<string>.Fail($"Can not update user info {e}");
         }
     }
     public async Task<OperationResult<string>> DeleteUserAsync(string userId)
     {
-        var publicKeyNotification = GetPublicKeyNotification();
-        var publicKeyMessaging = GetPublicKeyMessaging();
+        var publicKeyNotification = GetPublicKey("Notification");
+        var publicKeyMessaging = GetPublicKey("Messaging");
         
         var user = await userRepository.FindUserByIdAsync(userId);
         if (user == null || publicKeyNotification == null || publicKeyMessaging == null)
@@ -126,7 +125,6 @@ public class UserOrchestrator(
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
             return OperationResult<string>.Fail($"Can not delete user {e}");
         }
     }
@@ -147,12 +145,13 @@ public class UserOrchestrator(
             : OperationResult<List<UserFoundDto>>.Ok(users
                 .Select(u => new UserFoundDto(u.NickName, u.Image)).ToList());
     }
-    private string? GetPublicKeyNotification()
-        => publicKeyStorage.Get("Notification");
-    private string? GetPublicKeyMessaging()
-        => publicKeyStorage.Get("Messaging");
+    private string? GetPublicKey(string key) 
+        => publicKeyStorage.Get(key);
     private async Task DeleteImage(string image)
-    {
+    {    
+        if (string.IsNullOrEmpty(image))
+            return;
+        
         var uri = new Uri(image);
         var path = uri.AbsolutePath.TrimStart('/');
 
