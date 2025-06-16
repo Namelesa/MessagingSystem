@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
+using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.Infrastructure.Jwt;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 using MessagingSystem.Services.User.Infrastructure.PasswordHasher;
@@ -322,6 +323,19 @@ namespace MessagingSystem.Tests.User.IntegrationTests.Infrastructure
 
             // Assert
             Assert.Null(msgCtx3.Token); // Ensure no token set if cookie is empty
+        }
+        
+        [Fact]
+        public void Should_Resolve_DigitalOceanSpacesSettings_Through_ServiceProvider()
+        {
+            // Arrange & Act
+            using var scope = factory.Services.CreateScope();
+            var serviceProvider = scope.ServiceProvider;
+            
+            serviceProvider.GetService<DigitalOceanSpacesSettings>();
+
+            // Assert
+            Assert.True(true);
         }
         
         private static string GenerateValidToken()

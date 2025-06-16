@@ -111,7 +111,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
             // Arrange
             const string initialNickName = "initialNickName";
             const string newNickName = "newNickName";
-            var user = new UserModel("someLogin", initialNickName, "testIamge");
+            var user = new UserModel("someLogin", initialNickName, "testImage");
             
             // Act
             typeof(UserModel).GetProperty("NickName")
@@ -119,6 +119,64 @@ namespace MessagingSystem.Tests.User.UnitTests.Core
             
             // Assert
             Assert.Equal(newNickName, user.NickName);
+        }
+        
+        [Fact]
+        public void Image_PropertyGetter_ShouldReturnCorrectValue()
+        {
+            // Arrange
+            const string expectedImage = "user_avatar.jpg";
+            var user = new UserModel("someLogin", "someNickname", expectedImage);
+
+            // Act
+            var actualImage = user.Image;
+
+            // Assert
+            Assert.Equal(expectedImage, actualImage);
+        }
+        
+        [Fact]
+        public void Image_PropertyGetter_ShouldReturnNull_WhenSetToNull()
+        {
+            // Arrange
+            var user = new UserModel("someLogin", "someNickname", null);
+
+            // Act
+            var actualImage = user.Image;
+
+            // Assert
+            Assert.Null(actualImage);
+        }
+
+        [Fact]
+        public void Image_PropertySetter_ShouldSetValue()
+        {
+            // Arrange
+            const string initialImage = "initial_image.png";
+            const string newImage = "new_image.jpg";
+            var user = new UserModel("someLogin", "someNickname", initialImage);
+    
+            // Act
+            typeof(UserModel).GetProperty("Image")
+                ?.SetValue(user, newImage, null);
+    
+            // Assert
+            Assert.Equal(newImage, user.Image);
+        }
+
+        [Fact]
+        public void Image_PropertySetter_ShouldSetToNull()
+        {
+            // Arrange
+            const string initialImage = "initial_image.png";
+            var user = new UserModel("someLogin", "someNickname", initialImage);
+    
+            // Act
+            typeof(UserModel).GetProperty("Image")
+                ?.SetValue(user, null, null);
+    
+            // Assert
+            Assert.Null(user.Image);
         }
     }
 }

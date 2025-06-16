@@ -25,6 +25,7 @@ public class UserDtoTests
         Assert.Equal(firstName, userDto.FirstName);
         Assert.Equal(lastName, userDto.LastName);
         Assert.Equal(nickName, userDto.NickName);
+        Assert.Equal(image, userDto.Image);
     }
     
     [Fact]
@@ -53,6 +54,10 @@ public class UserDtoTests
         var nickNameProperty = type.GetProperty("NickName");
         Assert.NotNull(nickNameProperty);
         Assert.NotNull(nickNameProperty.SetMethod);
+        
+        var imageProperty = type.GetProperty("Image");
+        Assert.NotNull(imageProperty);
+        Assert.NotNull(imageProperty.SetMethod);
     }
 
     [Fact]
@@ -60,6 +65,14 @@ public class UserDtoTests
     {
         // Act & Assert
         var exception = Record.Exception(() => new UserDto("", "", "", "", "", ""));
+        Assert.Null(exception);
+    }
+    
+    [Fact]
+    public void Constructor_WithNullImage_ShouldNotThrowException()
+    {
+        // Act & Assert
+        var exception = Record.Exception(() => new UserDto("Test", "User", "login", "test@example.com", "nick", null));
         Assert.Null(exception);
     }
         
@@ -80,6 +93,7 @@ public class UserDtoTests
             FirstName = "NewFirst",
             LastName = "NewLast",
             NickName = "newnick",
+            Image = "newImage"
         };
             
         // Assert
@@ -88,5 +102,25 @@ public class UserDtoTests
         Assert.Equal("NewFirst", userDto.FirstName);
         Assert.Equal("NewLast", userDto.LastName);
         Assert.Equal("newnick", userDto.NickName);
+        Assert.Equal("newImage", userDto.Image);
+    }
+    
+    [Fact]
+    public void Image_CanBeSetToNull()
+    {
+        // Arrange & Act
+        var userDto = new UserDto(
+            "Test",
+            "User", 
+            "login",
+            "test@example.com",
+            "nick",
+            "initialImage")
+        {
+            Image = null
+        };
+            
+        // Assert
+        Assert.Null(userDto.Image);
     }
 }

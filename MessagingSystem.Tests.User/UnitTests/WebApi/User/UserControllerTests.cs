@@ -5,6 +5,7 @@ using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Infrastructure.ImageLoader;
 using MessagingSystem.Services.User.WebApi.User;
 using MessagingSystem.Services.User.WebApi.User.Contracts;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -14,15 +15,16 @@ public class UsersControllerTests
 {
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IUserOrchestrator> _userOrchestratorMock;
+    private readonly Mock<IImageLoaderService> _imageLoaderServiceMock;
     private readonly UsersController _sut;
 
     public UsersControllerTests()
     {
         _mapperMock = new Mock<IMapper>();
         _userOrchestratorMock = new Mock<IUserOrchestrator>();
-        Mock<IImageLoaderService> imageLoaderServiceMock = new();
+        _imageLoaderServiceMock = new Mock<IImageLoaderService>();
 
-        _sut = new UsersController(_userOrchestratorMock.Object, _mapperMock.Object, imageLoaderServiceMock.Object);
+        _sut = new UsersController(_userOrchestratorMock.Object, _mapperMock.Object, _imageLoaderServiceMock.Object);
     }
 
     [Fact]
@@ -164,6 +166,212 @@ public class UsersControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Email is already in use", badRequestResult.Value);
+    }
+    
+    [Fact]
+    public async Task EditUserAsync_WithImageFile_UploadsImageAndReturnsOkResult()
+    {
+        // Arrange
+        const string userId = "user123";
+        const string uploadedImageUrl = "https://example.com/uploaded-image.jpg";
+        
+        var mockFile = new Mock<IFormFile>();
+        var stream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+        
+        mockFile.Setup(f => f.Length).Returns(5);
+        mockFile.Setup(f => f.OpenReadStream()).Returns(stream);
+        
+        var editUserContract = new EditUserContract(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567")
+        {
+            ImageFile = mockFile.Object
+        };
+
+        var userDto = new UserDto(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567",
+            uploadedImageUrl);
+
+        var operationResult = OperationResult<string>.Ok("User updated successfully");
+
+        _imageLoaderServiceMock
+            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync(uploadedImageUrl);
+
+        _mapperMock
+            .Setup(m => m.Map<UserDto>(It.Is<EditUserContract>(c => c.Image == uploadedImageUrl)))
+            .Returns(userDto);
+
+        _userOrchestratorMock
+            .Setup(o => o.EditUserInfoAsync(userDto, userId))
+            .ReturnsAsync(operationResult);
+
+        // Act
+        var result = await _sut.EditUserAsync(userId, editUserContract);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("User updated successfully", okResult.Value);
+        
+        // Verify image upload was called
+        _imageLoaderServiceMock.Verify(
+            s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.Is<string>(fileName => fileName.EndsWith(".jpg"))),
+            Times.Once);
+        
+        // Verify the contract had the image URL set
+        Assert.Equal(uploadedImageUrl, editUserContract.Image);
+    }
+
+    [Fact]
+    public async Task EditUserAsync_WithEmptyImageFile_SkipsImageUploadAndReturnsOkResult()
+    {
+        // Arrange
+        const string userId = "user123";
+        
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.Length).Returns(0);
+        
+        var editUserContract = new EditUserContract(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567")
+        {
+            ImageFile = mockFile.Object
+        };
+
+        var userDto = new UserDto(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567",
+            "test");
+
+        var operationResult = OperationResult<string>.Ok("User updated successfully");
+
+        _mapperMock
+            .Setup(m => m.Map<UserDto>(editUserContract))
+            .Returns(userDto);
+
+        _userOrchestratorMock
+            .Setup(o => o.EditUserInfoAsync(userDto, userId))
+            .ReturnsAsync(operationResult);
+
+        // Act
+        var result = await _sut.EditUserAsync(userId, editUserContract);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("User updated successfully", okResult.Value);
+        
+        // Verify image upload was NOT called
+        _imageLoaderServiceMock.Verify(
+            s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task EditUserAsync_WithNullImageFile_SkipsImageUploadAndReturnsOkResult()
+    {
+        // Arrange
+        const string userId = "user123";
+        
+        var editUserContract = new EditUserContract(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567")
+        {
+            ImageFile = null
+        };
+
+        var userDto = new UserDto(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567",
+            "test");
+
+        var operationResult = OperationResult<string>.Ok("User updated successfully");
+
+        _mapperMock
+            .Setup(m => m.Map<UserDto>(editUserContract))
+            .Returns(userDto);
+
+        _userOrchestratorMock
+            .Setup(o => o.EditUserInfoAsync(userDto, userId))
+            .ReturnsAsync(operationResult);
+
+        // Act
+        var result = await _sut.EditUserAsync(userId, editUserContract);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("User updated successfully", okResult.Value);
+        
+        // Verify image upload was NOT called
+        _imageLoaderServiceMock.Verify(
+            s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task EditUserAsync_WithImageUploadFailure_StillProceedsWithUserUpdate()
+    {
+        // Arrange
+        const string userId = "user123";
+        
+        var mockFile = new Mock<IFormFile>();
+        var stream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+        
+        mockFile.Setup(f => f.Length).Returns(5);
+        mockFile.Setup(f => f.OpenReadStream()).Returns(stream);
+        
+        var editUserContract = new EditUserContract(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567")
+        {
+            ImageFile = mockFile.Object
+        };
+
+        var userDto = new UserDto(
+            "Maxim",
+            "Bilyk",
+            "qwerty123_4123456789",
+            "pdo090318@gmail.com",
+            "qwerty123@4567",
+            "test");
+
+        var operationResult = OperationResult<string>.Ok("User updated successfully");
+
+        _imageLoaderServiceMock
+            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ThrowsAsync(new Exception("Upload failed"));
+
+        _mapperMock
+            .Setup(m => m.Map<UserDto>(editUserContract))
+            .Returns(userDto);
+
+        _userOrchestratorMock
+            .Setup(o => o.EditUserInfoAsync(userDto, userId))
+            .ReturnsAsync(operationResult);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _sut.EditUserAsync(userId, editUserContract));
     }
 
     [Fact]

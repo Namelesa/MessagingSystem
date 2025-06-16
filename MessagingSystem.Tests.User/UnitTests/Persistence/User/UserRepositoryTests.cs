@@ -108,4 +108,21 @@ public class UserRepositoryTests
         var deleted = await db.Users.FindAsync(user.Id);
         Assert.Null(deleted);
     }
+
+    [Fact]
+    public async Task FindUsersByHashNickNamesAsync_ReturnsMatchingUsers()
+    {
+        // Arrange
+        var db = await GetDbContextWithData();
+        var repo = new UserRepository(db);
+        var hashNickNames = new List<string> { "nick_hash" };
+
+        // Act
+        var users = await repo.FindUsersByHashNickNamesAsync(hashNickNames);
+
+        // Assert
+        Assert.NotNull(users);
+        Assert.Single(users);
+        Assert.Equal("nick_hash", users.First().HashNickName);
+    }
 }

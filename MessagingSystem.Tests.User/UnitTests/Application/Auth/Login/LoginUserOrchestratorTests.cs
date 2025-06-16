@@ -155,4 +155,31 @@ public class LoginUserOrchestratorTests
         result.Success.Should().BeTrue();
         result.Data.Should().Be("False");
     }
+    [Fact]
+    public async Task LoginUserAsync_ShouldFail_WhenNickNameDoesNotMatch()
+    {
+        // Arrange
+        var dto = new LoginDto("user", "pass", "wrong-nick");
+        var user = new Services.User.Core.User.User("user", "nick", "test")
+        {
+            PasswordHash = "encrypted-password",
+            EmailConfirmed = true,
+        };
+
+        _validatorMock.Setup(x => x.ValidateAsync(dto, default))
+            .ReturnsAsync(new ValidationResult());
+
+        _hasherMock.Setup(x => x.Hash(dto.Login)).Returns("hashed-login");
+        _hasherMock.Setup(x => x.Hash(dto.NickName)).Returns("wrong-nick-hash");
+
+        _userRepoMock.Setup(x => x.FindUserByHashLoginAsync("hashed-login"))
+            .ReturnsAsync(user);
+
+        // Act
+        var result = await _orchestrator.LoginUserAsync(dto);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("Input your real nick name");
+    }
 }

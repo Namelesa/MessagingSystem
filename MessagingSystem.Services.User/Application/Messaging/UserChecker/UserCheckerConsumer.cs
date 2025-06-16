@@ -1,8 +1,6 @@
 using Encryptor.Decryption;
 using Encryptor.Encryption;
 using MassTransit;
-using MessagingSystem.SendingModels.UserMessaging;
-using MessagingSystem.SendingModels.UserMessaging.IsExist;
 using MessagingSystem.SendingModels.UserMessaging.IsExist.User;
 using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
