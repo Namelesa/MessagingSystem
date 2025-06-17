@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MessagingSystem.Services.Messaging.Persistence.Group.GroupDbInitializer;
 
-public class GroupDbInitializer(GroupAppDbContext db) : IGroupDbInitializer
+public class GroupDbInitializer(GroupAppDbContext db, ILogger<GroupDbInitializer> logger) : IGroupDbInitializer
 {
     public async Task Initialize()
     {
@@ -15,7 +15,7 @@ public class GroupDbInitializer(GroupAppDbContext db) : IGroupDbInitializer
         }
         catch
         {
-            Console.WriteLine("Can not do migration for group");
+            logger.LogInformation("Error with migration");
         }
     }
 }

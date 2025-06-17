@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MessagingSystem.Services.Messaging.Persistence.Oto.OtoDbInitializer;
 
-public class OtoDbInitializer(OtoAppDbContext db) : IOtoDbInitializer
+public class OtoDbInitializer(OtoAppDbContext db, ILogger<OtoDbInitializer> logger) : IOtoDbInitializer
 {
     public async Task Initialize()
     {
@@ -15,7 +15,7 @@ public class OtoDbInitializer(OtoAppDbContext db) : IOtoDbInitializer
         }
         catch
         {
-            Console.WriteLine("Can not do migration for oto");
+            logger.LogInformation("Error with migration");
         }
     }
 }
