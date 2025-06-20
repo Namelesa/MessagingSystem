@@ -1,5 +1,7 @@
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace MessagingSystem.Services.Messaging.Persistence.Group.GroupMember;
 
@@ -51,6 +53,25 @@ public class GroupMemberRepository(IDbContextFactory<GroupAppDbContext> dbFactor
                 WHERE ""AdminHash"" = {0}", userHashName);
 
             return affectedRows;
+        });
+    }
+    
+    public Task<int> DeleteUsersByHashesAsync(IEnumerable<string> userHashes)
+    {
+        return WithContextAsync(async context =>
+        {
+            var hashes = userHashes.ToArray();
+
+            var sql = @"
+            DELETE FROM ""GroupMembers""
+            WHERE ""UserNickNameHash"" = ANY(@p0)";
+
+            var param = new NpgsqlParameter("p0", NpgsqlDbType.Array | NpgsqlDbType.Text)
+            {
+                Value = hashes
+            };
+
+            return await context.Database.ExecuteSqlRawAsync(sql, param);
         });
     }
 }

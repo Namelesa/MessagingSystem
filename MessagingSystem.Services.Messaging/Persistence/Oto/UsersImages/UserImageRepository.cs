@@ -40,13 +40,15 @@ public class UserImageRepository(IDbContextFactory<OtoAppDbContext> db) : IUserI
             return usersImages;
         });
     }
-    public async Task<UserImage> DeleteUserImageAsync(UserImage usersImages)
+    public async Task<int> DeleteUserImageAsync(UserImage userHash)
     {
         return await WithContextAsync(async context =>
         {
-            context.Images.Remove(usersImages);
-            await context.SaveChangesAsync();
-            return usersImages;
+            var deleted = await context.Database.ExecuteSqlRawAsync(@"
+            DELETE FROM ""Images""
+            WHERE ""NickNameHash"" = {0}", userHash.NickNameHash);
+
+            return deleted;
         });
     }
 }

@@ -123,21 +123,6 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Core.Groups
         }
         
         [Fact]
-        public void DeleteUsers_Removes_Matched()
-        {
-            // Arrange
-            var group = new GroupInfo("Group", "img.jpg", "desc", "admin");
-
-            group.AddUser("User1");
-
-            // Act
-            group.DeleteUsers(new[] { "User1" });
-
-            // Assert
-            Assert.Empty(group.Members);
-        }
-        
-        [Fact]
         public void SetHash_Updates_AdminHash_And_GroupHash()
         {
             // Arrange

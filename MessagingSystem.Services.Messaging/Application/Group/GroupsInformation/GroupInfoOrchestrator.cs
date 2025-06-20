@@ -6,12 +6,14 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Val
 using MessagingSystem.Services.Messaging.Application.User;
 using MessagingSystem.Services.Messaging.Application.User.Dto;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 
 public class GroupInfoOrchestrator(
     IGroupInfoRepository groupInfoRepository,
+    IGroupMembersRepository groupMembersRepository,
     IHasher hasher,
     IMapper mapper,
     IValidator<GroupDto> validator,
@@ -139,9 +141,9 @@ public class GroupInfoOrchestrator(
 
         var result = groups.Select(g =>
         {
-            groupEncryption.Decrypt(g);
             g.EncryptMembers(groupEncryption.DecryptMembers);
-            return mapper.Map<GroupDto>(g);
+            var groupWithMembers =  MapAndDecryptForLists(g);
+            return groupWithMembers;
         }).ToList();
         
         return OperationResult<List<GroupDto>>.Ok(result);
@@ -158,12 +160,16 @@ public class GroupInfoOrchestrator(
             return OperationResult<GroupDto>.Fail("You can't add or delete members");
 
         group.EncryptMembers(groupEncryption.DecryptMembers);
+        
         return await SafeExecuteAsync(async () =>
         {
             var userNicks = users.ToList();
+            
             if (userNicks.Count == 0)
                 return OperationResult<GroupDto>.Fail("User list is empty");
 
+            var hashedNicks = userNicks.Select(hasher.Hash).ToList();
+            
             switch (modificationType)
             {
                 case GroupMemberModificationType.Add:
@@ -171,12 +177,14 @@ public class GroupInfoOrchestrator(
                     group.AddUsers(userNicks);
                     break;
                 case GroupMemberModificationType.Remove:
-                    group.DeleteUsers(userNicks);
+                    if(hashedNicks.Contains(adminHash))
+                        return OperationResult<GroupDto>.Fail("You can't remove yourself from group");
+                    group.Members.RemoveAll(m => userNicks.Contains(m.UserNickName));
+                    await groupMembersRepository.DeleteUsersByHashesAsync(hashedNicks);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(modificationType), modificationType, null);
             }
-
             group.EncryptMembers(groupEncryption.EncryptMembers);
             group.ApplyHashToMembers(hasher.Hash);
 
@@ -189,6 +197,12 @@ public class GroupInfoOrchestrator(
         var dto = mapper.Map<GroupDto>(group);
         groupEncryption.DecryptGeneric(dto);
         return OperationResult<GroupDto>.Ok(dto);
+    }
+    private GroupDto MapAndDecryptForLists(GroupInfo group)
+    {
+        var dto = mapper.Map<GroupDto>(group);
+        groupEncryption.DecryptGeneric(dto);
+        return dto;
     }
     private async Task<OperationResult<List<FoundedUser>>> CheckUsersOrThrowAsync(List<string> userNickNames)
     {

@@ -106,8 +106,6 @@ public class UserOrchestrator(
     private async Task<UserImage> FindUserAsync(string nickName)
     {
         var user = await userImageRepository.FindUserImageByHashAsync(nickName);
-        if (user == null)
-            throw new Exception("User not found");
-        return user;
+        return user ?? new UserImage(hasher.Hash(nickName), "");
     }
 }

@@ -6,7 +6,8 @@ public class GroupDto(
     string description, 
     string admin, 
     List<string> users,
-    byte[] rowVersion)
+    byte[] rowVersion,
+    Guid? groupId = null)
 {
     public string GroupName { get; init; } = groupName;
     public string? Image { get; init; } = image;
@@ -15,6 +16,7 @@ public class GroupDto(
     public List<string> Users { get; private set; } = users;
     public List<UserInGroupDto>? Members { get; private set; }
     public string RowVersion => Convert.ToBase64String(rowVersion);
+    public Guid? GroupId { get; init; } = groupId;
 
     public void AddAdminLikeUser(string admin)
     {

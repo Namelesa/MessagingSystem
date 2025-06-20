@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Group Chat Hub</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .section {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        input, textarea, button {
+            margin: 5px;
+            padding: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        .group-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<h1>Тест Group Chat Hub</h1>
+
+<div id="status" class="status disconnected">Отключено</div>
+
+<div class="section">
+    <h3>Подключение</h3>
+    <button onclick="connect()">Подключиться</button>
+    <button onclick="disconnect()">Отключиться</button>
+</div>
+
+<div class="section">
+    <h3>Создать группу</h3>
+    <input type="text" id="groupName" placeholder="Название группы" value="Тестовая группа">
+    <br>
+    <textarea id="groupDesc" placeholder="Описание">Описание тестовой группы</textarea>
+    <br>
+    <input type="text" id="groupMembers" placeholder="Участники через запятую" value="user1,user2">
+    <br>
+    <button onclick="createGroup()">Создать группу</button>
+</div>
+
+<div class="section">
+    <h3>Мои группы</h3>
+    <button onclick="loadGroups()">Загрузить группы</button>
+    <div id="groupsList"></div>
+</div>
+
+<div class="section">
+    <h3>Редактировать группу</h3>
+    <input type="text" id="editGroupId" placeholder="ID группы для редактирования">
+    <br>
+    <input type="text" id="editGroupName" placeholder="Новое название группы">
+    <br>
+    <textarea id="editGroupDesc" placeholder="Новое описание"></textarea>
+    <br>
+    <button onclick="editGroup()">Редактировать группу</button>
+</div>
+
+<div class="section">
+    <h3>Управление группой</h3>
+    <input type="text" id="groupId" placeholder="ID группы">
+    <br>
+    <button onclick="joinGroup()">Войти в группу</button>
+    <button onclick="leaveGroup()">Покинуть группу</button>
+    <button onclick="deleteGroup()">Удалить группу</button>
+    <br>
+    <input type="text" id="membersToAdd" placeholder="Участники для добавления (через запятую)">
+    <button onclick="addMembers()">Добавить участников</button>
+    <br>
+    <input type="text" id="membersToRemove" placeholder="Участники для удаления (через запятую)">
+    <button onclick="removeMembers()">Удалить участников</button>
+</div>
+
+<div class="section">
+    <h3>Лог</h3>
+    <button onclick="clearLog()">Очистить лог</button>
+    <div id="log" class="log"></div>
+</div>
+
+<script>
+    let connection = null;
+    const BASE_URL = "https://localhost:7275";
+
+    function log(message) {
+        const logDiv = document.getElementById('log');
+        const timestamp = new Date().toLocaleTimeString();
+        logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function clearLog() {
+        document.getElementById('log').innerHTML = '';
+    }
+
+    function updateStatus(connected) {
+        const statusDiv = document.getElementById('status');
+        if (connected) {
+            statusDiv.textContent = 'Подключено';
+            statusDiv.className = 'status connected';
+        } else {
+            statusDiv.textContent = 'Отключено';
+            statusDiv.className = 'status disconnected';
+        }
+    }
+
+    async function connect() {
+        try {
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(`${BASE_URL}/groupChatHub`, { withCredentials: true })
+                .withAutomaticReconnect()
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
+
+            // Обработчики событий
+            connection.on("GroupMembersAdded", (group) => {
+                log(`Участники добавлены в группу: ${JSON.stringify(group, null, 2)}`);
+            });
+
+            connection.on("GroupMembersRemoved", (group) => {
+                log(`Участники удалены из группы: ${JSON.stringify(group, null, 2)}`);
+            });
+
+            connection.onclose((error) => {
+                log(`Соединение закрыто: ${error || 'Неизвестная ошибка'}`);
+                updateStatus(false);
+            });
+
+            connection.onreconnected(() => {
+                log('Переподключено');
+                updateStatus(true);
+            });
+
+            connection.onreconnecting((error) => {
+                log(`Переподключение: ${error || 'Неизвестная ошибка'}`);
+                updateStatus(false);
+            });
+
+            await connection.start();
+            log('Подключено к SignalR hub');
+            updateStatus(true);
+        } catch (error) {
+            log(`Ошибка подключения: ${error.message}`);
+            updateStatus(false);
+        }
+    }
+
+    async function disconnect() {
+        if (connection) {
+            await connection.stop();
+            log('Отключено от SignalR hub');
+            updateStatus(false);
+        }
+    }
+
+    async function createGroup() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupName = document.getElementById('groupName').value;
+            const description = document.getElementById('groupDesc').value;
+            const membersInput = document.getElementById('groupMembers').value;
+
+            const members = membersInput ? membersInput.split(',').map(m => m.trim()).filter(m => m) : [];
+
+            const groupData = {
+                groupName: groupName,
+                description: description,
+                users: members
+            };
+
+            log(`Создание группы: ${JSON.stringify(groupData)}`);
+
+            const result = await connection.invoke("CreateGroupAsync", groupData);
+            log(`Группа создана: ${JSON.stringify(result, null, 2)}`);
+
+            // Автоматически заполняем ID созданной группы
+            document.getElementById('groupId').value = result.id;
+
+        } catch (error) {
+            log(`Ошибка создания группы: ${error.message}`);
+        }
+    }
+
+    async function editGroup() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupId = document.getElementById('editGroupId').value;
+            const groupName = document.getElementById('editGroupName').value;
+            const description = document.getElementById('editGroupDesc').value;
+
+            if (!groupId) {
+                log('Введите ID группы');
+                return;
+            }
+
+            const editData = {
+                groupName: groupName,
+                description: description
+            };
+
+            log(`Редактирование группы: ${JSON.stringify(editData)}`);
+
+            const result = await connection.invoke("EditGroupAsync", groupId, editData);
+            log(`Группа отредактирована: ${JSON.stringify(result, null, 2)}`);
+
+        } catch (error) {
+            log(`Ошибка редактирования группы: ${error.message}`);
+        }
+    }
+
+    async function loadGroups() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groups = await connection.invoke("GetAllGroupForUserAsync");
+            log(`Загружены группы: ${JSON.stringify(groups, null, 2)}`);
+
+            const groupsList = document.getElementById('groupsList');
+            groupsList.innerHTML = '';
+
+            groups.forEach(group => {
+                const div = document.createElement('div');
+                div.className = 'group-item';
+                div.innerHTML = `
+                <strong>${group.groupName}</strong> (ID: ${group.groupId})<br>
+                Описание: ${group.description || 'Нет'}<br>
+                Админ: ${group.admin}<br>
+                Участники: ${group.users ? group.users.join(', ') : 'Нет'}
+                <button onclick="document.getElementById('groupId').value='${group.groupId}'">Выбрать</button>
+                <button onclick="fillEditForm('${group.groupId}', '${group.groupName}', '${group.description || ''}')">Редактировать</button>
+            `;
+                groupsList.appendChild(div);
+            });
+
+        } catch (error) {
+            log(`Ошибка загрузки групп: ${error.message}`);
+        }
+    }
+
+    function fillEditForm(groupId, groupName, description) {
+        document.getElementById('editGroupId').value = groupId;
+        document.getElementById('editGroupName').value = groupName;
+        document.getElementById('editGroupDesc').value = description;
+        log(`Заполнена форма редактирования для группы: ${groupName}`);
+    }
+
+    async function joinGroup() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupId = document.getElementById('groupId').value;
+            if (!groupId) {
+                log('Введите ID группы');
+                return;
+            }
+
+            await connection.invoke("JoinGroupAsync", groupId);
+            log(`Вошли в группу: ${groupId}`);
+        } catch (error) {
+            log(`Ошибка входа в группу: ${error.message}`);
+        }
+    }
+
+    async function leaveGroup() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupId = document.getElementById('groupId').value;
+            if (!groupId) {
+                log('Введите ID группы');
+                return;
+            }
+
+            await connection.invoke("LeaveGroupAsync", groupId);
+            log(`Покинули группу: ${groupId}`);
+        } catch (error) {
+            log(`Ошибка выхода из группы: ${error.message}`);
+        }
+    }
+
+    async function deleteGroup() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupId = document.getElementById('groupId').value;
+            if (!groupId) {
+                log('Введите ID группы');
+                return;
+            }
+
+            const result = await connection.invoke("DeleteGroupAsync", groupId);
+            log(`Группа удалена: ${result}`);
+        } catch (error) {
+            log(`Ошибка удаления группы: ${error.message}`);
+        }
+    }
+
+    async function addMembers() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupId = document.getElementById('groupId').value;
+            const membersInput = document.getElementById('membersToAdd').value;
+
+            if (!groupId) {
+                log('Введите ID группы');
+                return;
+            }
+
+            if (!membersInput) {
+                log('Введите участников');
+                return;
+            }
+
+            const members = membersInput.split(',').map(m => m.trim()).filter(m => m);
+            const membersData = { users: members };
+
+            log(`Добавление участников: ${JSON.stringify(membersData)}`);
+
+            const result = await connection.invoke("AddMembersToGroupAsync", groupId, membersData);
+            log(`Участники добавлены: ${JSON.stringify(result, null, 2)}`);
+        } catch (error) {
+            log(`Ошибка добавления участников: ${error.message}`);
+        }
+    }
+
+    async function removeMembers() {
+        if (!connection) {
+            log('Нет подключения');
+            return;
+        }
+
+        try {
+            const groupId = document.getElementById('groupId').value;
+            const membersInput = document.getElementById('membersToRemove').value;
+
+            if (!groupId) {
+                log('Введите ID группы');
+                return;
+            }
+
+            if (!membersInput) {
+                log('Введите участников');
+                return;
+            }
+
+            const members = membersInput.split(',').map(m => m.trim()).filter(m => m);
+            const membersData = { users: members };
+
+            log(`Удаление участников: ${JSON.stringify(membersData)}`);
+
+            const result = await connection.invoke("RemoveMembersFromGroupAsync", groupId, membersData);
+            log(`Участники удалены: ${JSON.stringify(result, null, 2)}`);
+        } catch (error) {
+            log(`Ошибка удаления участников: ${error.message}`);
+        }
+    }
+
+    // Автоматическое подключение при загрузке страницы
+    document.addEventListener('DOMContentLoaded', () => {
+        log('Страница загружена. Нажмите "Подключиться" для начала тестирования.');
+    });
+</script>
+</body>
+</html>

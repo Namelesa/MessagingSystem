@@ -18,7 +18,8 @@ public class GroupMap : Profile
                 src.Description,
                 src.Admin,
                 src.Users,
-                new byte[0]
+                new byte[0],
+                null
             ));
         CreateMap<GroupDto, GroupInfo>()
             .ForMember(dest => dest.Members, opt => 
@@ -42,7 +43,8 @@ public class GroupMap : Profile
                 src.Description,
                 src.Admin,
                 src.Members.Select(m => m.UserNickName).ToList(),
-                src.RowVersion
+                src.RowVersion,
+                src.Id
             ));
 
         CreateMap<EditGroup, EditGroupDto>()

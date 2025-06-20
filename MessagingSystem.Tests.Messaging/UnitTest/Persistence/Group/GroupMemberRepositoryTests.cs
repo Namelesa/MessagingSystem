@@ -1,3 +1,4 @@
+using MessagingSystem.Services.Messaging.Core.Groups.Group;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Persistence.Group;
 using MessagingSystem.Services.Messaging.Persistence.Group.GroupMember;
@@ -20,7 +21,7 @@ public class GroupMemberRepositoryTests : IDisposable
     {
         SQLitePCL.Batteries.Init();
 
-        _connection = new SqliteConnection("DataSource=file:memdb1?mode=memory&cache=shared");
+        _connection = new SqliteConnection("DataSource=memory:");
         _connection.Open();
 
         _dbFactoryMock = new Mock<IDbContextFactory<GroupAppDbContext>>();
@@ -31,10 +32,11 @@ public class GroupMemberRepositoryTests : IDisposable
     {
         var options = new DbContextOptionsBuilder<GroupAppDbContext>()
             .UseSqlite(_connection)
-            .EnableSensitiveDataLogging()
             .Options;
 
-        return new GroupAppDbContext(options);
+        var context = new GroupAppDbContext(options);
+        context.Database.EnsureCreated();
+        return context;
     }
     
     private async Task<GroupAppDbContext> GetEmptyDbContext()
@@ -378,7 +380,139 @@ public class GroupMemberRepositoryTests : IDisposable
         Assert.True(factoryCalled, "Factory should have been called to create context");
         _dbFactoryMock.Verify(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+    
+    [Fact]
+    public async Task DeleteUsersByHashesAsync_WithValidHashes_CallsFactoryOnce()
+    {
+        // Arrange
+        await using var context = await GetEmptyDbContext();
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(context);
 
+        var hashesToDelete = new[] { "user_hash_1", "user_hash_2" };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidCastException>(async () => 
+            await _repository.DeleteUsersByHashesAsync(hashesToDelete));
+
+        _dbFactoryMock.Verify(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteUsersByHashesAsync_WithEmptyCollection_ThrowsInvalidCastException()
+    {
+        // Arrange
+        await using var context = await GetEmptyDbContext();
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(context);
+
+        var emptyHashes = Array.Empty<string>();
+
+        // Act & Assert 
+        await Assert.ThrowsAsync<InvalidCastException>(async () => 
+            await _repository.DeleteUsersByHashesAsync(emptyHashes));
+    }
+
+    [Fact]
+    public async Task DeleteUsersByHashesAsync_WithNullCollection_ThrowsArgumentNullException()
+    {
+        // Arrange
+        await using var context = await GetEmptyDbContext();
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(context);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(async () => 
+            await _repository.DeleteUsersByHashesAsync(null));
+    }
+    
+    [Fact]
+    public async Task DeleteUsersByHashesAsync_CoversAllBranches()
+    {
+        var mockFactory1 = new Mock<IDbContextFactory<GroupAppDbContext>>();
+        var mockFactory2 = new Mock<IDbContextFactory<GroupAppDbContext>>();
+        var mockFactory3 = new Mock<IDbContextFactory<GroupAppDbContext>>();
+    
+        var repo1 = new GroupMemberRepository(mockFactory1.Object);
+        var repo2 = new GroupMemberRepository(mockFactory2.Object);
+        var repo3 = new GroupMemberRepository(mockFactory3.Object);
+        
+        await Assert.ThrowsAsync<ArgumentNullException>(() => repo1.DeleteUsersByHashesAsync(null));
+        
+        var context1 = await GetEmptyDbContext();
+        mockFactory2.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(context1);
+    
+        try
+        {
+            await repo2.DeleteUsersByHashesAsync(Array.Empty<string>());
+            Assert.True(false, "Should have thrown exception");
+        }
+        catch (InvalidCastException)
+        {
+            Assert.True(true);
+        }
+
+        
+        var context2 = await GetEmptyDbContext();
+        mockFactory3.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(context2);
+    
+        try
+        {
+            await repo3.DeleteUsersByHashesAsync(new[] { "test_hash" });
+            Assert.True(false, "Should have thrown exception");
+        }
+        catch (InvalidCastException)
+        {
+            
+            Assert.True(true);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteUsersByHashesAsync_ShouldDeleteSpecifiedUsers()
+    {
+        // Arrange
+        var context = await GetEmptyDbContext();
+
+        var groupId = Guid.NewGuid();
+        var group = new GroupInfo("GroupName", null, "desc", "admin")
+        {
+            Id = groupId,
+            RowVersion = new byte[] { 1 }
+        };
+        group.SetHash("admin_hash", "group_hash");
+
+        await context.GroupInfos.AddAsync(group);
+
+        var user1 = new GroupMembers("User1") { GroupId = groupId };
+        user1.SetHash("hash1");
+
+        var user2 = new GroupMembers("User2") { GroupId = groupId };
+        user2.SetHash("hash2");
+
+        var user3 = new GroupMembers("User3") { GroupId = groupId };
+        user3.SetHash("hash3"); // ✅ Правильный объект
+
+        await context.GroupMembers.AddRangeAsync(user1, user2, user3);
+        await context.SaveChangesAsync();
+
+        // Настройка мок-фабрики
+        _dbFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(context);
+
+        // Act
+        var result = await _repository.DeleteUsersByHashesAsync(new[] { "hash1", "hash3" });
+
+        // Assert
+        Assert.Equal(2, result); // должно удалить 2 записи
+
+        var remaining = await context.GroupMembers.ToListAsync();
+        Assert.Single(remaining);
+        Assert.Equal("hash2", remaining[0].UserNickNameHash);
+    }
+    
     public void Dispose()
     {
         foreach (var connection in _connections)

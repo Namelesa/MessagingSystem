@@ -13,7 +13,7 @@ public sealed class GroupInfo(string groupName, string? image, string descriptio
     public string Admin { get; private set; } = admin;
     public string? AdminHash { get; private set; }
     public List<GroupMembers> Members { get; private set; } = [];
-    [Timestamp] public byte[] RowVersion { get; set; } = [];
+    [Timestamp] public byte[]? RowVersion { get; set; } = [];
 
     private const int MaxMembersCount = 40;
 
@@ -75,16 +75,6 @@ public sealed class GroupInfo(string groupName, string? image, string descriptio
         foreach (var member in Members.Where(member
                      => !string.IsNullOrWhiteSpace(member.UserNickName)))
             member.UserNickName = encryptFunc(member.UserNickName);
-    }
-    
-    public void DeleteUsers(IEnumerable<string> userNicks)
-    {
-        var toRemove = new HashSet<string>(
-            userNicks.Where(n => !string.IsNullOrWhiteSpace(n))
-                .Select(n => n.Trim()),
-            StringComparer.Ordinal);
-
-        Members.RemoveAll(m => toRemove.Contains(m.UserNickName));
     }
     
     public void SetHash(string adminHash, string groupNameHash)

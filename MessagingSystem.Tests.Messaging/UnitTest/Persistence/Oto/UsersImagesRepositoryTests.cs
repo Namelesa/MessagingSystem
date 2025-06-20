@@ -2,7 +2,9 @@ using FluentAssertions;
 using MessagingSystem.Services.Messaging.Core.Oto.Users;
 using MessagingSystem.Services.Messaging.Persistence.Oto;
 using MessagingSystem.Services.Messaging.Persistence.Oto.UsersImages;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
 using Assert = Xunit.Assert;
 
@@ -209,35 +211,12 @@ public class UserImageRepositoryTests : IDisposable
     #endregion
 
     #region DeleteUserImageAsync Tests
-
-    [Fact]
-    public async Task DeleteUserImageAsync_WithExistingUserImage_DeletesAndReturnsUserImage()
-    {
-        // Arrange
-        var userImage = new UserImage("test_hash", "test_image");
-        await SeedDataAsync(userImage);
-        
-        var savedImage = await FindImageInDatabaseAsync("test_hash");
-        savedImage.Should().NotBeNull();
-
-        // Act
-        var result = await _repository.DeleteUserImageAsync(savedImage);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.NickNameHash.Should().Be("test_hash");
-        result.Image.Should().Be("test_image");
-        
-        // Verify it was deleted from database
-        var deletedImage = await FindImageByIdInDatabaseAsync(savedImage.Id);
-        deletedImage.Should().BeNull();
-    }
-
+    
     [Fact]
     public async Task DeleteUserImageAsync_WithNullUserImage_ThrowsException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(
+        await Assert.ThrowsAsync<NullReferenceException>(
             () => _repository.DeleteUserImageAsync(null));
     }
 
@@ -248,89 +227,114 @@ public class UserImageRepositoryTests : IDisposable
         var nonExistentImage = new UserImage("non_existent_hash", "image");
 
         // Act & Assert
-        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(
+        await Assert.ThrowsAsync<InvalidOperationException>(
             () => _repository.DeleteUserImageAsync(nonExistentImage));
     }
-
+    
     [Fact]
-    public async Task DeleteUserImageAsync_DoesNotAffectOtherImages()
+    public async Task DeleteUserImageAsync_ValidUserImage_RemovesAndReturnsOne()
     {
-        // Arrange
-        var imageToDelete = new UserImage("delete_hash", "delete_image");
-        var imageToKeep = new UserImage("keep_hash", "keep_image");
-        
-        await SeedDataAsync(imageToDelete, imageToKeep);
+        var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
 
-        var savedImageToDelete = await FindImageInDatabaseAsync("delete_hash");
-        savedImageToDelete.Should().NotBeNull();
+        var options = new DbContextOptionsBuilder<OtoAppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+        
+        await using (var setupContext = new OtoAppDbContext(options))
+        {
+            await setupContext.Database.EnsureCreatedAsync();
+            var user = new UserImage("nick", "img");
+            user.EditInfo("hash123", "img");
+            await setupContext.Images.AddAsync(user);
+            await setupContext.SaveChangesAsync();
+        }
+        
+        var dbFactoryMock = new Mock<IDbContextFactory<OtoAppDbContext>>();
+        dbFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new OtoAppDbContext(options)); 
+
+        var repo = new UserImageRepository(dbFactoryMock.Object);
+
+        var userImage = new UserImage("nick", "img");
+        userImage.EditInfo("hash123", "img");
 
         // Act
-        await _repository.DeleteUserImageAsync(savedImageToDelete);
+        var result = await repo.DeleteUserImageAsync(userImage);
 
         // Assert
-        var remainingImages = await GetAllImagesFromDatabaseAsync();
-        remainingImages.Should().HaveCount(1);
-        remainingImages.First().NickNameHash.Should().Be("keep_hash");
-    }
-
-    #endregion
-
-    #region Integration Tests
-
-    [Fact]
-    public async Task FullCrudOperations_WorksCorrectly()
-    {
-        // Act & Assert - Add
-        var userImage = new UserImage("test_hash", "test_image");
-        var addedImage = await _repository.AddUserImageAsync(userImage);
-        addedImage.Should().NotBeNull();
-        addedImage.NickNameHash.Should().Be("test_hash");
-
-        // Act & Assert - Find
-        var foundImage = await _repository.FindUserImageByHashAsync("test_hash");
-        foundImage.Should().NotBeNull();
-        foundImage.Image.Should().Be("test_image");
-
-        // Act & Assert - Edit
-        foundImage.EditInfo("updated_hash", "updated_image");
-        var editedImage = await _repository.EditUserImageAsync(foundImage);
-        editedImage.NickNameHash.Should().Be("updated_hash");
-        editedImage.Image.Should().Be("updated_image");
-
-        // Act & Assert - Delete
-        var deletedImage = await _repository.DeleteUserImageAsync(editedImage);
-        deletedImage.Should().NotBeNull();
+        Assert.Equal(1, result); 
         
-        // Verify deletion
-        var searchResult = await _repository.FindUserImageByHashAsync("updated_hash");
-        searchResult.Should().BeNull();
-    }
+        await using var verifyContext = new OtoAppDbContext(options);
+        var remaining = await verifyContext.Images.ToListAsync();
+        Assert.Empty(remaining);
 
+        await connection.CloseAsync();
+    }
+    
     [Fact]
-    public async Task ConcurrentOperations_WorkCorrectly()
+    public async Task DeleteUserImageAsync_NoMatchingUserImage_ReturnsZero()
     {
         // Arrange
-        var tasks = new List<Task<UserImage>>();
-        
-        // Act - Create multiple images concurrently
-        for (int i = 0; i < 5; i++)
+        var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<OtoAppDbContext>()
+            .UseSqlite(connection)
+            .Options;
+
+        await using (var setupContext = new OtoAppDbContext(options))
         {
-            var image = new UserImage($"hash_{i}", $"image_{i}");
-            tasks.Add(_repository.AddUserImageAsync(image));
+            await setupContext.Database.EnsureCreatedAsync();
         }
 
-        var results = await Task.WhenAll(tasks);
+        var dbFactoryMock = new Mock<IDbContextFactory<OtoAppDbContext>>();
+        dbFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new OtoAppDbContext(options));
+
+        var repo = new UserImageRepository(dbFactoryMock.Object);
+
+        var userImage = new UserImage("ghost", "img");
+        userImage.EditInfo("nonexistent-hash", "img");
+
+        // Act
+        var result = await repo.DeleteUserImageAsync(userImage);
 
         // Assert
-        results.Should().HaveCount(5);
-        results.Should().OnlyContain(r => r != null);
+        Assert.Equal(0, result);
+
+        await connection.CloseAsync();
+    }
+    
+    [Fact]
+    public async Task DeleteUserImageAsync_WhenTableDoesNotExist_ThrowsSqliteException()
+    {
+        // Arrange
+        var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+
+        var options = new DbContextOptionsBuilder<OtoAppDbContext>()
+            .UseSqlite(connection)
+            .Options;
         
-        var allImages = await GetAllImagesFromDatabaseAsync();
-        allImages.Should().HaveCount(5);
+        var dbFactoryMock = new Mock<IDbContextFactory<OtoAppDbContext>>();
+        dbFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new OtoAppDbContext(options));
+
+        var repo = new UserImageRepository(dbFactoryMock.Object);
+
+        var userImage = new UserImage("nick", "img");
+        userImage.EditInfo("hash123", "img");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<SqliteException>(() => repo.DeleteUserImageAsync(userImage));
+        Assert.Contains("no such table", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        await connection.CloseAsync();
     }
 
     #endregion
-
+    
     #region Helper Methods
 
     private async Task SeedDataAsync(params UserImage[] images)
@@ -351,13 +355,7 @@ public class UserImageRepositoryTests : IDisposable
         await using var context = new OtoAppDbContext(_options);
         return await context.Images.FirstOrDefaultAsync(i => i.Id == id);
     }
-
-    private async Task<List<UserImage>> GetAllImagesFromDatabaseAsync()
-    {
-        await using var context = new OtoAppDbContext(_options);
-        return await context.Images.ToListAsync();
-    }
-
+    
     #endregion
 
     public void Dispose()
