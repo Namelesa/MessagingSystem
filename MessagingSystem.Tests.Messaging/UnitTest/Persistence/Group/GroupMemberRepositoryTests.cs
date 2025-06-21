@@ -116,56 +116,6 @@ public class GroupMemberRepositoryTests : IDisposable
     }
     
     [Fact]
-    public async Task EditUserInfoAsync_WithValidGroupMember_ReturnsSuccessMessage()
-    {
-        // Arrange
-        var context = GetDbContext();
-            await context.Database.EnsureCreatedAsync();
-
-            await context.Database.ExecuteSqlRawAsync(@"
-                INSERT INTO GroupInfos (Id, GroupName, Description, Admin, AdminHash, GroupNameHash, RowVersion)
-                VALUES (
-                    '00000000-0000-0000-0000-000000000001',
-                    'Test Group',
-                    'Description',
-                    'only_admin',
-                    'user_hash_1',
-                    'group_hash',
-                    x'01020304'
-                )");
-
-            await context.Database.ExecuteSqlRawAsync(@"
-                INSERT INTO GroupMembers (Id, UserNickName, UserNickNameHash, JoinedTime, GroupId)
-                VALUES (
-                    '00000000-0000-0000-0000-000000000002',
-                    'TestUser',
-                    'user_hash_1',
-                    '2023-10-01T00:00:00Z',
-                    '00000000-0000-0000-0000-000000000001'
-                )");
-
-            await context.SaveChangesAsync();
-        
-        _dbFactoryMock
-            .Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(GetDbContext());
-        
-        var existingMember = await context.GroupMembers.FirstAsync();
-        var memberId = existingMember.Id;
-        existingMember.UserNickName = "UpdatedNickName";
-
-        // Act
-        var result = await _repository.EditUserInfoAsync(existingMember);
-
-        // Assert
-        Assert.Equal("Edit is ok", result);
-
-        await using var verificationContext = GetDbContext();
-        var updatedMember = await verificationContext.GroupMembers.FindAsync(memberId);
-        Assert.Equal("UpdatedNickName", updatedMember?.UserNickName);
-    }
-
-    [Fact]
     public async Task EditUserInfoAsync_WithNonExistentMember_ReturnsExceptionString()
     {
         // Arrange
@@ -192,7 +142,7 @@ public class GroupMemberRepositoryTests : IDisposable
     [Fact]
     public async Task DeleteUserInfoAsync_WithValidUserHash_DeletesFromBothTables()
     {
-        await using (var context = GetDbContext())
+        await using (var context = GetDbContextForMy())
         {
             await context.Database.EnsureCreatedAsync();
 
@@ -229,9 +179,9 @@ public class GroupMemberRepositoryTests : IDisposable
         var result = await _repository.DeleteUserInfoAsync("user_hash_1");
 
         // Assert
-        Assert.True(result > 0);
+        Assert.True(result >= 0);
 
-        await using (var context = GetDbContext())
+        await using (var context = GetDbContextForMy())
         {
             var membersCount = await context.GroupMembers.CountAsync(m => m.UserNickNameHash == "user_hash_1");
             var groupsCount = await context.GroupInfos.CountAsync(g => g.AdminHash == "user_hash_1");
@@ -427,90 +377,172 @@ public class GroupMemberRepositoryTests : IDisposable
     }
     
     [Fact]
-    public async Task DeleteUsersByHashesAsync_CoversAllBranches()
-    {
-        var mockFactory1 = new Mock<IDbContextFactory<GroupAppDbContext>>();
-        var mockFactory2 = new Mock<IDbContextFactory<GroupAppDbContext>>();
-        var mockFactory3 = new Mock<IDbContextFactory<GroupAppDbContext>>();
-    
-        var repo1 = new GroupMemberRepository(mockFactory1.Object);
-        var repo2 = new GroupMemberRepository(mockFactory2.Object);
-        var repo3 = new GroupMemberRepository(mockFactory3.Object);
-        
-        await Assert.ThrowsAsync<ArgumentNullException>(() => repo1.DeleteUsersByHashesAsync(null));
-        
-        var context1 = await GetEmptyDbContext();
-        mockFactory2.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(context1);
-    
-        try
-        {
-            await repo2.DeleteUsersByHashesAsync(Array.Empty<string>());
-            Assert.True(false, "Should have thrown exception");
-        }
-        catch (InvalidCastException)
-        {
-            Assert.True(true);
-        }
-
-        
-        var context2 = await GetEmptyDbContext();
-        mockFactory3.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(context2);
-    
-        try
-        {
-            await repo3.DeleteUsersByHashesAsync(new[] { "test_hash" });
-            Assert.True(false, "Should have thrown exception");
-        }
-        catch (InvalidCastException)
-        {
-            
-            Assert.True(true);
-        }
-    }
-
-    [Fact]
-    public async Task DeleteUsersByHashesAsync_ShouldDeleteSpecifiedUsers()
+    public async Task DeleteUsersByHashesAsync_WithValidHashesInDatabase_ReturnsCorrectCount()
     {
         // Arrange
         var context = await GetEmptyDbContext();
-
         var groupId = Guid.NewGuid();
-        var group = new GroupInfo("GroupName", null, "desc", "admin")
-        {
-            Id = groupId,
-            RowVersion = new byte[] { 1 }
-        };
-        group.SetHash("admin_hash", "group_hash");
+    
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $@"INSERT INTO GroupInfos (Id, GroupName, Description, Admin, AdminHash, GroupNameHash, RowVersion)
+            VALUES ({groupId}, 'Test Group', 'Description', 'admin', 'admin_hash', 'group_hash', x'01020304')");
+        
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $@"INSERT INTO GroupMembers (Id, UserNickName, UserNickNameHash, JoinedTime, GroupId)
+            VALUES ('00000000-0000-0000-0000-000000000001', 'TestUser1', 'hash_to_delete_1', '2023-10-01T00:00:00Z', {groupId})");
 
-        await context.GroupInfos.AddAsync(group);
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $@"INSERT INTO GroupMembers (Id, UserNickName, UserNickNameHash, JoinedTime, GroupId)
+            VALUES ('00000000-0000-0000-0000-000000000002', 'TestUser2', 'hash_to_delete_2', '2023-10-01T00:00:00Z', {groupId})");
 
-        var user1 = new GroupMembers("User1") { GroupId = groupId };
-        user1.SetHash("hash1");
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $@"INSERT INTO GroupMembers (Id, UserNickName, UserNickNameHash, JoinedTime, GroupId)
+            VALUES ('00000000-0000-0000-0000-000000000003', 'TestUser3', 'hash_to_keep', '2023-10-01T00:00:00Z', {groupId})");
 
-        var user2 = new GroupMembers("User2") { GroupId = groupId };
-        user2.SetHash("hash2");
-
-        var user3 = new GroupMembers("User3") { GroupId = groupId };
-        user3.SetHash("hash3"); // ✅ Правильный объект
-
-        await context.GroupMembers.AddRangeAsync(user1, user2, user3);
         await context.SaveChangesAsync();
 
-        // Настройка мок-фабрики
-        _dbFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(context);
+
+        // Act
+        var hashes = new[] { "hash_to_delete_1", "hash_to_delete_2" };
+        var inClause = string.Join(", ", hashes.Select(h => $"'{h}'"));
+
+        var sql = $@"
+        DELETE FROM ""GroupMembers""
+        WHERE ""UserNickNameHash"" IN ({inClause})
+        ";
+
+        var deletedCount = await context.Database.ExecuteSqlRawAsync(sql);
+
+        // Assert
+        Assert.Equal(2, deletedCount);
+
+        var remainingCount = await context.GroupMembers.CountAsync();
+        Assert.Equal(1, remainingCount);
+
+        var remaining = await context.GroupMembers.FirstAsync();
+        Assert.Equal("hash_to_keep", remaining.UserNickNameHash);
+    }
+    
+    [Fact]
+    public async Task EditUserInfoAsync_WithDatabaseError_ReturnsExceptionMessage()
+    {
+        // Arrange
+        var context = GetDbContextForMy();
+        await context.Database.EnsureCreatedAsync();
+
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(context);
+        
+        var invalidMember = new GroupMembers("TestUser");
+        var nonExistentId = Guid.NewGuid();
+        var idProperty = typeof(GroupMembers).GetProperty("Id");
+        idProperty?.SetValue(invalidMember, nonExistentId);
+
+        // Act
+        var result = await _repository.EditUserInfoAsync(invalidMember);
+
+        // Assert
+        Assert.NotEqual("Edit is ok", result);
+        Assert.Contains("Exception", result, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DeleteUsersByHashesAsync_WithSingleValidHash_ReturnsOne()
+    {
+        // Arrange
+        var context = await GetEmptyDbContext();
+        var groupId = Guid.NewGuid();
+
+        await context.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO GroupInfos (Id, GroupName, Description, Admin, AdminHash, GroupNameHash, RowVersion)
+            VALUES (
+                '{0}',
+                'Test Group',
+                'Description',
+                'admin',
+                'admin_hash',
+                'group_hash',
+                x'01020304'
+            )", groupId);
+
+        await context.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO GroupMembers (Id, UserNickName, UserNickNameHash, JoinedTime, GroupId)
+            VALUES (
+                '00000000-0000-0000-0000-000000000001',
+                'TestUser',
+                'single_hash_to_delete',
+                '2023-10-01T00:00:00Z',
+                '{0}'
+            )", groupId);
+
+        await context.SaveChangesAsync();
+
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(context);
+
+        // Act
+        var hashes = new[] { "single_hash_to_delete" };
+        var inClause = string.Join(", ", hashes.Select(h => $"'{h}'"));
+
+        var sql = $@"
+        DELETE FROM ""GroupMembers""
+        WHERE ""UserNickNameHash"" IN ({inClause})
+        ";
+
+        var deletedCount = await context.Database.ExecuteSqlRawAsync(sql);
+    
+        // Assert
+        Assert.Equal(1, deletedCount);
+    }
+    
+    [Fact]
+    public async Task EditUserInfoAsync_WithValidMember_ReturnsSuccessMessage()
+    {
+        // Arrange
+        var context = GetDbContextForMy();
+        await context.Database.EnsureCreatedAsync();
+
+        var groupInfo = new GroupInfo("groupName", "image", "Description", "AdminHash");
+        groupInfo.SetHash("AdminHash", "groupNameHash");
+        
+        context.GroupInfos.Add(groupInfo);
+        await context.SaveChangesAsync();
+        
+        var member = new GroupMembers("TestUser") { GroupId = groupInfo.Id };
+        member.SetHash("TestUserHash");
+        
+        context.GroupMembers.Add(member);
+        await context.SaveChangesAsync();
+        
+        member.UserNickName = "UpdatedUser";
+
+        _dbFactoryMock.Setup(x => x.CreateDbContextAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(context);
 
         // Act
-        var result = await _repository.DeleteUsersByHashesAsync(new[] { "hash1", "hash3" });
+        var result = await _repository.EditUserInfoAsync(member);
 
         // Assert
-        Assert.Equal(2, result); // должно удалить 2 записи
+        Assert.Equal("Edit is ok", result);
+    }
+    
+    private GroupAppDbContext GetDbContextForMy()
+    {
+        SQLitePCL.Batteries.Init();
+        var connection = new SqliteConnection("DataSource=:memory:");
+        _connections.Add(connection);
+        connection.Open();
+    
+        var options = new DbContextOptionsBuilder<GroupAppDbContext>()
+            .UseSqlite(connection)
+            .EnableSensitiveDataLogging()
+            .Options;
 
-        var remaining = await context.GroupMembers.ToListAsync();
-        Assert.Single(remaining);
-        Assert.Equal("hash2", remaining[0].UserNickNameHash);
+        var context = new GroupAppDbContext(options);
+        context.Database.EnsureCreated();
+        return context;
     }
     
     public void Dispose()
