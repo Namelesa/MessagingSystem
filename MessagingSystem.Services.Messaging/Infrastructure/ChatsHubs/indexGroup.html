@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тест Group Chat Hub</title>
+    <title>Group Chat Hub Test</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <style>
         body {
@@ -25,7 +25,7 @@
             padding: 15px;
             border-radius: 5px;
         }
-        input, textarea, button {
+        input, textarea, button, select {
             margin: 5px;
             padding: 8px;
         }
@@ -52,70 +52,131 @@
             font-family: monospace;
             font-size: 12px;
         }
+        .current-group {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .message-item {
+            border: 1px solid #ddd;
+            padding: 8px;
+            margin: 3px 0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .small-input {
+            width: 80px;
+        }
     </style>
 </head>
 <body>
-<h1>Тест Group Chat Hub</h1>
+<h1>Group Chat Hub Test</h1>
 
-<div id="status" class="status disconnected">Отключено</div>
+<div id="status" class="status disconnected">Disconnected</div>
 
-<div class="section">
-    <h3>Подключение</h3>
-    <button onclick="connect()">Подключиться</button>
-    <button onclick="disconnect()">Отключиться</button>
+<div class="current-group" id="currentGroup" style="display: none;">
+    <strong>Current Group:</strong> <span id="currentGroupName"></span> (ID: <span id="currentGroupId"></span>)
 </div>
 
 <div class="section">
-    <h3>Создать группу</h3>
-    <input type="text" id="groupName" placeholder="Название группы" value="Тестовая группа">
-    <br>
-    <textarea id="groupDesc" placeholder="Описание">Описание тестовой группы</textarea>
-    <br>
-    <input type="text" id="groupMembers" placeholder="Участники через запятую" value="user1,user2">
-    <br>
-    <button onclick="createGroup()">Создать группу</button>
+    <h3>Connection</h3>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
 </div>
 
 <div class="section">
-    <h3>Мои группы</h3>
-    <button onclick="loadGroups()">Загрузить группы</button>
+    <h3>Create Group</h3>
+    <input type="text" id="groupName" placeholder="Group Name" value="Test">
+    <br>
+    <textarea id="groupDesc" placeholder="Description">Description</textarea>
+    <br>
+    <input type="text" id="groupMembers" placeholder="Users" value="user1,user2">
+    <br>
+    <button onclick="createGroup()">Create Group</button>
+</div>
+
+<div class="section">
+    <h3>My Groups</h3>
+    <button onclick="loadGroups()">Load Groups</button>
     <div id="groupsList"></div>
 </div>
 
 <div class="section">
-    <h3>Редактировать группу</h3>
-    <input type="text" id="editGroupId" placeholder="ID группы для редактирования">
+    <h3>Edit Group</h3>
+    <input type="text" id="editGroupId" placeholder="Group ID to edit" value="">
     <br>
-    <input type="text" id="editGroupName" placeholder="Новое название группы">
+    <input type="text" id="editGroupName" placeholder="New group name" value="">
     <br>
-    <textarea id="editGroupDesc" placeholder="Новое описание"></textarea>
+    <textarea id="editGroupDesc" placeholder="New description"></textarea>
     <br>
-    <button onclick="editGroup()">Редактировать группу</button>
+    <button onclick="editGroup()">Edit Group</button>
 </div>
 
 <div class="section">
-    <h3>Управление группой</h3>
-    <input type="text" id="groupId" placeholder="ID группы">
+    <h3>Group Management</h3>
+    <input type="text" id="groupId" placeholder="Group ID">
     <br>
-    <button onclick="joinGroup()">Войти в группу</button>
-    <button onclick="leaveGroup()">Покинуть группу</button>
-    <button onclick="deleteGroup()">Удалить группу</button>
+    <button onclick="joinGroup()">Join Group</button>
+    <button onclick="leaveGroup()">Leave Group</button>
+    <button onclick="deleteGroup()">Delete Group</button>
     <br>
-    <input type="text" id="membersToAdd" placeholder="Участники для добавления (через запятую)">
-    <button onclick="addMembers()">Добавить участников</button>
+    <input type="text" id="membersToAdd" placeholder="Members to add (comma separated)">
+    <button onclick="addMembers()">Add Members</button>
     <br>
-    <input type="text" id="membersToRemove" placeholder="Участники для удаления (через запятую)">
-    <button onclick="removeMembers()">Удалить участников</button>
+    <input type="text" id="membersToRemove" placeholder="Members to remove (comma separated)">
+    <button onclick="removeMembers()">Remove Members</button>
 </div>
 
 <div class="section">
-    <h3>Лог</h3>
-    <button onclick="clearLog()">Очистить лог</button>
+    <h3>Messages</h3>
+    <div style="margin-bottom: 10px;">
+        <input type="number" id="historyTake" placeholder="Count" value="20" class="small-input">
+        <button onclick="loadChatHistory()">Load History</button>
+    </div>
+    <div id="messagesHistory" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;"></div>
+
+    <div style="margin-top: 10px;">
+        <textarea id="messageContent" placeholder="Enter message..." style="width: 70%; height: 60px;"></textarea>
+        <br>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<div class="section">
+    <h3>Message Management</h3>
+    <input type="text" id="messageId" placeholder="Message ID">
+    <br>
+    <input type="text" id="editMessageContent" placeholder="New message text">
+    <button onclick="editMessage()">Edit</button>
+    <br>
+    <button onclick="softDeleteMessage()">Soft Delete</button>
+    <button onclick="deleteMessage()">Delete Forever</button>
+    <br>
+    <input type="text" id="replyMessageId" placeholder="Message ID to reply">
+    <input type="text" id="replyContent" placeholder="Reply text">
+    <button onclick="replyToMessage()">Reply</button>
+</div>
+
+<div class="section">
+    <h3>Message Search</h3>
+    <input type="text" id="searchSender" placeholder="Sender">
+    <input type="text" id="searchRecipient" placeholder="Recipient">
+    <input type="datetime-local" id="searchTime">
+    <button onclick="findMessages()">Find</button>
+    <div id="searchResults"></div>
+</div>
+
+<div class="section">
+    <h3>Log</h3>
+    <button onclick="clearLog()">Clear Log</button>
     <div id="log" class="log"></div>
 </div>
 
 <script>
     let connection = null;
+    let currentGroupId = null;
+    let currentGroupName = null;
     const BASE_URL = "https://localhost:7275";
 
     function log(message) {
@@ -132,12 +193,26 @@
     function updateStatus(connected) {
         const statusDiv = document.getElementById('status');
         if (connected) {
-            statusDiv.textContent = 'Подключено';
+            statusDiv.textContent = 'Connected';
             statusDiv.className = 'status connected';
         } else {
-            statusDiv.textContent = 'Отключено';
+            statusDiv.textContent = 'Disconnected';
             statusDiv.className = 'status disconnected';
         }
+    }
+
+    function setCurrentGroup(groupId, groupName) {
+        currentGroupId = groupId;
+        currentGroupName = groupName;
+
+        document.getElementById('currentGroupId').textContent = groupId;
+        document.getElementById('currentGroupName').textContent = groupName;
+        document.getElementById('currentGroup').style.display = 'block';
+
+        document.getElementById('groupId').value = groupId;
+        document.getElementById('editGroupId').value = groupId;
+
+        log(`Selected group: ${groupName} (${groupId})`);
     }
 
     async function connect() {
@@ -148,35 +223,69 @@
                 .configureLogging(signalR.LogLevel.Information)
                 .build();
 
-            // Обработчики событий
             connection.on("GroupMembersAdded", (group) => {
-                log(`Участники добавлены в группу: ${JSON.stringify(group, null, 2)}`);
+                log(`Members added to group: ${JSON.stringify(group, null, 2)}`);
             });
 
             connection.on("GroupMembersRemoved", (group) => {
-                log(`Участники удалены из группы: ${JSON.stringify(group, null, 2)}`);
+                log(`Members removed from group: ${JSON.stringify(group, null, 2)}`);
+            });
+
+            connection.on("ReceiveMessage", (message) => {
+                log(`Message received: ${JSON.stringify(message, null, 2)}`);
+                if (currentGroupId) {
+                    loadChatHistory();
+                }
+            });
+
+            connection.on("MessageEdited", (editInfo) => {
+                log(`Message edited: ${JSON.stringify(editInfo, null, 2)}`);
+                if (currentGroupId) {
+                    loadChatHistory();
+                }
+            });
+
+            connection.on("MessageSoftDeleted", (messageId) => {
+                log(`Message soft deleted: ${messageId}`);
+                if (currentGroupId) {
+                    loadChatHistory();
+                }
+            });
+
+            connection.on("MessageDeleted", (messageId) => {
+                log(`Message deleted: ${messageId}`);
+                if (currentGroupId) {
+                    loadChatHistory();
+                }
+            });
+
+            connection.on("MessageReplied", (replyData) => {
+                log(`Message replied: ${JSON.stringify(replyData, null, 2)}`);
+                if (currentGroupId) {
+                    loadChatHistory();
+                }
             });
 
             connection.onclose((error) => {
-                log(`Соединение закрыто: ${error || 'Неизвестная ошибка'}`);
+                log(`Connection closed: ${error || 'Unknown error'}`);
                 updateStatus(false);
             });
 
             connection.onreconnected(() => {
-                log('Переподключено');
+                log('Reconnected');
                 updateStatus(true);
             });
 
             connection.onreconnecting((error) => {
-                log(`Переподключение: ${error || 'Неизвестная ошибка'}`);
+                log(`Reconnecting: ${error || 'Unknown error'}`);
                 updateStatus(false);
             });
 
             await connection.start();
-            log('Подключено к SignalR hub');
+            log('Connected to SignalR hub');
             updateStatus(true);
         } catch (error) {
-            log(`Ошибка подключения: ${error.message}`);
+            log(`Connection error: ${error.message}`);
             updateStatus(false);
         }
     }
@@ -184,14 +293,14 @@
     async function disconnect() {
         if (connection) {
             await connection.stop();
-            log('Отключено от SignalR hub');
+            log('Disconnected from SignalR hub');
             updateStatus(false);
         }
     }
 
     async function createGroup() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
@@ -208,32 +317,31 @@
                 users: members
             };
 
-            log(`Создание группы: ${JSON.stringify(groupData)}`);
+            log(`Creating group: ${JSON.stringify(groupData)}`);
 
             const result = await connection.invoke("CreateGroupAsync", groupData);
-            log(`Группа создана: ${JSON.stringify(result, null, 2)}`);
+            log(`Group created: ${JSON.stringify(result, null, 2)}`);
 
-            // Автоматически заполняем ID созданной группы
-            document.getElementById('groupId').value = result.id;
+            setCurrentGroup(result.id, result.groupName);
 
         } catch (error) {
-            log(`Ошибка создания группы: ${error.message}`);
+            log(`Group creation error: ${error.message}`);
         }
     }
 
     async function editGroup() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
-            const groupId = document.getElementById('editGroupId').value;
+            const groupId = document.getElementById('editGroupId').value || currentGroupId;
             const groupName = document.getElementById('editGroupName').value;
             const description = document.getElementById('editGroupDesc').value;
 
             if (!groupId) {
-                log('Введите ID группы');
+                log('Enter group ID');
                 return;
             }
 
@@ -242,25 +350,29 @@
                 description: description
             };
 
-            log(`Редактирование группы: ${JSON.stringify(editData)}`);
+            log(`Editing group: ${JSON.stringify(editData)}`);
 
             const result = await connection.invoke("EditGroupAsync", groupId, editData);
-            log(`Группа отредактирована: ${JSON.stringify(result, null, 2)}`);
+            log(`Group edited: ${JSON.stringify(result, null, 2)}`);
+
+            if (currentGroupId === groupId) {
+                setCurrentGroup(result.id, result.groupName);
+            }
 
         } catch (error) {
-            log(`Ошибка редактирования группы: ${error.message}`);
+            log(`Group edit error: ${error.message}`);
         }
     }
 
     async function loadGroups() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
             const groups = await connection.invoke("GetAllGroupForUserAsync");
-            log(`Загружены группы: ${JSON.stringify(groups, null, 2)}`);
+            log(`Groups loaded: ${JSON.stringify(groups, null, 2)}`);
 
             const groupsList = document.getElementById('groupsList');
             groupsList.innerHTML = '';
@@ -269,155 +381,381 @@
                 const div = document.createElement('div');
                 div.className = 'group-item';
                 div.innerHTML = `
-                <strong>${group.groupName}</strong> (ID: ${group.groupId})<br>
-                Описание: ${group.description || 'Нет'}<br>
-                Админ: ${group.admin}<br>
-                Участники: ${group.users ? group.users.join(', ') : 'Нет'}
-                <button onclick="document.getElementById('groupId').value='${group.groupId}'">Выбрать</button>
-                <button onclick="fillEditForm('${group.groupId}', '${group.groupName}', '${group.description || ''}')">Редактировать</button>
+                <strong>${group.groupName}</strong> (ID: ${group.id || group.groupId})<br>
+                Description: ${group.description || 'None'}<br>
+                Admin: ${group.admin}<br>
+                Members: ${group.users ? group.users.join(', ') : 'None'}
+                <button onclick="selectGroup('${group.id || group.groupId}', '${group.groupName}')">Select and Join</button>
+                <button onclick="fillEditForm('${group.id || group.groupId}', '${group.groupName}', '${group.description || ''}')">Edit</button>
             `;
                 groupsList.appendChild(div);
             });
 
         } catch (error) {
-            log(`Ошибка загрузки групп: ${error.message}`);
+            log(`Groups loading error: ${error.message}`);
         }
+    }
+
+    async function selectGroup(groupId, groupName) {
+        setCurrentGroup(groupId, groupName);
+        await joinGroup();
+        await loadChatHistory();
     }
 
     function fillEditForm(groupId, groupName, description) {
         document.getElementById('editGroupId').value = groupId;
         document.getElementById('editGroupName').value = groupName;
         document.getElementById('editGroupDesc').value = description;
-        log(`Заполнена форма редактирования для группы: ${groupName}`);
+        log(`Edit form filled for group: ${groupName}`);
     }
 
     async function joinGroup() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
-            const groupId = document.getElementById('groupId').value;
+            const groupId = document.getElementById('groupId').value || currentGroupId;
             if (!groupId) {
-                log('Введите ID группы');
+                log('Enter group ID');
                 return;
             }
 
             await connection.invoke("JoinGroupAsync", groupId);
-            log(`Вошли в группу: ${groupId}`);
+            log(`Joined group: ${groupId}`);
         } catch (error) {
-            log(`Ошибка входа в группу: ${error.message}`);
+            log(`Group join error: ${error.message}`);
         }
     }
 
     async function leaveGroup() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
-            const groupId = document.getElementById('groupId').value;
+            const groupId = document.getElementById('groupId').value || currentGroupId;
             if (!groupId) {
-                log('Введите ID группы');
+                log('Enter group ID');
                 return;
             }
 
             await connection.invoke("LeaveGroupAsync", groupId);
-            log(`Покинули группу: ${groupId}`);
+            log(`Left group: ${groupId}`);
         } catch (error) {
-            log(`Ошибка выхода из группы: ${error.message}`);
+            log(`Group leave error: ${error.message}`);
         }
     }
 
     async function deleteGroup() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
-            const groupId = document.getElementById('groupId').value;
+            const groupId = document.getElementById('groupId').value || currentGroupId;
             if (!groupId) {
-                log('Введите ID группы');
+                log('Enter group ID');
                 return;
             }
 
             const result = await connection.invoke("DeleteGroupAsync", groupId);
-            log(`Группа удалена: ${result}`);
+            log(`Group deleted: ${result}`);
+
+            if (currentGroupId === groupId) {
+                currentGroupId = null;
+                currentGroupName = null;
+                document.getElementById('currentGroup').style.display = 'none';
+            }
         } catch (error) {
-            log(`Ошибка удаления группы: ${error.message}`);
+            log(`Group deletion error: ${error.message}`);
         }
     }
 
     async function addMembers() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
-            const groupId = document.getElementById('groupId').value;
+            const groupId = document.getElementById('groupId').value || currentGroupId;
             const membersInput = document.getElementById('membersToAdd').value;
 
             if (!groupId) {
-                log('Введите ID группы');
+                log('Enter group ID');
                 return;
             }
 
             if (!membersInput) {
-                log('Введите участников');
+                log('Enter members');
                 return;
             }
 
             const members = membersInput.split(',').map(m => m.trim()).filter(m => m);
             const membersData = { users: members };
 
-            log(`Добавление участников: ${JSON.stringify(membersData)}`);
+            log(`Adding members: ${JSON.stringify(membersData)}`);
 
             const result = await connection.invoke("AddMembersToGroupAsync", groupId, membersData);
-            log(`Участники добавлены: ${JSON.stringify(result, null, 2)}`);
+            log(`Members added: ${JSON.stringify(result, null, 2)}`);
         } catch (error) {
-            log(`Ошибка добавления участников: ${error.message}`);
+            log(`Add members error: ${error.message}`);
         }
     }
 
     async function removeMembers() {
         if (!connection) {
-            log('Нет подключения');
+            log('No connection');
             return;
         }
 
         try {
-            const groupId = document.getElementById('groupId').value;
+            const groupId = document.getElementById('groupId').value || currentGroupId;
             const membersInput = document.getElementById('membersToRemove').value;
 
             if (!groupId) {
-                log('Введите ID группы');
+                log('Enter group ID');
                 return;
             }
 
             if (!membersInput) {
-                log('Введите участников');
+                log('Enter members');
                 return;
             }
 
             const members = membersInput.split(',').map(m => m.trim()).filter(m => m);
             const membersData = { users: members };
 
-            log(`Удаление участников: ${JSON.stringify(membersData)}`);
+            log(`Removing members: ${JSON.stringify(membersData)}`);
 
             const result = await connection.invoke("RemoveMembersFromGroupAsync", groupId, membersData);
-            log(`Участники удалены: ${JSON.stringify(result, null, 2)}`);
+            log(`Members removed: ${JSON.stringify(result, null, 2)}`);
         } catch (error) {
-            log(`Ошибка удаления участников: ${error.message}`);
+            log(`Remove members error: ${error.message}`);
         }
     }
 
-    // Автоматическое подключение при загрузке страницы
+    async function loadChatHistory() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const groupId = currentGroupId;
+            const take = parseInt(document.getElementById('historyTake').value) || 20;
+
+            if (!groupId) {
+                log('Select group');
+                return;
+            }
+
+            const messages = await connection.invoke("LoadChatHistoryAsync", groupId, take);
+            log(`History loaded: ${messages.length} messages`);
+
+            const historyDiv = document.getElementById('messagesHistory');
+            historyDiv.innerHTML = '';
+
+            messages.forEach(message => {
+                const div = document.createElement('div');
+                div.className = 'message-item';
+                div.innerHTML = `
+                <strong>${message.sender}</strong> (${new Date(message.sendTime).toLocaleString()})
+                ${message.isEdited ? '<em>[edited]</em>' : ''}
+                <br>${message.content}
+                <br><small>ID: ${message.id}</small>
+                <button onclick="document.getElementById('messageId').value='${message.id}'">Select</button>
+                <button onclick="document.getElementById('replyMessageId').value='${message.id}'">Reply</button>
+            `;
+                historyDiv.appendChild(div);
+            });
+
+        } catch (error) {
+            log(`Load history error: ${error.message}`);
+        }
+    }
+
+    async function sendMessage() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const content = document.getElementById('messageContent').value;
+            const groupId = currentGroupId;
+
+            if (!groupId) {
+                log('Select group');
+                return;
+            }
+
+            if (!content.trim()) {
+                log('Enter message text');
+                return;
+            }
+
+            const result = await connection.invoke("SendMessageAsync", content, groupId);
+            log(`Message sent: ${JSON.stringify(result, null, 2)}`);
+
+            document.getElementById('messageContent').value = '';
+            await loadChatHistory();
+
+        } catch (error) {
+            log(`Send message error: ${error.message}`);
+        }
+    }
+
+    async function editMessage() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const messageId = document.getElementById('messageId').value;
+            const content = document.getElementById('editMessageContent').value;
+
+            if (!messageId) {
+                log('Enter message ID');
+                return;
+            }
+
+            if (!content.trim()) {
+                log('Enter new message text');
+                return;
+            }
+
+            await connection.invoke("EditMessageAsync", messageId, content);
+            log(`Message edited: ${messageId}`);
+
+        } catch (error) {
+            log(`Edit message error: ${error.message}`);
+        }
+    }
+
+    async function softDeleteMessage() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const messageId = document.getElementById('messageId').value;
+
+            if (!messageId) {
+                log('Enter message ID');
+                return;
+            }
+
+            await connection.invoke("SofDeleteMessageAsync", messageId);
+            log(`Message soft deleted: ${messageId}`);
+
+        } catch (error) {
+            log(`Soft delete error: ${error.message}`);
+        }
+    }
+
+    async function deleteMessage() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const messageId = document.getElementById('messageId').value;
+
+            if (!messageId) {
+                log('Enter message ID');
+                return;
+            }
+
+            await connection.invoke("DeleteMessageAsync", messageId);
+            log(`Message deleted: ${messageId}`);
+
+        } catch (error) {
+            log(`Delete message error: ${error.message}`);
+        }
+    }
+
+    async function replyToMessage() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const messageId = document.getElementById('replyMessageId').value;
+            const content = document.getElementById('replyContent').value;
+            const groupId = currentGroupId;
+
+            if (!messageId) {
+                log('Enter message ID to reply');
+                return;
+            }
+
+            if (!content.trim()) {
+                log('Enter reply text');
+                return;
+            }
+
+            if (!groupId) {
+                log('Select group');
+                return;
+            }
+
+            const result = await connection.invoke("ReplyForMessageAsync", messageId, content, groupId);
+            log(`Reply sent: ${JSON.stringify(result, null, 2)}`);
+
+            document.getElementById('replyContent').value = '';
+
+        } catch (error) {
+            log(`Reply error: ${error.message}`);
+        }
+    }
+
+    async function findMessages() {
+        if (!connection) {
+            log('No connection');
+            return;
+        }
+
+        try {
+            const sender = document.getElementById('searchSender').value || null;
+            const recipient = document.getElementById('searchRecipient').value || null;
+            const timeInput = document.getElementById('searchTime').value;
+            const time = timeInput ? new Date(timeInput).toISOString() : null;
+
+            const results = await connection.invoke("FindMessageByFilterAsync", recipient, time, sender);
+            log(`Messages found: ${results.length}`);
+
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '';
+
+            results.forEach(message => {
+                const div = document.createElement('div');
+                div.className = 'message-item';
+                div.innerHTML = `
+                <strong>${message.sender}</strong> (${new Date(message.sentAt).toLocaleString()})
+                ${message.isEdited ? '<em>[edited]</em>' : ''}
+                <br>${message.content}
+                <br><small>ID: ${message.messageId}</small>
+                <button onclick="document.getElementById('messageId').value='${message.messageId}'">Select</button>
+            `;
+                resultsDiv.appendChild(div);
+            });
+
+        } catch (error) {
+            log(`Message search error: ${error.message}`);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        log('Страница загружена. Нажмите "Подключиться" для начала тестирования.');
+        log('Page loaded. Click "Connect" to start testing.');
     });
 </script>
 </body>

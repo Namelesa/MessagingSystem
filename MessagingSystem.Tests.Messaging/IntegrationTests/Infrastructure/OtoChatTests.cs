@@ -7,6 +7,7 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
+using MessagingSystem.Services.Messaging.Core;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 using MessagingSystem.Services.Messaging.WebApi;
@@ -25,13 +26,13 @@ using Assert = Xunit.Assert;
 
 namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure;
 
-public class OtoChatHubIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly Mock<IMessageOrchestrator> _messageOrchestratorMock;
     private readonly Mock<IChatOrchestrator> _chatOrchestratorMock;
 
-    public OtoChatHubIntegrationTests(WebApplicationFactory<Program> factory)
+    public OtoChatHubTests(WebApplicationFactory<Program> factory)
     {
         _messageOrchestratorMock = new Mock<IMessageOrchestrator>();
         _chatOrchestratorMock = new Mock<IChatOrchestrator>();
@@ -652,6 +653,121 @@ public class OtoChatHubIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         await connection.DisposeAsync();
     }
 
+    [Fact]
+    public async Task FindMessagesAsync_WithValidParameters_ShouldReturnMessages()
+{
+    // Arrange
+    var nickname = "testuser";
+    var recipient = "recipient1";
+    var filterDate = DateTime.UtcNow.AddDays(-1);
+    var sender = "sender1";
+
+    var messages = new List<Message>
+    {
+        new("sender1", "recipient1", "Message 1") { Id = Guid.NewGuid(), SendTime = filterDate},
+        new("sender1", "recipient1", "Message 2") { Id = Guid.NewGuid(), SendTime = filterDate.AddMinutes(10)}
+    };
+
+    _messageOrchestratorMock
+        .Setup(x => x.FindMessagesAsync(It.Is<MessageFilter>(f => 
+            f.Sender == sender && f.Date == filterDate)))
+        .ReturnsAsync(messages);
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    // Act
+    var result = await connection.InvokeAsync<List<object>>("FindMessagesAsync", recipient, filterDate, sender);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal(2, result.Count);
+
+    _messageOrchestratorMock.Verify(x => x.FindMessagesAsync(It.Is<MessageFilter>(f => 
+        f.Sender == sender && f.Date == filterDate)), Times.Once);
+
+    await connection.DisposeAsync();
+}
+
+    [Fact]
+    public async Task FindMessagesAsync_WithNullResults_ShouldReturnEmptyList()
+{
+    // Arrange
+    var nickname = "testuser";
+    var recipient = "recipient1";
+    var filterDate = DateTime.UtcNow;
+    var sender = "sender1";
+
+    _messageOrchestratorMock
+        .Setup(x => x.FindMessagesAsync(It.IsAny<MessageFilter>()))
+        .ReturnsAsync((List<Message>)null);
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    // Act
+    var result = await connection.InvokeAsync<List<object>>("FindMessagesAsync", recipient, filterDate, sender);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Empty(result);
+
+    await connection.DisposeAsync();
+}
+
+    [Fact]
+    public async Task FindMessagesAsync_WithEmptyResults_ShouldReturnEmptyList()
+{
+    // Arrange
+    var nickname = "testuser";
+    var recipient = "recipient1";
+    var filterDate = DateTime.UtcNow;
+    var sender = "sender1";
+
+    _messageOrchestratorMock
+        .Setup(x => x.FindMessagesAsync(It.IsAny<MessageFilter>()))
+        .ReturnsAsync(new List<Message>());
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    // Act
+    var result = await connection.InvokeAsync<List<object>>("FindMessagesAsync", recipient, filterDate, sender);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Empty(result);
+
+    await connection.DisposeAsync();
+}
+
+    [Fact]
+    public async Task FindMessagesAsync_WithNullParameters_ShouldCreateFilterCorrectly()
+{
+    // Arrange
+    var nickname = "testuser";
+    var messages = new List<Message>
+    {
+        new("sender1", "recipient1", "Message 1") { Id = Guid.NewGuid() }
+    };
+
+    _messageOrchestratorMock
+        .Setup(x => x.FindMessagesAsync(It.Is<MessageFilter>(f => 
+            f.Sender == null && f.Date == null)))
+        .ReturnsAsync(messages);
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    // Act
+    var result = await connection.InvokeAsync<List<object>>("FindMessagesAsync", null, null, null);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Single(result);
+
+    _messageOrchestratorMock.Verify(x => x.FindMessagesAsync(It.Is<MessageFilter>(f => 
+        f.Sender == null && f.Date == null)), Times.Once);
+
+    await connection.DisposeAsync();
+}
+    
     private async Task<HubConnection> CreateConnectionAsync(string nickname)
     {
         var token = GenerateJwtToken(nickname);

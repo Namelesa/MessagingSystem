@@ -3,6 +3,8 @@ using AutoMapper;
 using FluentAssertions;
 using MessagingSystem.Services.Messaging.Application;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.User;
@@ -23,6 +25,7 @@ public class MessagingControllerTests
 {
     private readonly Mock<IUserOrchestrator> _userOrchestratorMock;
     private readonly Mock<IMessageOrchestrator> _messageOrchestratorMock;
+    private readonly Mock<IChatOrchestrator> _chatOrchestratorMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly MessagingController _controller;
 
@@ -30,11 +33,13 @@ public class MessagingControllerTests
     {
         _userOrchestratorMock = new Mock<IUserOrchestrator>();
         _messageOrchestratorMock = new Mock<IMessageOrchestrator>();
+        _chatOrchestratorMock = new Mock<IChatOrchestrator>();
         _mapperMock = new Mock<IMapper>();
-        
+
         _controller = new MessagingController(
             _userOrchestratorMock.Object,
             _messageOrchestratorMock.Object,
+            _chatOrchestratorMock.Object,
             _mapperMock.Object);
     }
 
@@ -357,4 +362,48 @@ public class MessagingControllerTests
     }
 
     #endregion
+    
+    [Fact]
+    public async Task GetChatsAsync_ReturnsOkWithChats()
+    {
+        // Arrange
+        var nickName = "user1";
+        var expectedChats = new List<ChatDto>
+        {
+            new ChatDto { NickName = "user2", Image = "image1" },
+            new ChatDto { NickName = "user3", Image = "image2" }
+        };
+
+        _chatOrchestratorMock
+            .Setup(x => x.GetChatsAsync(nickName))
+            .ReturnsAsync(expectedChats);
+
+        // Act
+        var result = await _controller.GetChatsAsync(nickName);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(200, okResult.StatusCode);
+
+        var returnedChats = Assert.IsAssignableFrom<IEnumerable<ChatDto>>(okResult.Value);
+        Assert.Equal(expectedChats, returnedChats);
+    }
+
+    [Fact]
+    public async Task GetChatsAsync_WhenChatOrchestratorReturnsNull_ReturnsOkWithNull()
+    {
+        // Arrange
+        var nickName = "user1";
+
+        _chatOrchestratorMock
+            .Setup(x => x.GetChatsAsync(nickName))
+            .ReturnsAsync((List<ChatDto>?)null);
+
+        // Act
+        var result = await _controller.GetChatsAsync(nickName);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Null(okResult.Value);
+    }
 }

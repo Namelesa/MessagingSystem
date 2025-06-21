@@ -21,9 +21,8 @@ public class ChatOrchestrator(
             return [];
         
         foreach (var chat in encryptedChats)
-        {
-            chat.NickName = decryptionInfo.Decrypt(chat.NickName);
-        }
+            (chat.NickName, chat.Image) = (decryptionInfo.Decrypt(chat.NickName), decryptionInfo.Decrypt(chat.Image));
+
         var result = mapper.Map<List<ChatDto>>(encryptedChats);
         return result;
     }

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using AutoMapper;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.User;
@@ -17,6 +18,7 @@ namespace MessagingSystem.Services.Messaging.WebApi.Messages;
 public class MessagingController(
     IUserOrchestrator userOrchestrator,
     IMessageOrchestrator messageOrchestrator,
+    IChatOrchestrator chatOrchestrator,
     IMapper mapper
     ) : ControllerBase
 {
@@ -54,5 +56,12 @@ public class MessagingController(
 
         var result = await messageOrchestrator.SendMessageAsync(messageForCreate);
         return Ok(result);
+    }
+    
+    [HttpGet("get-chats")]
+    public async Task<IActionResult> GetChatsAsync([FromQuery] string nickName)
+    {
+        var chats = await chatOrchestrator.GetChatsAsync(nickName);
+        return Ok(chats);
     }
 }

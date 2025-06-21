@@ -1,10 +1,16 @@
 using System.Security.Claims;
 using AutoMapper;
+using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
+using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+using MessagingSystem.Services.Messaging.Application.MessageDto;
+using MessagingSystem.Services.Messaging.Core;
+using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
+using MessagingSystem.Services.Messaging.WebApi.Group.Messages.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
@@ -14,6 +20,7 @@ namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 public class GroupChatHub(
     ILogger<GroupChatHub> logger,
     IGroupInfoOrchestrator groupInfoOrchestrator,
+    IGroupMessagesOrchestrator groupMessagesOrchestrator,
     IMapper mapper,
     IHasher hasher
 ) : Hub
@@ -111,6 +118,107 @@ public class GroupChatHub(
     public Task LeaveGroupAsync(Guid groupId)
     {
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, groupId.ToString());
+    }
+    public async Task<List<GroupMessage>> LoadChatHistoryAsync(Guid groupId, int take)
+    {
+        var messages = await groupMessagesOrchestrator.LoadChatHistory(groupId, take);
+        return messages;
+    }
+    public async Task<CreatedMessageResult> SendMessageAsync(string content, Guid groupId)
+    {
+        var nickname = CurrentUserNickname;
+        
+        var message = mapper.Map<GroupMessageDto>(new CreateGroupMessage(nickname, content, groupId));
+        
+        var result = await groupMessagesOrchestrator.SendMessageAsync(message);
+
+        if (result?.Data == null)
+            throw new HubException("Failed to send message");
+        await NotifyUsersInGroupAsync(message.GroupId.ToString(), "ReceiveMessage", message);
+        return result.Data;
+    }
+    public async Task EditMessageAsync(Guid messageId, string content)
+    {
+        
+        var result = await groupMessagesOrchestrator.EditMessageAsync(messageId, new EditMessageDto(content));
+
+        if (!result.Success)
+            throw new HubException(result.Message ?? "Failed to edit message");
+
+        var editInfo = new
+        {
+            messageId,
+            newContent = content,
+            editedAt = DateTime.UtcNow
+        };
+
+        await NotifyUsersInGroupAsync(result.Data, "MessageEdited", editInfo);
+    }
+    public async Task SofDeleteMessageAsync(Guid messageId)
+    {
+        var result = await groupMessagesOrchestrator.SoftDeleteMessageAsync(messageId);
+
+        if (!result.Success)
+            throw new HubException(result.Message ?? "Failed to soft delete message");
+
+        await NotifyUsersInGroupAsync(result.Data, "MessageSoftDeleted", messageId);
+    }
+    public async Task DeleteMessageAsync(Guid messageId)
+    {
+        var result = await groupMessagesOrchestrator.DeleteMessageAsync(messageId);
+
+        if (!result.Success)
+            throw new HubException(result.Message ?? "Failed to delete message");
+
+        await NotifyUsersInGroupAsync(result.Data, "MessageDeleted", messageId);
+    }
+    public async Task<object> ReplyForMessageAsync(Guid messageId, string message, Guid groupId)
+    {
+        var sender = CurrentUserNickname;
+        
+        var sendResult = await groupMessagesOrchestrator.SendMessageAsync(new GroupMessageDto(sender, message, groupId));
+        if (!sendResult.Success || sendResult.Data == null)
+            throw new HubException(sendResult.Message ?? "Failed to send message");
+
+        var replyResult = await groupMessagesOrchestrator.ReplyForMessageAsync(sendResult.Data.MessageId, messageId);
+        if (!replyResult.Success || replyResult.Data == null)
+            throw new HubException(replyResult.Message ?? "Failed to attach reply");
+
+        var resultData = new
+        {
+            messageId = replyResult.Data.Id,
+            sender,
+            content = replyResult.Data.Content,
+            sentAt = replyResult.Data.SendTime,
+            replyTo = messageId
+        };
+
+        await NotifyUsersInGroupAsync(groupId.ToString(), "MessageReplied", resultData);
+        return resultData;
+    }
+    public async Task<List<object>> FindMessageByFilterAsync(string? recipient, DateTime? time, string? sender)
+    {
+        var filter = new MessageFilter()
+        {
+            Sender = sender,
+            Recipient = recipient,
+            Date = time
+        };
+        
+        var messages = await groupMessagesOrchestrator.FindMessagesAsync(filter);
+        
+        if (messages == null || !messages.Any())
+             return [];
+        
+        return messages.Select(m => new
+        {
+            messageId = m.Id,
+            sender = m.Sender,
+            content = m.Content,
+            sentAt = m.SendTime,
+            isEdited = m.IsEdited,
+            replyFor = m.ReplyFor
+        }).Cast<object>().ToList();
     }
     private Task NotifyUsersInGroupAsync(string groupId, string method, object data)
     {

@@ -60,24 +60,35 @@ public class ChatOrchestratorTests
         const string hashedUserName = "hashedUser";
         const string encryptedNickName = "encryptedNick";
         const string decryptedNickName = "decryptedNick";
-        
+        const string encryptedImage = "encryptedImage.jpg";
+        const string decryptedImage = "decryptedImage.jpg";
+    
         var encryptedChats = new List<Chat>
         {
-            new() { NickName = encryptedNickName, Image = "image1.jpg" },
-            new() { NickName = "encryptedNick2", Image = "image2.jpg" }
+            new() { NickName = encryptedNickName, Image = encryptedImage },
+            new() { NickName = "encryptedNick2", Image = "encryptedImage2.jpg" }
         };
+    
 
         var expectedDtos = new List<ChatDto>
         {
-            new() { NickName = decryptedNickName, Image = "image1.jpg" },
-            new() { NickName = "decryptedNick2", Image = "image2.jpg" }
+            new() { NickName = decryptedNickName, Image = decryptedImage },
+            new() { NickName = "decryptedNick2", Image = "decryptedImage2.jpg" }
         };
 
         _hasherMock.Setup(x => x.Hash(userName)).Returns(hashedUserName);
         _chatRepositoryMock.Setup(x => x.GetChatsAsync(hashedUserName)).ReturnsAsync(encryptedChats);
+    
         _decryptionInfoMock.Setup(x => x.Decrypt(encryptedNickName)).Returns(decryptedNickName);
         _decryptionInfoMock.Setup(x => x.Decrypt("encryptedNick2")).Returns("decryptedNick2");
-        _mapperMock.Setup(x => x.Map<List<ChatDto>>(encryptedChats)).Returns(expectedDtos);
+    
+        _decryptionInfoMock.Setup(x => x.Decrypt(encryptedImage)).Returns(decryptedImage);
+        _decryptionInfoMock.Setup(x => x.Decrypt("encryptedImage2.jpg")).Returns("decryptedImage2.jpg");
+    
+        _mapperMock.Setup(x => x.Map<List<ChatDto>>(It.Is<List<Chat>>(chats => 
+            chats.First().NickName == decryptedNickName && 
+            chats.First().Image == decryptedImage)))
+            .Returns(expectedDtos);
 
         // Act
         var result = await _orchestrator.GetChatsAsync(userName);
@@ -85,12 +96,16 @@ public class ChatOrchestratorTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(expectedDtos.Count, result.Count);
-        Assert.Equal(expectedDtos, result);
-        
+        Assert.Equal(expectedDtos[0].NickName, result[0].NickName);
+        Assert.Equal(expectedDtos[0].Image, result[0].Image);
+        Assert.Equal(expectedDtos[1].NickName, result[1].NickName);
+        Assert.Equal(expectedDtos[1].Image, result[1].Image);
+    
+        // Verify calls
         _hasherMock.Verify(x => x.Hash(userName), Times.Once);
         _chatRepositoryMock.Verify(x => x.GetChatsAsync(hashedUserName), Times.Once);
-        _decryptionInfoMock.Verify(x => x.Decrypt(It.IsAny<string>()), Times.Exactly(2));
-        _mapperMock.Verify(x => x.Map<List<ChatDto>>(encryptedChats), Times.Once);
+        _decryptionInfoMock.Verify(x => x.Decrypt(It.IsAny<string>()), Times.Exactly(4));
+        _mapperMock.Verify(x => x.Map<List<ChatDto>>(It.IsAny<List<Chat>>()), Times.Once);
     }
 
     [Fact]

@@ -1,1600 +1,495 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Private Chat</title>
+    <meta charset="UTF-8">
+    <title>Simple Chat Test</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: #f9fafb;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .sidebar {
-            width: 240px;
-            background: #ffffff;
-            border-right: 1px solid #e5e7eb;
+            font-family: Arial, sans-serif;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
         }
-        .sidebar h2 {
-            font-size: 18px;
+
+        .section {
             margin-bottom: 20px;
-        }
-        .chat-button {
-            background: none;
-            border: none;
-            text-align: left;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s;
-        }
-        .chat-button:hover {
-            background-color: #f3f4f6;
-        }
-        .chat-button.active {
-            background-color: #e0f2fe;
-            font-weight: 600;
-        }
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .chat-box {
-            flex: 1;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            background: #ffffff;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .message {
-            position: relative;
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            font-size: 16px;
-            background: #f3f4f6;
-            align-self: flex-start;
-            display: flex;
-            flex-direction: column;
-        }
-        .message.self {
-            background-color: #d1e7fd;
-            align-self: flex-end;
-        }
-        .message.dark {
-            background-color: #121212;
-            color: #e0e0e0;
-            border: 1px solid #333;
-        }
-        .message .content {
-            margin-bottom: 5px;
-            word-break: break-word;
-        }
-        .message .timestamp {
-            font-size: 12px;
-            color: #666;
-            align-self: flex-end;
-            margin-top: 4px;
-        }
-        .message.dark .timestamp {
-            color: #aaa;
-        }
-        .message .edited-label {
-            font-size: 12px;
-            color: #666;
-            font-style: italic;
-            margin-top: 4px;
-        }
-        .message.dark .edited-label {
-            color: #aaa;
-        }
-        .message .message-buttons {
-            position: absolute;
-            top: 8px;
-            right: 12px;
-            display: none;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
-            padding: 2px 6px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        .message.dark .message-buttons {
-            background-color: rgba(0, 0, 0, 0.6);
-        }
-        .message:hover .message-buttons {
-            display: inline-flex;
-            gap: 8px;
-        }
-        .message-buttons button {
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px;
-            transition: transform 0.2s;
-        }
-        .message-buttons button:hover {
-            transform: scale(1.2);
-        }
-        .message.deleted {
-            background-color: #f5f5f5;
-            font-style: italic;
-            color: #888;
-        }
-        .input-container {
-            display: none;
-            margin-top: 12px;
-            gap: 12px;
-            flex-direction: column;
-        }
-        .input-container.active {
-            display: flex;
-        }
-        .input-message {
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .send-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .send-button:hover {
-            background-color: #45a049;
-        }
-        .search-controls input {
-            padding: 8px;
-            font-size: 14px;
+            padding: 15px;
             border: 1px solid #ccc;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            width: 100%;
+            border-radius: 5px;
         }
-        .search-controls button {
+
+        .section h3 {
+            margin-top: 0;
+        }
+
+        input, button, select {
             padding: 8px;
-            font-size: 14px;
-            border-radius: 6px;
-            width: 100%;
-        }
-        .chat-type-toggle {
-            display: flex;
-            margin-bottom: 16px;
-            background-color: #f3f4f6;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .chat-type-toggle button {
-            flex: 1;
-            padding: 8px 0;
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        .chat-type-toggle button.active {
-            background-color: #4CAF50;
-            color: white;
-            font-weight: 600;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 350px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-        .modal-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .modal-option {
-            padding: 10px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .modal-option:hover {
-            background-color: #f3f4f6;
-        }
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        .modal-button {
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            border: none;
-        }
-        .modal-button.cancel {
-            background-color: #f3f4f6;
-        }
-        .modal-button.confirm {
-            background-color: #ef4444;
-            color: white;
-        }
-        .reply-container {
-            display: none;
-            background-color: #f8f9fa;
-            border-left: 4px solid #4CAF50;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-        }
-        .reply-container.active {
-            display: flex;
-            flex-direction: column;
-        }
-        .reply-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-            font-size: 12px;
-            color: #666;
-        }
-        .reply-content {
-            font-size: 14px;
-            color: #444;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
-        .reply-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #888;
-        }
-        .reply-close:hover {
-            color: #444;
-        }
-        .reply-indicator {
-            background-color: #e6f7ff;
-            border-left: 3px solid #1890ff;
-            padding: 6px 10px;
-            margin-bottom: 6px;
-            border-radius: 4px;
-            font-size: 13px;
-            color: #555;
-        }
-        .chat-button {
-            background: none;
-            border: none;
-            text-align: left;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-        }
-        .chat-button:hover {
-            background-color: #f3f4f6;
-        }
-        .chat-button.active {
-            background-color: #e0f2fe;
-            font-weight: 600;
-        }
-        .chat-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-            flex-shrink: 0;
-            background-color: #e5e7eb;
-        }
-        .chat-name {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            margin: 5px;
         }
 
-        .group-header {
-            display: none;
-            align-items: center;
-            padding: 12px 16px;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            border-radius: 12px 12px 0 0;
-            margin-bottom: 0;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .group-header:hover {
-            background: #f9fafb;
-        }
-
-        .group-header.active {
-            display: flex;
-        }
-
-        .group-header-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 12px;
-            background-color: #4CAF50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .group-header-info {
-            flex: 1;
-        }
-
-        .group-header-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 2px;
-        }
-
-        .group-header-members {
-            font-size: 12px;
-            color: #666;
-        }
-
-        /* Стили для модального окна группы */
-        .group-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 200;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .group-modal {
-            background-color: white;
-            padding: 24px;
-            border-radius: 12px;
-            width: 450px;
-            max-height: 80vh;
+        #messages {
+            height: 300px;
             overflow-y: auto;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #f9f9f9;
         }
 
-        .group-modal-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e5e7eb;
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background: white;
+            position: relative;
         }
 
-        .group-modal-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 16px;
-            background-color: #4CAF50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 24px;
+        .message-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
         }
 
-        .group-modal-info h3 {
-            margin: 0 0 4px 0;
-            font-size: 20px;
-            font-weight: 600;
+        .message:hover .message-actions {
+            display: block;
         }
 
-        .group-modal-info p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .group-modal-actions {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .group-action-btn {
-            flex: 1;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .group-action-btn.edit {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .group-action-btn.edit:hover {
-            background-color: #45a049;
-        }
-
-        .group-action-btn.delete {
-            background-color: #ef4444;
-            color: white;
-        }
-
-        .group-action-btn.delete:hover {
-            background-color: #dc2626;
-        }
-
-        .group-action-btn.leave {
-            background-color: #f97316;
-            color: white;
-        }
-
-        .group-action-btn.leave:hover {
-            background-color: #ea580c;
-        }
-
-        .group-members {
-            margin-bottom: 20px;
-        }
-
-        .group-members h4 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .member-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .member-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background-color: #2196F3;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .message-actions button {
+            padding: 2px 6px;
+            margin: 0 2px;
             font-size: 12px;
-            font-weight: 600;
-            margin-right: 12px;
-        }
-
-        .member-info {
-            flex: 1;
-        }
-
-        .member-name {
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .member-role {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .group-modal-close {
-            display: flex;
-            justify-content: flex-end;
-        }
-
-        .group-modal-close button {
-            padding: 8px 16px;
-            background-color: #f3f4f6;
             border: none;
-            border-radius: 6px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 14px;
         }
 
-        .group-modal-close button:hover {
-            background-color: #e5e7eb;
+        .edit-btn {
+            background: #ffc107;
+            color: #000;
         }
 
-        /* Обновленные стили для chat-box с группой */
-        .chat-box.with-group-header {
-            border-radius: 0 0 12px 12px;
-            border-top: none;
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status {
+            color: green;
+            font-weight: bold;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .flex {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .message-id {
+            font-size: 11px;
+            color: #666;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
-<div class="sidebar">
-    <h2>Chats</h2>
+<h1>Simple Chat Hub Test</h1>
 
-    <div class="chat-type-toggle">
-        <button id="personalChatsBtn" class="active" onclick="switchChatType('personal')">Personal</button>
-        <button id="groupChatsBtn" onclick="switchChatType('group')">Group</button>
-    </div>
-
-    <div class="search-controls">
-        <label for="searchInput"></label><input type="text" id="searchInput" placeholder="Search user..." />
-        <button onclick="searchUser()">Find User</button>
-    </div>
-
-    <div id="chatList"></div>
+<!-- Connection Status -->
+<div class="section">
+    <h3>Connection</h3>
+    <div id="connectionStatus" class="error">Disconnected</div>
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
 </div>
 
-<div class="main">
-    <div class="top-bar">
-        <span id="selectedUser">Select a user to chat</span>
-        <div id="groupHeader" class="group-header">
-            <div id="groupHeaderAvatar" class="group-header-avatar"></div>
-            <div class="group-header-info">
-                <div id="groupHeaderName" class="group-header-name"></div>
-                <div id="groupHeaderMembers" class="group-header-members"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="group-modal-overlay" id="groupModal">
-        <div class="group-modal">
-            <div class="group-modal-header">
-                <div id="groupModalAvatar" class="group-modal-avatar"></div>
-                <div class="group-modal-info">
-                    <h3 id="groupModalName"></h3>
-                    <p id="groupModalMemberCount"></p>
-                </div>
-            </div>
-
-            <div id="groupModalActions" class="group-modal-actions">
-            </div>
-
-            <div class="group-members">
-                <h4>Members</h4>
-                <div id="groupMembersList"></div>
-            </div>
-
-            <div class="group-modal-close">
-                <button onclick="closeGroupModal()">Close</button>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="chat-box" id="chatBox"></div>
-
-    <div class="input-container" id="inputContainer">
-        <div id="replyContainer" class="reply-container">
-            <div class="reply-header">
-                <span>Replying to <span id="replyToUser"></span></span>
-                <button class="reply-close" onclick="cancelReply()">×</button>
-            </div>
-            <div id="replyContent" class="reply-content"></div>
-        </div>
-        <label for="messageInput"></label><input type="text" id="messageInput" class="input-message" placeholder="Type a message..." />
-        <button class="send-button" onclick="sendMessage()">Send</button>
+<!-- Send Message -->
+<div class="section">
+    <h3>Send Message</h3>
+    <div class="flex">
+        <input type="text" id="recipient" placeholder="Recipient nickname" style="width: 200px;">
+        <input type="text" id="messageText" placeholder="Message" style="width: 300px;">
+        <button onclick="sendMessage()">Send</button>
     </div>
 </div>
 
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal">
-        <div class="modal-title">Delete Message</div>
-        <div class="modal-options">
-            <div class="modal-option" onclick="selectDeleteOption('everyone')">
-                Delete only for me (the other user will still see it)
-            </div>
-            <div class="modal-option" onclick="selectDeleteOption('personal')">
-                Delete for everyone
-            </div>
-        </div>
-        <div class="modal-buttons">
-            <button class="modal-button cancel" onclick="closeDeleteModal()">Cancel</button>
-            <button class="modal-button confirm" id="confirmDeleteBtn">Delete</button>
-        </div>
+<!-- Reply to Message -->
+<div class="section">
+    <h3>Reply to Message</h3>
+    <div class="flex">
+        <input type="text" id="replyRecipient" placeholder="Recipient" style="width: 150px;">
+        <input type="text" id="replyText" placeholder="Reply message" style="width: 200px;">
+        <input type="text" id="replyToId" placeholder="Reply to message ID (GUID)" style="width: 250px;">
+        <button onclick="replyMessage()">Reply</button>
     </div>
+</div>
+
+<!-- Edit Message -->
+<div class="section">
+    <h3>Edit Message</h3>
+    <div class="flex">
+        <input type="text" id="editMessageId" placeholder="Message ID to edit" style="width: 250px;" readonly>
+        <input type="text" id="editContent" placeholder="New content" style="width: 200px;">
+        <button onclick="editMessage()">Edit</button>
+        <button onclick="clearEditForm()" style="background: #6c757d; color: white;">Clear</button>
+    </div>
+</div>
+
+<!-- Delete Message -->
+<div class="section">
+    <h3>Delete Message</h3>
+    <div class="flex">
+        <input type="text" id="deleteMessageId" placeholder="Message ID to delete" style="width: 250px;" readonly>
+        <select id="deleteType">
+            <option value="soft">Soft Delete</option>
+            <option value="hard">Hard Delete</option>
+        </select>
+        <button onclick="deleteMessage()">Delete</button>
+        <button onclick="clearDeleteForm()" style="background: #6c757d; color: white;">Clear</button>
+    </div>
+</div>
+
+<!-- Find Messages -->
+<div class="section">
+    <h3>Find Messages</h3>
+    <div class="flex">
+        <input type="text" id="findRecipient" placeholder="Recipient (optional)" style="width: 150px;">
+        <input type="datetime-local" id="findTime" placeholder="Time (optional)" style="width: 200px;">
+        <input type="text" id="findSender" placeholder="Sender (optional)" style="width: 150px;">
+        <button onclick="findMessages()">Find</button>
+    </div>
+</div>
+
+<!-- Load Chat History -->
+<div class="section">
+    <h3>Load Chat History</h3>
+    <div class="flex">
+        <input type="text" id="historyUser" placeholder="User nickname" style="width: 200px;">
+        <input type="number" id="historyCount" placeholder="Count" value="50" style="width: 80px;">
+        <button onclick="loadHistory()">Load</button>
+    </div>
+</div>
+
+<!-- Get Chats -->
+<div class="section">
+    <h3>Get Chats</h3>
+    <button onclick="getChats()">Get All Chats</button>
+</div>
+
+<!-- Messages Display -->
+<div class="section">
+    <h3>Messages & Events</h3>
+    <div id="messages"></div>
+    <button onclick="clearMessages()">Clear</button>
 </div>
 
 <script>
     const BASE_URL = "https://localhost:7275";
-    const chatList = document.getElementById("chatList");
-    const selectedUser = document.getElementById("selectedUser");
-    const chatBox = document.getElementById("chatBox");
-    const inputContainer = document.getElementById("inputContainer");
-    const messageInput = document.getElementById("messageInput");
-    const deleteModal = document.getElementById("deleteModal");
-    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-    const replyContainer = document.getElementById("replyContainer");
-    const replyToUser = document.getElementById("replyToUser");
-    const replyContent = document.getElementById("replyContent");
-
-    let currentUserName = null;
-    let activeChatUser = null;
-    let currentChatType = "personal";
-
-    let editingMessageId = null;
-    let editingMessageDiv = null;
-    let deletingMessageId = null;
-    let selectedDeleteType = null;
-
-    let activeGroupInfo = null;
-    let currentUserRole = null;
-
-    // New variables for reply functionality
-    let replyingToMessageId = null;
-    let replyMessageCache = {};
-
-    const connection = new signalR.HubConnectionBuilder()
-        .withUrl(`${BASE_URL}/otoChatHub`, { withCredentials: true })
-        .withAutomaticReconnect([0, 2000, 5000])
-        .configureLogging(signalR.LogLevel.Information)
-        .build();
-
-    const connectionGroup = new signalR.HubConnectionBuilder()
-        .withUrl(`${BASE_URL}/groupChatHub`, { withCredentials: true })
-        .withAutomaticReconnect([0, 2000, 5000])
-        .configureLogging(signalR.LogLevel.Information)
-        .build();
-    
-    let isGroupConnectionActive = false;
-
-    function switchChatType(type) {
-        currentChatType = type;
-
-        document.getElementById("personalChatsBtn").classList.toggle("active", type === "personal");
-        document.getElementById("groupChatsBtn").classList.toggle("active", type === "group");
-
-        chatBox.innerHTML = "";
-        selectedUser.innerText = "Select a " + (type === "personal" ? "user" : "group") + " to chat";
-        inputContainer.classList.remove("active");
-        activeChatUser = null; 
-
-        document.getElementById("searchInput").placeholder = "Search " + (type === "personal" ? "user" : "group") + "...";
-
-        if (type === "group" && !isGroupConnectionActive) {
-            console.log("Попытка подключения к групповому чату...");
-
-            connectionGroup.start()
-                .then(() => {
-                    console.log("✅ Пользователь успешно подключен к групповому хабу!");
-                    isGroupConnectionActive = true;
-                    fetchChats();
-                })
-                .catch(err => {
-                    console.error("❌ Ошибка подключения к групповому хабу:", err);
-                });
-        } else {
-            fetchChats();
-        }
-    }
-
-    async function fetchCurrentUser() {
-        try {
-            const response = await fetch(`${BASE_URL}/api/messaging/me`, {
-                credentials: "include",
-                headers: { "Accept": "application/json" }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                currentUserName = data.nick;
-                return true;
-            } else {
-                throw new Error("Unauthorized");
-            }
-        } catch (err) {
-            alert("Authentication required");
-            return false;
-        }
-    }
-
-    function persistDeletedMessages(messageId, type) {
-        if (type === "hard") {
-            const deletedMessages = JSON.parse(localStorage.getItem('deletedMessages_' + currentUserName) || '[]');
-            if (!deletedMessages.includes(messageId)) {
-                deletedMessages.push(messageId);
-                localStorage.setItem('deletedMessages_' + currentUserName, JSON.stringify(deletedMessages));
-            }
-        }
-    }
-
-    function isMessageDeletedLocally(messageId) {
-        const deletedMessages = JSON.parse(localStorage.getItem('deletedMessages_' + currentUserName) || '[]');
-        return deletedMessages.includes(messageId);
-    }
-
-    connection.on("ReceivePrivateMessage", (message) => {
-        if (message.sender === activeChatUser || message.sender === currentUserName) {
-            if (isMessageDeletedLocally(message.messageId)) {
-                return;
-            }
-
-            const sentAtDate = new Date(message.sentAt);
-
-            // Check if this is a reply message
-            if (message.replyTo) {
-                addOrUpdateMessage(
-                    message.messageId,
-                    message.sender,
-                    message.content,
-                    message.sender === currentUserName,
-                    sentAtDate,
-                    null,
-                    false,
-                    message.replyTo
-                );
-            } else {
-                addOrUpdateMessage(
-                    message.messageId,
-                    message.sender,
-                    message.content,
-                    message.sender === currentUserName,
-                    sentAtDate
-                );
-            }
-
-            // Cache message content for future reference in replies
-            replyMessageCache[message.messageId] = {
-                sender: message.sender,
-                content: message.content
-            };
-
-            sortMessagesByTimestamp();
-        }
-    });
-
-    connection.on("MessageEdited", (editInfo) => {
-        const messageDiv = document.querySelector(`.message[data-message-id="${editInfo.messageId}"]`);
-        if (messageDiv) {
-            const contentSpan = messageDiv.querySelector(".content");
-            if (contentSpan) {
-                contentSpan.textContent = editInfo.newContent;
-
-                // Update the cache for replies
-                if (replyMessageCache[editInfo.messageId]) {
-                    replyMessageCache[editInfo.messageId].content = editInfo.newContent;
-                }
-            }
-
-            let editedLabel = messageDiv.querySelector(".edited-label");
-            const editTimestamp = new Date(editInfo.editedAt);
-            const formattedEditTime = formatFullTimestamp(editTimestamp);
-
-            if (!editedLabel) {
-                editedLabel = document.createElement("div");
-                editedLabel.className = "edited-label";
-                messageDiv.appendChild(editedLabel);
-            }
-
-            editedLabel.textContent = `edited ${formattedEditTime}`;
-        }
-    });
-
-    connection.on("MessageDeleted", (deleteInfo) => {
-        const messageDiv = document.querySelector(`.message[data-message-id="${deleteInfo.messageId}"]`);
-        if (!messageDiv) return;
-
-        const isSoftDelete = deleteInfo.type === "soft";
-        const isHardDelete = deleteInfo.type === "hard";
-
-        persistDeletedMessages(deleteInfo.messageId, deleteInfo.type);
-
-        if (isSoftDelete) {
-            const contentSpan = messageDiv.querySelector(".content");
-            if (contentSpan) {
-                contentSpan.textContent = "This message has been deleted";
-            }
-            messageDiv.classList.add("deleted");
-
-            const messageButtons = messageDiv.querySelector(".message-buttons");
-            if (messageButtons) {
-                messageButtons.remove();
-            }
-
-            // Update cache
-            if (replyMessageCache[deleteInfo.messageId]) {
-                replyMessageCache[deleteInfo.messageId].content = "This message has been deleted";
-            }
-        } else if (isHardDelete) {
-            chatBox.removeChild(messageDiv);
-
-            // Remove from cache
-            if (replyMessageCache[deleteInfo.messageId]) {
-                delete replyMessageCache[deleteInfo.messageId];
-            }
-        }
-    });
-
-    function setActiveChat(user) {
-        activeChatUser = user;
-
-        if (currentChatType === "group") {
-            selectedUser.innerText = `Group: ${user}`;
-            showGroupHeader(user);
-            loadGroupInfo(user);
-        } else {
-            selectedUser.innerText = `Chatting with: ${user}`;
-            hideGroupHeader();
-        }
-
-        inputContainer.classList.add("active");
-        chatBox.innerHTML = "";
-        loadChatHistory(user);
-    }
-
-    function showGroupHeader(groupName) {
-        const groupHeader = document.getElementById("groupHeader");
-        const chatBox = document.getElementById("chatBox");
-
-        groupHeader.classList.add("active");
-        chatBox.classList.add("with-group-header");
-
-        document.getElementById("groupHeaderName").textContent = groupName;
-
-        // Установить аватар
-        const avatar = document.getElementById("groupHeaderAvatar");
-        const initials = groupName
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase())
-            .slice(0, 2)
-            .join('');
-        avatar.textContent = initials || groupName.charAt(0).toUpperCase();
-
-        // Добавить обработчик клика
-        groupHeader.onclick = () => openGroupModal();
-    }
-
-    async function loadGroupInfo(groupName) {
-        try {
-            // Здесь должен быть запрос к серверу для получения информации о группе
-            const groupInfo = await connectionGroup.invoke('GetGroupInfoAsync', groupName);
-            activeGroupInfo = groupInfo;
-
-            // Обновить счетчик участников в header
-            document.getElementById("groupHeaderMembers").textContent =
-                `${groupInfo.members.length} members`;
-
-            // Определить роль текущего пользователя
-            const currentMember = groupInfo.members.find(m => m.userName === currentUserName);
-            currentUserRole = currentMember ? currentMember.role : 'member';
-
-        } catch (error) {
-            console.error("Failed to load group info:", error);
-            activeGroupInfo = { name: groupName, members: [], description: "" };
-            currentUserRole = 'member';
-        }
-    }
-
-    function openGroupModal() {
-        if (!activeGroupInfo) return;
-
-        const modal = document.getElementById("groupModal");
-
-        // Заполнить информацию о группе
-        document.getElementById("groupModalName").textContent = activeGroupInfo.name;
-        document.getElementById("groupModalMemberCount").textContent =
-            `${activeGroupInfo.members.length} members`;
-
-        // Установить аватар
-        const avatar = document.getElementById("groupModalAvatar");
-        const initials = activeGroupInfo.name
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase())
-            .slice(0, 2)
-            .join('');
-        avatar.textContent = initials || activeGroupInfo.name.charAt(0).toUpperCase();
-
-        // Создать кнопки действий
-        createGroupActionButtons();
-
-        // Показать участников
-        displayGroupMembers();
-
-        modal.style.display = "flex";
-    }
-
-    function createGroupActionButtons() {
-        const actionsContainer = document.getElementById("groupModalActions");
-        actionsContainer.innerHTML = "";
-
-        const isAdmin = currentUserRole === 'admin' || currentUserRole === 'owner';
-
-        if (isAdmin) {
-            // Кнопка редактирования для админов
-            const editBtn = document.createElement("button");
-            editBtn.className = "group-action-btn edit";
-            editBtn.textContent = "Edit Group";
-            editBtn.onclick = () => editGroup();
-            actionsContainer.appendChild(editBtn);
-
-            // Кнопка удаления для админов
-            const deleteBtn = document.createElement("button");
-            deleteBtn.className = "group-action-btn delete";
-            deleteBtn.textContent = "Delete Group";
-            deleteBtn.onclick = () => deleteGroup();
-            actionsContainer.appendChild(deleteBtn);
-        } else {
-            // Кнопка выхода для обычных участников
-            const leaveBtn = document.createElement("button");
-            leaveBtn.className = "group-action-btn leave";
-            leaveBtn.textContent = "Leave Group";
-            leaveBtn.onclick = () => leaveGroup();
-            actionsContainer.appendChild(leaveBtn);
-        }
-    }
-
-    // Отображение участников группы
-    function displayGroupMembers() {
-        const membersList = document.getElementById("groupMembersList");
-        membersList.innerHTML = "";
-
-        if (!activeGroupInfo.members) return;
-
-        activeGroupInfo.members.forEach(member => {
-            const memberDiv = document.createElement("div");
-            memberDiv.className = "member-item";
-
-            const avatar = document.createElement("div");
-            avatar.className = "member-avatar";
-            const initials = member.userName
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase())
-                .slice(0, 2)
-                .join('');
-            avatar.textContent = initials || member.userName.charAt(0).toUpperCase();
-
-            const info = document.createElement("div");
-            info.className = "member-info";
-
-            const name = document.createElement("div");
-            name.className = "member-name";
-            name.textContent = member.userName;
-
-            const role = document.createElement("div");
-            role.className = "member-role";
-            role.textContent = member.role || 'member';
-
-            info.appendChild(name);
-            info.appendChild(role);
-
-            memberDiv.appendChild(avatar);
-            memberDiv.appendChild(info);
-
-            membersList.appendChild(memberDiv);
-        });
-    }
-
-    // Действия с группой
-    function editGroup() {
-        // Здесь должна быть логика редактирования группы
-        alert("Edit group functionality - to be implemented");
-        closeGroupModal();
-    }
-
-    async function deleteGroup() {
-        if (!confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
-            return;
-        }
-
-        try {
-            await connectionGroup.invoke('DeleteGroupAsync', activeGroupInfo.name);
-            closeGroupModal();
-
-            // Обновить список чатов
-            await fetchChats();
-
-            // Очистить активный чат
-            activeChatUser = null;
-            hideGroupHeader();
-            selectedUser.innerText = "Select a group to chat";
-            inputContainer.classList.remove("active");
-            chatBox.innerHTML = "";
-
-            alert("Group deleted successfully");
-        } catch (error) {
-            console.error("Failed to delete group:", error);
-            alert("Failed to delete group: " + error.message);
-        }
-    }
-
-    async function leaveGroup() {
-        if (!confirm("Are you sure you want to leave this group?")) {
-            return;
-        }
-
-        try {
-            await connectionGroup.invoke('LeaveGroupAsync', activeGroupInfo.name);
-            closeGroupModal();
-
-            // Обновить список чатов
-            await fetchChats();
-
-            // Очистить активный чат
-            activeChatUser = null;
-            hideGroupHeader();
-            selectedUser.innerText = "Select a group to chat";
-            inputContainer.classList.remove("active");
-            chatBox.innerHTML = "";
-
-            alert("You have left the group");
-        } catch (error) {
-            console.error("Failed to leave group:", error);
-            alert("Failed to leave group: " + error.message);
-        }
-    }
-
-    function closeGroupModal() {
-        document.getElementById("groupModal").style.display = "none";
-    }
-
-    // Закрытие модального окна при клике вне его
-    document.getElementById("groupModal").addEventListener("click", function(e) {
-        if (e.target === this) {
-            closeGroupModal();
-        }
-    });
-
-    function hideGroupHeader() {
-        const groupHeader = document.getElementById("groupHeader");
-        const chatBox = document.getElementById("chatBox");
-
-        groupHeader.classList.remove("active");
-        chatBox.classList.remove("with-group-header");
-    }
-
-
-    function formatTimeOnly(date) {
-        if (!(date instanceof Date) || isNaN(date)) {
-            return "";
-        }
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function formatFullTimestamp(date) {
-        if (!(date instanceof Date) || isNaN(date)) {
-            return "";
-        }
-        return date.toLocaleString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        }).replace(/\//g, '/');
-    }
-
-    function addOrUpdateMessage(messageId, sender, content, isSelf, sentAt, editedAt = null, isDeleted = false, replyToId = null) {
-        if (isMessageDeletedLocally(messageId)) {
-            return;
-        }
-
-        let existing = document.querySelector(`.message[data-message-id="${messageId}"]`);
-        if (existing) return;
-
-        const sentAtDate = sentAt instanceof Date ? sentAt : new Date(sentAt);
-
-        const messageDiv = document.createElement("div");
-        messageDiv.classList.add("message");
-        if (isSelf) {
-            messageDiv.classList.add("self");
-        }
-        if (isDeleted) messageDiv.classList.add("deleted");
-        messageDiv.dataset.messageId = messageId;
-        messageDiv.dataset.timestamp = sentAtDate.toISOString();
-
-        // Add reply indicator if this is a reply to another message
-        if (replyToId) {
-            const replyIndicator = document.createElement("div");
-            replyIndicator.className = "reply-indicator";
-
-            // Try to get the original message details
-            const replyingTo = replyMessageCache[replyToId];
-            if (replyingTo) {
-                const truncatedContent = replyingTo.content.length > 30
-                    ? replyingTo.content.substring(0, 30) + "..."
-                    : replyingTo.content;
-                replyIndicator.textContent = `↩️ ${replyingTo.sender}: ${truncatedContent}`;
-            } else {
-                replyIndicator.textContent = "↩️ In reply to a message";
-            }
-
-            messageDiv.appendChild(replyIndicator);
-        }
-
-        const contentSpan = document.createElement("span");
-        contentSpan.className = "content";
-        contentSpan.textContent = isDeleted ? "This message has been deleted" : content;
-        messageDiv.appendChild(contentSpan);
-
-        const timestamp = document.createElement("div");
-        timestamp.className = "timestamp";
-        timestamp.textContent = formatTimeOnly(sentAtDate);
-        messageDiv.appendChild(timestamp);
-
-        if (editedAt) {
-            const editedLabel = document.createElement("div");
-            editedLabel.className = "edited-label";
-            const editedAtDate = editedAt instanceof Date ? editedAt : new Date(editedAt);
-            editedLabel.textContent = `edited ${formatFullTimestamp(editedAtDate)}`;
-            messageDiv.appendChild(editedLabel);
-        }
-
-        // Add message to cache for replies
-        replyMessageCache[messageId] = {
-            sender: sender,
-            content: content
-        };
-
-        if (!isDeleted) {
-            const buttonsDiv = document.createElement("div");
-            buttonsDiv.className = "message-buttons";
-
-            // Everyone can reply to any message
-            const replyBtn = document.createElement("button");
-            replyBtn.textContent = "↩️";
-            replyBtn.title = "Reply to message";
-            replyBtn.onclick = () => {
-                setReplyTo(messageId, sender, content);
-            };
-
-            buttonsDiv.appendChild(replyBtn);
-
-            // Only the message sender can edit or delete
-            if (isSelf) {
-                const editBtn = document.createElement("button");
-                editBtn.textContent = "✏️";
-                editBtn.title = "Edit message";
-                editBtn.onclick = () => {
-                    cancelReply(); // Cancel any ongoing reply
-                    messageInput.value = content;
-                    editingMessageId = messageId;
-                    editingMessageDiv = contentSpan;
-                    messageInput.focus();
-                };
-
-                const deleteBtn = document.createElement("button");
-                deleteBtn.textContent = "🗑️";
-                deleteBtn.title = "Delete message";
-                deleteBtn.onclick = () => {
-                    openDeleteModal(messageId);
-                };
-
-                buttonsDiv.appendChild(editBtn);
-                buttonsDiv.appendChild(deleteBtn);
-            }
-
-            messageDiv.appendChild(buttonsDiv);
-        }
-
-        chatBox.appendChild(messageDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function setReplyTo(messageId, sender, content) {
-        // Set up the reply UI
-        replyingToMessageId = messageId;
-        replyToUser.textContent = sender;
-
-        // Truncate content if too long
-        const truncatedContent = content.length > 50
-            ? content.substring(0, 50) + "..."
-            : content;
-        replyContent.textContent = truncatedContent;
-
-        // Show the reply container
-        replyContainer.classList.add("active");
-
-        // Focus the input field
-        messageInput.focus();
-    }
-
-    function cancelReply() {
-        replyingToMessageId = null;
-        replyContainer.classList.remove("active");
-    }
-
-    function sendMessage() {
-        const message = messageInput.value.trim();
-        if (!message || !activeChatUser) return;
-
-        if (editingMessageId && editingMessageDiv) {
-            connection.invoke("EditMessageAsync", editingMessageId, message)
-                .then(() => {
-                    editingMessageId = null;
-                    editingMessageDiv = null;
-                    messageInput.value = "";
-                })
-                .catch(err => alert("Error editing message: " + err.message));
-        } else if (replyingToMessageId) {
-            // Send as a reply
-            if (currentChatType === "personal") {
-                connection.invoke("ReplyToMessageAsync", activeChatUser, message, replyingToMessageId)
-                    .then(() => {
-                        messageInput.value = "";
-                        cancelReply(); // Reset reply state
-                    })
-                    .catch(err => alert("Error sending reply: " + err.message));
-            }
-        } else {
-            // Send as a regular message
-            if (currentChatType === "personal") {
-                connection.invoke("SendMessageAsync", activeChatUser, message)
-                    .then(() => {
-                        messageInput.value = "";
-                    })
-                    .catch(err => alert("Error sending message: " + err.message));
-            }
-        }
-    }
-
-    function sortMessagesByTimestamp() {
-        const messages = Array.from(chatBox.children);
-
-        messages.sort((a, b) => {
-            const timestampA = new Date(a.dataset.timestamp);
-            const timestampB = new Date(b.dataset.timestamp);
-            return timestampA - timestampB;
-        });
-
-        chatBox.innerHTML = "";
-
-        messages.forEach(message => {
-            chatBox.appendChild(message);
-        });
-    }
-
-    function openDeleteModal(messageId) {
-        deletingMessageId = messageId;
-        selectedDeleteType = null;
-        deleteModal.style.display = "flex";
-
-        document.querySelectorAll(".modal-option").forEach(option => {
-            option.style.backgroundColor = "";
-        });
-        confirmDeleteBtn.disabled = true;
-    }
-
-    function closeDeleteModal() {
-        deleteModal.style.display = "none";
-        deletingMessageId = null;
-    }
-
-    function selectDeleteOption(type) {
-        selectedDeleteType = type;
-
-        document.querySelectorAll(".modal-option").forEach(option => {
-            option.style.backgroundColor = "";
-        });
-
-        event.currentTarget.style.backgroundColor = "#e0f2fe";
-        confirmDeleteBtn.disabled = false;
-    }
-
-    confirmDeleteBtn.addEventListener("click", () => {
-        if (deletingMessageId && selectedDeleteType) {
-            deleteMessage(deletingMessageId, selectedDeleteType);
-            closeDeleteModal();
-        }
-    });
-
-    function deleteMessage(messageId, deleteScope) {
-        const typeOfDeleting = deleteScope === "everyone" ? "soft" : "hard";
-
-        const invokeMethod = currentChatType === "personal"
-            ? "DeleteMessageAsync"
-            : "DeleteGroupMessageAsync";
-
-        connection.invoke(invokeMethod, messageId, typeOfDeleting)
-            .then(() => {
-                console.log(`Message ${messageId} deletion requested with type: ${typeOfDeleting}`);
-
-                if (typeOfDeleting === "hard") {
-                    const messageDiv = document.querySelector(`.message[data-message-id="${messageId}"]`);
-                    if (messageDiv) {
-                        chatBox.removeChild(messageDiv);
-                    }
-
-                    persistDeletedMessages(messageId, typeOfDeleting);
-                }
-            })
-            .catch(err => alert("Error deleting message: " + err.message));
-    }
-
-    async function fetchChats() {
-        try {
-            chatList.innerHTML = "<div style='text-align:center;padding:10px;'>Loading chats...</div>";
-
-            let chats = [];
-
-            if (currentChatType === "personal") {
-                const chatDtos = await connection.invoke('GetChatsAsync');
-                
-                chats = chatDtos.map(chatDto => ({
-                    name: chatDto.nickName,
-                    avatar: chatDto.avatar || chatDto.image || null, 
-                    type: 'personal'
-                }));
-            } else if (currentChatType === "group") {
-                const groupsData = await connectionGroup.invoke('GetAllGroupForUserAsync');
-                chats = groupsData.map(group => ({
-                    name: group.groupName || group.name || group,
-                    avatar: group.image || group.avatar || null,
-                    type: 'group'
-                }));
-            }
-
-            chatList.innerHTML = "";
-
-            if (!chats || chats.length === 0) {
-                const emptyMessage = currentChatType === "personal" ? "No chats found" : "No groups found";
-                chatList.innerHTML = `<div style='text-align:center;padding:10px;color:#666;'>${emptyMessage}</div>`;
-                return;
-            }
-
-            chats.forEach(chat => {
-                const chatButton = document.createElement("button");
-                chatButton.classList.add("chat-button");
-
-                const avatar = document.createElement("img");
-                avatar.classList.add("chat-avatar");
-
-                if (chat.avatar) {
-                    avatar.src = chat.avatar;
-                    avatar.alt = `${chat.name} avatar`;
-                    avatar.onerror = () => {
-                        avatar.style.display = 'none';
-                        const placeholder = createAvatarPlaceholder(chat.name, chat.type);
-                        chatButton.insertBefore(placeholder, chatButton.firstChild);
-                    };
-                } else {
-                    const placeholder = createAvatarPlaceholder(chat.name, chat.type);
-                    chatButton.appendChild(placeholder);
-                }
-
-                const nameSpan = document.createElement("span");
-                nameSpan.classList.add("chat-name");
-                nameSpan.textContent = chat.name;
-
-                if (chat.avatar) {
-                    chatButton.appendChild(avatar);
-                }
-                chatButton.appendChild(nameSpan);
-
-                chatButton.onclick = () => {
-                    document.querySelectorAll(".chat-button").forEach(b => b.classList.remove("active"));
-                    chatButton.classList.add("active");
-                    setActiveChat(chat.name);
-                };
-
-                chatList.appendChild(chatButton);
-            });
-        } catch (error) {
-            console.error("Error fetching chats:", error);
-            const errorMessage = currentChatType === "personal" ? "Failed to load chats" : "Failed to load groups";
-            chatList.innerHTML = `<div style='text-align:center;padding:10px;color:red;'>${errorMessage}</div>`;
-        }
-    }
-
-    function createAvatarPlaceholder(name, type) {
-        const placeholder = document.createElement("div");
-        placeholder.classList.add("chat-avatar");
-        placeholder.style.display = "flex";
-        placeholder.style.alignItems = "center";
-        placeholder.style.justifyContent = "center";
-        placeholder.style.fontSize = "12px";
-        placeholder.style.fontWeight = "600";
-        placeholder.style.color = "white";
+    let connection = null;
+
+    function addMessage(text, type = 'info', messageData = null) {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+
+        const timestamp = new Date().toLocaleTimeString();
+        let messageContent = `<strong>[${timestamp}]</strong> ${text}`;
         
-        if (type === 'group') {
-            placeholder.style.backgroundColor = "#4CAF50";
-        } else {
-            placeholder.style.backgroundColor = "#2196F3";
+        if (messageData && messageData.messageId) {
+            messageContent += `
+                <div class="message-id">ID: ${messageData.messageId}</div>
+                <div class="message-actions">
+                    <button class="edit-btn" onclick="selectForEdit('${messageData.messageId}', '${messageData.content || ''}')">Edit</button>
+                    <button class="delete-btn" onclick="selectForDelete('${messageData.messageId}')">Delete</button>
+                </div>
+            `;
         }
-        
-        const initials = name
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase())
-            .slice(0, 2)
-            .join('');
 
-        placeholder.textContent = initials || name.charAt(0).toUpperCase();
+        messageDiv.innerHTML = messageContent;
 
-        return placeholder;
+        if (type === 'error') {
+            messageDiv.style.borderLeftColor = 'red';
+        } else if (type === 'success') {
+            messageDiv.style.borderLeftColor = 'green';
+        }
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    async function loadChatHistory(user) {
+    function selectForEdit(messageId, currentContent) {
+        document.getElementById('editMessageId').value = messageId;
+        document.getElementById('editContent').value = currentContent.replace(/&quot;/g, '"');
+        document.getElementById('editContent').focus();
+        addMessage(`📝 Selected message ${messageId} for editing`, 'info');
+    }
+
+    function selectForDelete(messageId) {
+        document.getElementById('deleteMessageId').value = messageId;
+        addMessage(`🗑️ Selected message ${messageId} for deletion`, 'info');
+    }
+
+    function clearEditForm() {
+        document.getElementById('editMessageId').value = '';
+        document.getElementById('editContent').value = '';
+    }
+
+    function clearDeleteForm() {
+        document.getElementById('deleteMessageId').value = '';
+    }
+
+    function updateConnectionStatus(status, isConnected) {
+        const statusDiv = document.getElementById('connectionStatus');
+        statusDiv.textContent = status;
+        statusDiv.className = isConnected ? 'status' : 'error';
+    }
+
+    async function connect() {
         try {
-            let history;
-            if (currentChatType === "personal") {
-                history = await connection.invoke("LoadChatHistoryAsync", user, 50);
+            if (connection) {
+                await connection.stop();
             }
 
-            chatBox.innerHTML = "";
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(`${BASE_URL}/otoChatHub`, { withCredentials: true })
+                .withAutomaticReconnect([0, 2000, 5000])
+                .configureLogging(signalR.LogLevel.Information)
+                .build();
 
-            history.sort((a, b) => new Date(a.sentAt) - new Date(b.sentAt));
-            
-            const deletedMessages = JSON.parse(localStorage.getItem('deletedMessages_' + currentUserName) || '[]');
-
-            history.forEach(message => {
-                if (deletedMessages.includes(message.messageId)) {
-                    return;
-                }
-
-                const isSelf = message.sender === currentUserName;
-
-                const sentAtDate = new Date(message.sentAt);
-                const editedAtDate = message.isEdited ? new Date(message.editedAt) : null;
-                const isDeleted = message.isDeleted || false;
-
-                addOrUpdateMessage(
-                    message.messageId,
-                    message.sender,
-                    message.content,
-                    isSelf,
-                    sentAtDate,
-                    editedAtDate,
-                    isDeleted
-                );
+            // Event handlers
+            connection.on("ReceivePrivateMessage", (message) => {
+                addMessage(`📨 Message received: ${JSON.stringify(message, null, 2)}`, 'success', message);
             });
 
-            chatBox.scrollTop = chatBox.scrollHeight;
-        } catch (error) {
-            console.error("Failed to load chat history:", error);
-            alert("Could not load chat history.");
-        }
-    }
-
-    async function searchUser() {
-        const nickName = document.getElementById("searchInput").value.trim();
-        if (!nickName) return;
-        if (nickName === currentUserName) {
-            alert("You cannot chat with yourself.");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${BASE_URL}/api/messaging/find-user?nickName=${encodeURIComponent(nickName)}`, {
-                credentials: "include",
-                headers: { "Accept": "application/json" }
+            connection.on("MessageEdited", (editInfo) => {
+                addMessage(`✏️ Message edited: ${JSON.stringify(editInfo, null, 2)}`, 'success');
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (!result.success || !result.data) {
-                    alert("User data not received from server.");
-                    return;
-                }
+            connection.on("MessageDeleted", (deleteInfo) => {
+                addMessage(`🗑️ Message deleted: ${JSON.stringify(deleteInfo, null, 2)}`, 'success');
+            });
 
-                const userNick = result.data.nickName;
-                const userAvatar = result.data.image;
+            connection.onreconnecting(() => {
+                updateConnectionStatus("Reconnecting...", false);
+                addMessage("🔄 Connection lost, reconnecting...", 'error');
+            });
 
-                if (!Array.from(chatList.children).some(btn => btn.querySelector('.chat-name')?.textContent === userNick)) {
-                    const chatButton = document.createElement("button");
-                    chatButton.classList.add("chat-button");
-                    const avatar = document.createElement("img");
-                    avatar.classList.add("chat-avatar");
+            connection.onreconnected(() => {
+                updateConnectionStatus("Connected", true);
+                addMessage("✅ Reconnected successfully", 'success');
+            });
 
-                    if (userAvatar) {
-                        avatar.src = userAvatar;
-                        avatar.alt = `${userNick} avatar`;
-                        avatar.onerror = () => {
-                            avatar.style.display = 'none';
-                            const placeholder = createAvatarPlaceholder(userNick, 'personal');
-                            chatButton.insertBefore(placeholder, chatButton.firstChild);
-                        };
-                        chatButton.appendChild(avatar);
-                    } else {
-                        const placeholder = createAvatarPlaceholder(userNick, 'personal');
-                        chatButton.appendChild(placeholder);
-                    }
+            connection.onclose(() => {
+                updateConnectionStatus("Disconnected", false);
+                addMessage("❌ Connection closed", 'error');
+            });
 
-                    const nameSpan = document.createElement("span");
-                    nameSpan.classList.add("chat-name");
-                    nameSpan.textContent = userNick;
-                    chatButton.appendChild(nameSpan);
-                    
-                    chatButton.onclick = () => {
-                        document.querySelectorAll(".chat-button").forEach(b => b.classList.remove("active"));
-                        chatButton.classList.add("active");
-                        setActiveChat(userNick);
-                    };
-                    chatList.appendChild(chatButton);
-                }
-
-                setActiveChat(userNick);
-            } else if (response.status === 404) {
-                alert("User not found");
-            } else {
-                alert("Unexpected error: " + response.statusText);
-            }
-        } catch (err) {
-            console.error("Search failed:", err);
-            alert("Failed to search user.");
-        }
-    }
-
-    async function startConnection() {
-        try {
             await connection.start();
-            console.log("Connected to SignalR hub");
-            await fetchChats();
-        } catch (err) {
-            console.error("Connection failed", err);
-            setTimeout(startConnection, 3000);
+            updateConnectionStatus("Connected", true);
+            addMessage("✅ Connected to hub successfully", 'success');
+
+        } catch (error) {
+            updateConnectionStatus("Connection Failed", false);
+            addMessage(`❌ Connection failed: ${error.message}`, 'error');
         }
     }
 
-    window.addEventListener("load", async () => {
-        const authenticated = await fetchCurrentUser();
-        if (authenticated) {
-            await startConnection();
+    async function disconnect() {
+        if (connection) {
+            try {
+                await connection.stop();
+                updateConnectionStatus("Disconnected", false);
+                addMessage("🔌 Disconnected from hub", 'info');
+            } catch (error) {
+                addMessage(`❌ Error disconnecting: ${error.message}`, 'error');
+            }
         }
+    }
+
+    async function sendMessage() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        const recipient = document.getElementById('recipient').value.trim();
+        const message = document.getElementById('messageText').value.trim();
+
+        if (!recipient || !message) {
+            addMessage("❌ Please fill recipient and message", 'error');
+            return;
+        }
+
+        try {
+            const result = await connection.invoke("SendMessageAsync", recipient, message);
+            addMessage(`✅ Message sent: ${JSON.stringify(result, null, 2)}`, 'success', result);
+            document.getElementById('messageText').value = '';
+        } catch (error) {
+            addMessage(`❌ Send failed: ${error.message}`, 'error');
+        }
+    }
+
+    async function replyMessage() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        const recipient = document.getElementById('replyRecipient').value.trim();
+        const message = document.getElementById('replyText').value.trim();
+        const replyToId = document.getElementById('replyToId').value.trim();
+
+        if (!recipient || !message || !replyToId) {
+            addMessage("❌ Please fill all reply fields", 'error');
+            return;
+        }
+
+        try {
+            const result = await connection.invoke("ReplyToMessageAsync", recipient, message, replyToId);
+            addMessage(`✅ Reply sent: ${JSON.stringify(result, null, 2)}`, 'success', result);
+            document.getElementById('replyText').value = '';
+        } catch (error) {
+            addMessage(`❌ Reply failed: ${error.message}`, 'error');
+        }
+    }
+
+    async function editMessage() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        const messageId = document.getElementById('editMessageId').value.trim();
+        const content = document.getElementById('editContent').value.trim();
+
+        if (!messageId || !content) {
+            addMessage("❌ Please fill message ID and new content", 'error');
+            return;
+        }
+
+        try {
+            await connection.invoke("EditMessageAsync", messageId, content);
+            addMessage(`✅ Message edited successfully`, 'success');
+            clearEditForm();
+        } catch (error) {
+            addMessage(`❌ Edit failed: ${error.message}`, 'error');
+        }
+    }
+
+    async function deleteMessage() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        const messageId = document.getElementById('deleteMessageId').value.trim();
+        const deleteType = document.getElementById('deleteType').value;
+
+        if (!messageId) {
+            addMessage("❌ Please provide message ID", 'error');
+            return;
+        }
+
+        try {
+            await connection.invoke("DeleteMessageAsync", messageId, deleteType);
+            addMessage(`✅ Message deleted (${deleteType})`, 'success');
+            clearDeleteForm();
+        } catch (error) {
+            addMessage(`❌ Delete failed: ${error.message}`, 'error');
+        }
+    }
+
+    async function findMessages() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        const recipient = document.getElementById('findRecipient').value.trim() || null;
+        const timeStr = document.getElementById('findTime').value.trim();
+        const sender = document.getElementById('findSender').value.trim() || null;
+
+        const time = timeStr ? new Date(timeStr).toISOString() : null;
+
+        try {
+            const result = await connection.invoke("FindMessagesAsync", recipient, time, sender);
+            if (result && result.length > 0) {
+                addMessage(`🔍 Found ${result.length} messages: ${JSON.stringify(result, null, 2)}`, 'success');
+                result.forEach(msg => {
+                    addMessage(`📋 Found message from ${msg.sender}: "${msg.content}"`, 'info', msg);
+                });
+            } else {
+                addMessage(`🔍 No messages found with specified criteria`, 'info');
+            }
+        } catch (error) {
+            addMessage(`❌ Find messages failed: ${error.message}`, 'error');
+        }
+    }
+
+    async function loadHistory() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        const user = document.getElementById('historyUser').value.trim();
+        const count = parseInt(document.getElementById('historyCount').value) || 50;
+
+        if (!user) {
+            addMessage("❌ Please provide user nickname", 'error');
+            return;
+        }
+
+        try {
+            const result = await connection.invoke("LoadChatHistoryAsync", user, count);
+            addMessage(`✅ Chat history loaded (${result.length} messages): ${JSON.stringify(result, null, 2)}`, 'success');
+            result.forEach(msg => {
+                addMessage(`📜 History message from ${msg.sender}: "${msg.content}"`, 'info', msg);
+            });
+        } catch (error) {
+            addMessage(`❌ Load history failed: ${error.message}`, 'error');
+        }
+    }
+
+    async function getChats() {
+        if (!connection) {
+            addMessage("❌ Not connected to hub", 'error');
+            return;
+        }
+
+        try {
+            const result = await connection.invoke("GetChatsAsync");
+            addMessage(`✅ Chats loaded: ${JSON.stringify(result, null, 2)}`, 'success');
+        } catch (error) {
+            addMessage(`❌ Get chats failed: ${error.message}`, 'error');
+        }
+    }
+
+    function clearMessages() {
+        document.getElementById('messages').innerHTML = '';
+    }
+
+    // Auto-connect on page load
+    window.addEventListener('load', () => {
+        addMessage("🚀 Page loaded. Click 'Connect' to start testing", 'info');
     });
 
-    messageInput.addEventListener("keyup", function(event) {
-        if (event.key === "Enter") {
-            sendMessage();
+    // Handle Enter key in input fields
+    document.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const activeElement = document.activeElement;
+            if (activeElement.id === 'messageText') {
+                sendMessage();
+            } else if (activeElement.id === 'replyText') {
+                replyMessage();
+            } else if (activeElement.id === 'editContent') {
+                editMessage();
+            }
         }
     });
 </script>

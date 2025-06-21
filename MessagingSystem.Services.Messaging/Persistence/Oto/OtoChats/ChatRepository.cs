@@ -5,22 +5,27 @@ namespace MessagingSystem.Services.Messaging.Persistence.Oto.OtoChats;
 
 public class ChatRepository(OtoAppDbContext db) : IChatRepository
 {
-    public async Task<List<Chat>?> GetChatsAsync(string currentUserName)
+    public async Task<List<Chat>?> GetChatsAsync(string currentUserHash)
     {
-        return await db.UsersMessages
-            .Where(m => !m.IsDeleted &&
-                        (m.SenderHash == currentUserName ||
-                         m.RecipientHash == currentUserName))
-            .Select(m => m.SenderHash == currentUserName ? m.Recipient : m.Sender)
-            .Distinct()
-            .Join(db.Images,
-                nickname => nickname,
-                ui => ui.NickNameHash,
-                (nickname, ui) => new Chat
-                {
-                    NickName = nickname,
-                    Image = ui.Image
-                })
+        var sql = @"
+        SELECT DISTINCT 
+            CASE 
+                WHEN um.""SenderHash"" = {0} THEN um.""Recipient"" 
+                ELSE um.""Sender"" 
+            END as ""NickName"",
+            i.""Image""
+        FROM public.""UsersMessages"" um
+        LEFT JOIN public.""Images"" i ON (
+            CASE 
+                WHEN um.""SenderHash"" = {0} THEN um.""RecipientHash"" 
+                ELSE um.""SenderHash"" 
+            END = i.""NickNameHash""
+        )
+        WHERE um.""IsDeleted"" = false 
+            AND (um.""SenderHash"" = {0} OR um.""RecipientHash"" = {0})";
+
+        return await db.Database
+            .SqlQueryRaw<Chat>(sql, currentUserHash)
             .ToListAsync();
     }
 }

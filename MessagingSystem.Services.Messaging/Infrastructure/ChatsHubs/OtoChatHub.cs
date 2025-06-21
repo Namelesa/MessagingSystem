@@ -6,6 +6,7 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
+using MessagingSystem.Services.Messaging.Core;
 
 namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 
@@ -146,6 +147,28 @@ public class OtoChatHub(
 
         await NotifyUsersAsync(sender, recipientNickname, "ReceivePrivateMessage", resultData);
         return resultData;
+    }
+    public async Task<List<object>> FindMessagesAsync(string? recipient, DateTime? time, string? sender)
+    {
+        var filter = new MessageFilter
+        {
+            Sender = sender,
+            Date = time
+        };
+
+        var messages = await messageOrchestrator.FindMessagesAsync(filter);
+        if (messages == null || !messages.Any())
+            return [];
+
+        return messages.Select(m => new
+        {
+            messageId = m.Id,
+            sender = m.Sender,
+            content = m.Content,
+            sentAt = m.SendTime,
+            isEdited = m.IsEdited,
+            replyFor = m.ReplyFor
+        }).Cast<object>().ToList();
     }
     private Task NotifyUsersAsync(string user1, string? user2, string method, object data)
     {

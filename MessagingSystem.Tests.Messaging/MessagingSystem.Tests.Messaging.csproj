@@ -16,6 +16,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="9.0.6" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.15" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="9.0.6" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="10.0.0-preview.5.25277.114" />
         <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.5" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.5" />
