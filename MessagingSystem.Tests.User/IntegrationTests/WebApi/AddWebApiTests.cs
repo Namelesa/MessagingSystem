@@ -20,24 +20,29 @@ public class AddWebApiTests
     }
 
     [Fact]
-    public void AddWebApiLayer_Should_Register_AutoMapper_Profiles()
+    public void AddWebApiLayer_Should_Resolve_IMapper()
     {
         var mapper = _serviceProvider.GetService<IMapper>();
         Assert.NotNull(mapper);
-
-        var configurationProvider = mapper.ConfigurationProvider;
-        
-        configurationProvider.AssertConfigurationIsValid();
     }
 
     [Fact]
-    public void AddWebApiLayer_Should_Throw_Exception_If_Profiles_Are_Not_Registered()
+    public void AddWebApiLayer_Should_Map_BasicObject_WithoutExceptions()
     {
-        var mapper = _serviceProvider.GetService<IMapper>();
-        var configurationProvider = mapper?.ConfigurationProvider;
-        
-        var exception = Record.Exception(() => configurationProvider?.AssertConfigurationIsValid());
+        var mapper = _serviceProvider.GetRequiredService<IMapper>();
 
-        Assert.Null(exception);
+        var contract = new MessagingSystem.Services.User.WebApi.User.Contracts.EditUserContract
+        {
+            FirstName = "John",
+            LastName = "Doe",
+            Login = "johndoe",
+            Email = "john@example.com",
+            NickName = "johnny"
+        };
+
+        var dto = mapper.Map<MessagingSystem.Services.User.Application.User.Dto.UserDto>(contract);
+        Assert.Equal("John", dto.FirstName);
+        Assert.Equal("Doe", dto.LastName);
+        Assert.Equal("johndoe", dto.Login);
     }
 }

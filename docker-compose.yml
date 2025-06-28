@@ -9,7 +9,7 @@
       POSTGRES_PASSWORD: postgres
     ports:
       - "5556:5432"
-        
+  
   postgres1:
     image: postgres:latest
     container_name: privateMessage_db
@@ -47,3 +47,10 @@
     ports:
       - "5672:5672"
       - "15672:15672"
+  
+  redis:
+    image: redis:latest
+    container_name: cashService
+    restart: always
+    ports:
+      - "6650:6379"

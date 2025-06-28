@@ -9,6 +9,7 @@ using MessagingSystem.SendingModels.UserMessaging.IsExist.Users;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
+using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
@@ -29,6 +30,7 @@ public static class AddInfrastructure
         services.AddScoped<IEncryptionInfo, EncryptionInfo>();
         services.AddScoped<IDecryptionInfo, DecryptionInfo>();
         services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
+        services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<KeyPublisher>();
         
         services.Configure<MessageBrokerSettings>(configuration.GetSection("MessageBroker"));
@@ -146,6 +148,12 @@ public static class AddInfrastructure
                     .AllowAnyMethod()
                     .AllowCredentials();
             });
+        });
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration
+                .GetRequiredSection("Redis").GetValue<string>("Host");
         });
     }
 }

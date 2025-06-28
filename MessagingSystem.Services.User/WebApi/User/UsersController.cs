@@ -17,8 +17,19 @@ public class UsersController(
     IMapper mapper,
     IImageLoaderService imageLoaderService) : ControllerBase
 {
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetUserProfileAsync([Required] string nickName)
+    {
+        var result = await userOrchestrator.GetUserInfoAsync(nickName);
+        
+        if (!result.Success) 
+            return BadRequest($"{result.Message}");
+        
+        return Ok(result.Data);
+    }
+    
     [HttpPut("edit")]
-    public async Task<IActionResult> EditUserAsync([Required] string userId, [Required, FromForm] EditUserContract userContract)
+    public async Task<IActionResult> EditUserAsync([Required] string nickName, [Required, FromForm] EditUserContract userContract)
     {
         if (userContract.ImageFile is { Length: > 0 })
         {
@@ -29,7 +40,7 @@ public class UsersController(
         }
         
         var userDto = mapper.Map<UserDto>(userContract);
-        var result = await userOrchestrator.EditUserInfoAsync(userDto, userId);
+        var result = await userOrchestrator.EditUserInfoAsync(userDto, nickName);
 
         if (!result.Success) 
             return BadRequest($"{result.Message}");
@@ -39,9 +50,9 @@ public class UsersController(
     }
 
     [HttpDelete("delete")]
-    public async Task<IActionResult> DeleteUserAsync([Required] string id)
+    public async Task<IActionResult> DeleteUserAsync([Required] string nickName)
     {
-        var result = await userOrchestrator.DeleteUserAsync(id);
+        var result = await userOrchestrator.DeleteUserAsync(nickName);
         
         if (!result.Success) 
             return BadRequest($"{result.Message}");

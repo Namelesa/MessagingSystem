@@ -6,6 +6,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
+using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
@@ -17,7 +18,8 @@ public class GroupMessagesOrchestrator(
     IEncryptionInfo encryptionInfo,
     IValidator<GroupMessageDto> createValidator,
     IValidator<EditMessageDto> editValidator,
-    IGroupMessagesRepository messageRepository
+    IGroupMessagesRepository messageRepository,
+    ICacheService cacheService
     ) : MessageOrchestratorBase<GroupMessage, GroupMessageDto>(hasher, mapper, 
     encryptionInfo, decryptionInfo, createValidator, editValidator, messageRepository), 
     IGroupMessagesOrchestrator
@@ -26,8 +28,15 @@ public class GroupMessagesOrchestrator(
     
     public async Task<List<GroupMessage>> LoadChatHistory(Guid groupId, int take)
     {
-        var result =  await messageRepository.GetMessageStoryAsync(groupId, take);
-        return DecryptListOfMessage(result);
+        var cacheKey = $"group:{groupId}:history:{take}";
+        var cached = await  cacheService.GetAsync<List<GroupMessage>>(cacheKey);
+        if (cached != null) return cached;
+
+        var result = await messageRepository.GetMessageStoryAsync(groupId, take);
+        result = DecryptListOfMessage(result);
+
+        await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(1));
+        return result;
     }
 
     protected override void ApplyHashAndSet(GroupMessageDto dto, GroupMessage message)
@@ -39,5 +48,10 @@ public class GroupMessagesOrchestrator(
     protected override void EditMessage(GroupMessage message, EditMessageDto editDto)
     {
         message.EditInfo(editDto.Content);
+    }
+    
+    protected override Task InvalidateCacheAsync(GroupMessage message)
+    {
+        return cacheService.RemoveAsync($"group:{message.GroupId}:history:100");
     }
 }

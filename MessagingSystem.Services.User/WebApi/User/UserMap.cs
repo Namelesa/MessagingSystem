@@ -1,5 +1,4 @@
 using AutoMapper;
-using MessagingSystem.Services.User.Application.User;
 using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.WebApi.User.Contracts;
 
@@ -37,7 +36,28 @@ namespace MessagingSystem.Services.User.WebApi.User
                 .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore()) 
                 .ForMember(dest => dest.LockoutEnd, opt => opt.Ignore())
                 .ForMember(dest => dest.LockoutEnabled, opt => opt.Ignore()) 
-                .ForMember(dest => dest.AccessFailedCount, opt => opt.Ignore()); 
+                .ForMember(dest => dest.AccessFailedCount, opt => opt.Ignore());
+            
+            CreateMap<Core.User.User, UserDto>()
+                .ConstructUsing(src => new UserDto(
+                    SplitPascalCase(src.UserName).FirstOrDefault() ?? "",
+                    SplitPascalCase(src.UserName).Skip(1).FirstOrDefault() ?? "",
+                    src.Login,
+                    src.Email,
+                    src.NickName,
+                    src.Image
+                ));
+
+        }
+        private static List<string> SplitPascalCase(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return [];
+
+            return System.Text.RegularExpressions.Regex
+                .Matches(input, @"[A-Z][a-z]*")
+                .Select(m => m.Value)
+                .ToList();
         }
     }
 }

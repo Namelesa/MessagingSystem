@@ -6,6 +6,7 @@ using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
@@ -17,7 +18,9 @@ public class MessageOrchestrator(
     IValidator<EditMessageDto> editValidator,
     IEncryptionInfo encryptionInfo,
     IDecryptionInfo decryptionInfo,
-    IHasher hasher)
+    IHasher hasher,
+    ICacheService cacheService
+    )
     : MessageOrchestratorBase<Message, MessagesDto>(hasher, mapper, 
         encryptionInfo, decryptionInfo, createValidator,
         editValidator, otoMessageRepository), IMessageOrchestrator
@@ -29,8 +32,18 @@ public class MessageOrchestrator(
         var hashSender = _hasher.Hash(sender);
         var hashRecipient = _hasher.Hash(recipient);
         
-        var result =  await otoMessageRepository.GetMessageStoryAsync(hashSender, hashRecipient, take);
-        return DecryptListOfMessage(result);
+        var keyPair = new [] { hashSender, hashRecipient }.OrderBy(x => x).ToArray();
+        var cacheKey = $"oto:{keyPair[0]}:{keyPair[1]}:history:{take}";
+
+        var cached = await cacheService.GetAsync<List<Message>>(cacheKey);
+        if (cached != null)
+            return cached;
+
+        var result = await otoMessageRepository.GetMessageStoryAsync(hashSender, hashRecipient, take);
+        result = DecryptListOfMessage(result);
+
+        await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(1));
+        return result;
     }
 
     protected override void ApplyHashAndSet(MessagesDto dto, Message message)
@@ -43,5 +56,13 @@ public class MessageOrchestrator(
     protected override void EditMessage(Message message, EditMessageDto editDto)
     {
         message.EditInfo(editDto.Content);
+    }
+    
+    protected override async Task InvalidateCacheAsync(Message message)
+    {
+        var participants = new[] { message.SenderHash, message.RecipientHash }.OrderBy(x => x).ToArray();
+        var cacheKey = $"oto:{participants[0]}:{participants[1]}:history:100";
+
+        await cacheService.RemoveAsync(cacheKey);
     }
 }

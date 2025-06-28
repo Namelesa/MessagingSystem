@@ -30,6 +30,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
 
         var message = mapper.Map<TMessage>(messagesDto);
         ApplyHashAndSet(messagesDto, message);
+        await InvalidateCacheAsync(message);
         encryptionInfo.EncryptObjectStrings(message);
         var result = await messageRepository.CreateMessageAsync(message);
 
@@ -48,6 +49,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
             return OperationResult<string>.Fail("Message not found");
 
         EditMessage(message, messagesDto);
+        await InvalidateCacheAsync(message);
         encryptionInfo.EncryptObjectStrings(message);
         var result = await messageRepository.EditMessageAsync(message);
 
@@ -58,8 +60,9 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         var message = await messageRepository.FindMessageByIdAsync(messageId);
         if (message == null)
             return OperationResult<string>.Fail("Message not found");
-
+        
         var result = await messageRepository.DeleteMessageAsync(message);
+        await InvalidateCacheAsync(message);
         return OperationResult<string>.Ok(result.Id.ToString());
     }
     public async Task<OperationResult<string>> SoftDeleteMessageAsync(Guid messageId)
@@ -69,6 +72,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
             return OperationResult<string>.Fail("Message not found");
 
         var result = await messageRepository.SoftDeleteMessageAsync(message);
+        await InvalidateCacheAsync(message);
         return OperationResult<string>.Ok(result.Id.ToString());
     }
     public async Task<OperationResult<string>> FindMessageByIdAsync(Guid messageId)
@@ -87,6 +91,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
 
         var reply = await messageRepository.ReplyMessageAsync(replyId, message);
         decryptionInfo.DecryptObjectStrings(reply);
+        await InvalidateCacheAsync(message);
         
         return OperationResult<TMessage>.Ok(reply);
     }
@@ -139,6 +144,11 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         encryptedMessages.ForEach(decryptionInfo.DecryptObjectStrings);
         return encryptedMessages;
     }
+    protected virtual Task InvalidateCacheAsync(TMessage message)
+    {
+        return Task.CompletedTask;
+    }
+    
     protected abstract void ApplyHashAndSet(TCreateDto dto, TMessage message);
     protected abstract void EditMessage(TMessage message, EditMessageDto editDto);
 }

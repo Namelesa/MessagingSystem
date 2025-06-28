@@ -8,6 +8,7 @@ using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
+using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using Moq;
 using Xunit;
@@ -20,6 +21,7 @@ public class MessageOrchestratorTests
     private readonly Mock<IOtoMessageRepository> _repositoryMock;
     private readonly Mock<IDecryptionInfo> _decryptionInfoMock;
     private readonly Mock<IHasher> _hasherMock;
+    private readonly Mock<ICacheService> _cacheServiceMock;
 
     private readonly MessageOrchestrator _orchestrator;
 
@@ -32,6 +34,7 @@ public class MessageOrchestratorTests
         var encryptionInfoMock = new Mock<IEncryptionInfo>();
         _decryptionInfoMock = new Mock<IDecryptionInfo>();
         _hasherMock = new Mock<IHasher>();
+        _cacheServiceMock = new Mock<ICacheService>();
 
         _orchestrator = new MessageOrchestrator(
             _repositoryMock.Object,
@@ -40,9 +43,145 @@ public class MessageOrchestratorTests
             editValidatorMock.Object,
             encryptionInfoMock.Object,
             _decryptionInfoMock.Object,
-            _hasherMock.Object);
+            _hasherMock.Object,
+            _cacheServiceMock.Object);
     }
 
+    [Fact]
+    public async Task LoadChatHistory_ShouldReturnCachedData_WhenCacheHit()
+    {
+        // Arrange
+        const string sender = "sender@test.com";
+        const string recipient = "recipient@test.com";
+        const string hashedSender = "hashedSender";
+        const string hashedRecipient = "hashedRecipient";
+        const int take = 10;
+
+        var cachedMessages = new List<Message>
+        {
+            new("sender", "recipient", "cachedContent1"),
+            new("sender", "recipient", "cachedContent2")
+        };
+
+        _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
+        _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
+
+        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{take}";
+        _cacheServiceMock.Setup(x => x.GetAsync<List<Message>>(expectedCacheKey))
+            .ReturnsAsync(cachedMessages);
+
+        // Act
+        var result = await _orchestrator.LoadChatHistory(sender, recipient, take);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(cachedMessages, result);
+
+        _hasherMock.Verify(x => x.Hash(sender), Times.Once);
+        _hasherMock.Verify(x => x.Hash(recipient), Times.Once);
+        _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
+        _repositoryMock.Verify(x => x.GetMessageStoryAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        _cacheServiceMock.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<Message>>(), It.IsAny<TimeSpan>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoadChatHistory_ShouldCacheResult_WhenCacheMiss()
+    {
+        // Arrange
+        const string sender = "sender@test.com";
+        const string recipient = "recipient@test.com";
+        const string hashedSender = "hashedSender";
+        const string hashedRecipient = "hashedRecipient";
+        const int take = 10;
+
+        var encryptedMessages = new List<Message>
+        {
+            new("sender", "recipient", "encryptedContent1"),
+            new("sender", "recipient", "encryptedContent2")
+        };
+
+        _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
+        _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
+
+        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{take}"; // Отсортированный порядок
+        _cacheServiceMock.Setup(x => x.GetAsync<List<Message>>(expectedCacheKey))
+            .ReturnsAsync((List<Message>)null);
+
+        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take))
+            .ReturnsAsync(encryptedMessages);
+
+        _decryptionInfoMock
+            .Setup(x => x.DecryptObjectStrings(It.IsAny<Message>()))
+            .Callback<Message>(_ => { });
+
+        // Act
+        var result = await _orchestrator.LoadChatHistory(sender, recipient, take);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Count);
+
+        _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
+        _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take), Times.Once);
+        _decryptionInfoMock.Verify(x => x.DecryptObjectStrings(It.IsAny<Message>()), Times.Exactly(2));
+        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
+    }
+
+    [Fact]
+    public async Task LoadChatHistory_ShouldOrderHashesForCacheKey()
+    {
+        // Arrange
+        const string sender = "zebra@test.com";
+        const string recipient = "alpha@test.com";
+        const string hashedSender = "zzz";
+        const string hashedRecipient = "aaa";
+        const int take = 5;
+
+        _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
+        _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
+
+        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{take}"; // aaa:zzz (отсортированный)
+        _cacheServiceMock.Setup(x => x.GetAsync<List<Message>>(expectedCacheKey))
+            .ReturnsAsync((List<Message>)null);
+
+        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take))
+            .ReturnsAsync(new List<Message>());
+
+        // Act
+        await _orchestrator.LoadChatHistory(sender, recipient, take);
+
+        // Assert
+        _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
+        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, It.IsAny<List<Message>>(), TimeSpan.FromMinutes(1)), Times.Once);
+    }
+
+    [Fact]
+    public async Task InvalidateCacheAsync_ShouldRemoveCorrectCacheKey()
+    {
+        // Arrange
+        var message = new Message("sender", "recipient", "content");
+    
+        var senderHashProperty = typeof(Message).GetProperty("SenderHash");
+        var recipientHashProperty = typeof(Message).GetProperty("RecipientHash");
+    
+        senderHashProperty?.SetValue(message, "zzz");
+        recipientHashProperty?.SetValue(message, "aaa");
+
+        var expectedCacheKey = "oto:aaa:zzz:history:100";
+
+        var method = typeof(MessageOrchestrator)
+            .GetMethod("InvalidateCacheAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        method.Should().NotBeNull();
+
+        // Act
+        await (Task)method.Invoke(_orchestrator, [message]);
+
+        // Assert
+        _cacheServiceMock.Verify(x => x.RemoveAsync(expectedCacheKey), Times.Once);
+    }
+    
     [Fact]
     public void ApplyHashAndSet_ShouldHashSenderAndRecipient()
     {

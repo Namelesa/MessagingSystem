@@ -85,9 +85,19 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             _mockConfiguration.Setup(x => x["Encryption:ChaChaKey"])
                 .Returns("ThisIsAVeryLongSecretKeyForTesting12345");
             
+            var redisSection = new Mock<IConfigurationSection>();
+            redisSection.Setup(x => x["Host"]).Returns("localhost:6379");
+
+            _mockConfiguration.Setup(x => x.GetSection("Redis"))
+                .Returns(redisSection.Object);
+            
+            _mockConfiguration.Setup(x => x["Redis:Host"])
+                .Returns("localhost:6379");
+            
             _mockConfiguration.Setup(x => x["JWTConfig:Issuer"]).Returns("TestIssuer");
             _mockConfiguration.Setup(x => x["JWTConfig:Audience"]).Returns("TestAudience");
             _mockConfiguration.Setup(x => x["JWTConfig:Key"]).Returns("ThisIsAVeryLongSecretKeyForTesting12345");
+            _mockConfiguration.Setup(x => x["Redis:Host"]).Returns("localhost:6379");
         }
 
         [Fact]
@@ -171,8 +181,25 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
         [Fact]
         public void AddInfrastructureLayer_ShouldRegisterConsumers()
         {
-            // Act
-            _services.AddSingleton(_mockConfiguration.Object);
+            // Arrange
+            var inMemorySettings = new Dictionary<string, string>
+            {
+                {"MessageBroker:Host", "amqp://localhost:5672"},
+                {"MessageBroker:UserName", "guest"},
+                {"MessageBroker:Password", "guest"},
+                {"Encryption:ChaChaKey", "ThisIsAVeryLongSecretKeyForTesting12345"},
+                {"Redis:Host", "localhost:6379"},
+                {"JWTConfig:Issuer", "TestIssuer"},
+                {"JWTConfig:Audience", "TestAudience"},
+                {"JWTConfig:Key", "ThisIsAVeryLongSecretKeyForTesting12345"}
+            };
+
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(inMemorySettings)
+                .Build();
+
+            _services.AddSingleton<IConfiguration>(configuration);
+
             _services.AddDbContextFactory<GroupAppDbContext>(options =>
             {
                 options.UseInMemoryDatabase("TestDb");
@@ -197,7 +224,6 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             _services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
             _services.AddScoped<IGroupEncryption, GroupEncryptionDecorator>();
             _services.AddLogging();
-            _services.AddLogging();
 
             _services.AddSingleton(Options.Create(new MessageBrokerSettings
             {
@@ -205,8 +231,8 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
                 UserName = "guest",
                 Password = "guest"
             }));
-            
-            _services.AddInfrastructureLayer(_mockConfiguration.Object);
+
+            _services.AddInfrastructureLayer(configuration);
 
             var serviceProvider = _services.BuildServiceProvider();
 

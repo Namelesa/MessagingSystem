@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using Encryptor.Decryption;
 using Encryptor.Encryption;
@@ -25,9 +26,30 @@ public class UserOrchestrator(
     IRequestClient<EditUserInfoRequest> editClient,
     IRequestClient<DeleteUserInfoRequest> deleteClient,
     IPublicKeyStorage publicKeyStorage,
-    IImageLoaderService imageLoaderService) : IUserOrchestrator
+    IImageLoaderService imageLoaderService,
+    IHttpContextAccessor httpContextAccessor) : IUserOrchestrator
 {
-    public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string userId)
+    public async Task<OperationResult<UserDto>> GetUserInfoAsync(string nickName)
+    {
+        var currentNickName = httpContextAccessor.HttpContext?.User
+            .Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+
+        if (!string.Equals(currentNickName, nickName, StringComparison.OrdinalIgnoreCase))
+        {
+            return OperationResult<UserDto>.Fail("Access denied");
+        }
+
+        var user = await userRepository.FindUserByHashNickNameAsync(hasher.Hash(nickName));
+        if (user == null) 
+            return OperationResult<UserDto>.Fail("User not found");
+        
+        decryptionInfo.DecryptObjectStrings(user);
+    
+        var userDto = mapper.Map<UserDto>(user);
+    
+        return OperationResult<UserDto>.Ok(userDto);
+    }
+    public async Task<OperationResult<string>> EditUserInfoAsync(UserDto userDto, string nickName)
     {
         var publicKeyNotification = GetPublicKey("Notification");
         var publicKeyMessaging = GetPublicKey("Messaging");
@@ -36,9 +58,17 @@ public class UserOrchestrator(
         if (!validationResult.IsValid) 
             return OperationResult<string>.Fail(string.Join("; ", validationResult.Errors));
 
-        var existingUser = await userRepository.FindUserByIdAsync(userId);
+        var existingUser = await userRepository.FindUserByHashNickNameAsync(hasher.Hash(nickName));
         if (existingUser == null || publicKeyNotification == null || publicKeyMessaging == null)
             return OperationResult<string>.Fail("User not found");
+        
+        var currentNickName = httpContextAccessor.HttpContext?.User
+            .Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+
+        if (currentNickName != nickName)
+        {
+            return OperationResult<string>.Fail("Access denied");
+        }
 
         var oldHashNick = existingUser.HashNickName;
         var hashLogin = hasher.Hash(userDto.Login);
@@ -87,14 +117,22 @@ public class UserOrchestrator(
             return OperationResult<string>.Fail($"Can not update user info {e}");
         }
     }
-    public async Task<OperationResult<string>> DeleteUserAsync(string userId)
+    public async Task<OperationResult<string>> DeleteUserAsync(string nickName)
     {
         var publicKeyNotification = GetPublicKey("Notification");
         var publicKeyMessaging = GetPublicKey("Messaging");
         
-        var user = await userRepository.FindUserByIdAsync(userId);
+        var user = await userRepository.FindUserByHashNickNameAsync(nickName);
         if (user == null || publicKeyNotification == null || publicKeyMessaging == null)
             return OperationResult<string>.Fail("Not found user");
+        
+        var currentNickName = httpContextAccessor.HttpContext?.User
+            .Claims.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value;
+
+        if (!string.Equals(currentNickName, nickName, StringComparison.OrdinalIgnoreCase))
+        {
+            return OperationResult<string>.Fail("Access denied");
+        }
         
         try
         {

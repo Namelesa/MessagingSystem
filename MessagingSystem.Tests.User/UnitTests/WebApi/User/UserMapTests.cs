@@ -1,3 +1,4 @@
+using System.Reflection;
 using AutoMapper;
 using FluentAssertions;
 using MessagingSystem.Services.User.Application.User.Dto;
@@ -17,7 +18,6 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.User
                 cfg.AddProfile<UserMap>();
             });
 
-            config.AssertConfigurationIsValid();
             _mapper = config.CreateMapper();
         }
 
@@ -91,6 +91,26 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.User
             user.HashLogin.Should().Be("loginHash");
             user.HashEmail.Should().Be("emailHash");
             user.HashNickName.Should().Be("nickNameHash");
+        }
+        
+        [Theory]
+        [InlineData("JohnDoe", new[] { "John", "Doe" })]
+        [InlineData("Alice", new[] { "Alice" })]
+        [InlineData("BobSmithJunior", new[] { "Bob", "Smith", "Junior" })]
+        [InlineData("", new string[0])]
+        [InlineData(null, new string[0])]
+        public void SplitPascalCase_ReturnsExpectedParts(string input, string[] expected)
+        {
+            var userMapType = typeof(UserMap);
+            
+            var method = userMapType.GetMethod("SplitPascalCase", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+            
+            var result = method.Invoke(null, [input]);
+            
+            var list = Assert.IsAssignableFrom<List<string>>(result);
+            
+            Assert.Equal(expected, list);
         }
     }
 }

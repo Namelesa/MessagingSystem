@@ -199,7 +199,7 @@
 
         const timestamp = new Date().toLocaleTimeString();
         let messageContent = `<strong>[${timestamp}]</strong> ${text}`;
-        
+
         if (messageData && messageData.messageId) {
             messageContent += `
                 <div class="message-id">ID: ${messageData.messageId}</div>

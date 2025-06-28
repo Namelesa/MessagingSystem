@@ -6,6 +6,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
+using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using Moq;
 using Xunit;
@@ -18,6 +19,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         private readonly Mock<IHasher> _hasherMock;
         private readonly Mock<IGroupMessagesRepository> _messageRepositoryMock;
         private readonly GroupMessagesOrchestrator _orchestrator;
+        private readonly Mock<ICacheService> _cacheServiceMock;
 
         public GroupMessagesOrchestratorTests()
         {
@@ -28,6 +30,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Mock<IValidator<GroupMessageDto>> createValidatorMock = new();
             Mock<IValidator<EditMessageDto>> editValidatorMock = new();
             _messageRepositoryMock = new Mock<IGroupMessagesRepository>();
+            _cacheServiceMock = new Mock<ICacheService>();
 
             _orchestrator = new GroupMessagesOrchestrator(
                 mapperMock.Object,
@@ -36,10 +39,221 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
                 encryptionInfoMock.Object,
                 createValidatorMock.Object,
                 editValidatorMock.Object,
-                _messageRepositoryMock.Object
+                _messageRepositoryMock.Object,
+                _cacheServiceMock.Object
             );
         }
 
+        [Fact]
+        public async Task InvalidateCacheAsync_ShouldRemoveCorrectCacheKey()
+        {
+            // Arrange
+            var groupId = Guid.NewGuid();
+            var message = new GroupMessage("sender", "content")
+            {
+                GroupId = groupId
+            };
+            var expectedCacheKey = $"group:{groupId}:history:100";
+
+            // Act
+            var method = typeof(GroupMessagesOrchestrator)
+                .GetMethod("InvalidateCacheAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            await (Task)method?.Invoke(_orchestrator, [message]);
+
+            // Assert
+            _cacheServiceMock.Verify(x => x.RemoveAsync(expectedCacheKey), Times.Once);
+        }
+
+        [Fact]
+        public async Task InvalidateCacheAsync_WithDifferentGroupIds_ShouldRemoveDifferentCacheKeys()
+        {
+            // Arrange
+            var groupId1 = Guid.NewGuid();
+            var groupId2 = Guid.NewGuid();
+    
+            var message1 = new GroupMessage("sender1", "content1")
+            {
+                GroupId = groupId1
+            };
+            var message2 = new GroupMessage("sender2", "content2")
+            {
+                GroupId = groupId2
+            };
+
+            var expectedCacheKey1 = $"group:{groupId1}:history:100";
+            var expectedCacheKey2 = $"group:{groupId2}:history:100";
+
+            var method = typeof(GroupMessagesOrchestrator)
+                .GetMethod("InvalidateCacheAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            // Act
+            await (Task)method?.Invoke(_orchestrator, [message1]);
+            await (Task)method?.Invoke(_orchestrator, [message2]);
+
+            // Assert
+            _cacheServiceMock.Verify(x => x.RemoveAsync(expectedCacheKey1), Times.Once);
+            _cacheServiceMock.Verify(x => x.RemoveAsync(expectedCacheKey2), Times.Once);
+        }
+
+        [Fact]
+        public async Task LoadChatHistory_WhenCacheHit_ShouldReturnCachedData()
+{
+    // Arrange
+    var groupId = Guid.NewGuid();
+    const int take = 10;
+    var expectedCacheKey = $"group:{groupId}:history:{take}";
+    
+    var cachedMessages = new List<GroupMessage>
+    {
+        new("sender1", "cached content 1") { Id = Guid.NewGuid() },
+        new("sender2", "cached content 2") { Id = Guid.NewGuid() }
+    };
+
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey))
+        .ReturnsAsync(cachedMessages);
+
+    // Act
+    var result = await _orchestrator.LoadChatHistory(groupId, take);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal(cachedMessages.Count, result.Count);
+    Assert.Equal(cachedMessages[0].Content, result[0].Content);
+    Assert.Equal(cachedMessages[1].Content, result[1].Content);
+
+    // Verify cache was checked
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey), Times.Once);
+    
+    // Verify repository was NOT called when cache hit
+    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+    _cacheServiceMock.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<GroupMessage>>(), It.IsAny<TimeSpan>()), Times.Never);
+}
+
+        [Fact]
+        public async Task LoadChatHistory_WhenCacheMiss_ShouldFetchDataAndCache()
+{
+    // Arrange
+    var groupId = Guid.NewGuid();
+    const int take = 10;
+    var expectedCacheKey = $"group:{groupId}:history:{take}";
+    
+    var repositoryMessages = new List<GroupMessage>
+    {
+        new("sender1", "content1") { Id = Guid.NewGuid() },
+        new("sender2", "content2") { Id = Guid.NewGuid() }
+    };
+
+    // Setup cache miss
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey))
+        .ReturnsAsync((List<GroupMessage>?)null);
+
+    _messageRepositoryMock.Setup(x => x.GetMessageStoryAsync(groupId, take))
+        .ReturnsAsync(repositoryMessages);
+
+    // Act
+    var result = await _orchestrator.LoadChatHistory(groupId, take);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Equal(repositoryMessages.Count, result.Count);
+
+    // Verify cache miss was handled
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey), Times.Once);
+    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, take), Times.Once);
+    _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
+}
+
+        [Fact]
+        public async Task LoadChatHistory_WithDifferentGroupIds_ShouldUseDifferentCacheKeys()
+{
+    // Arrange
+    var groupId1 = Guid.NewGuid();
+    var groupId2 = Guid.NewGuid();
+    const int take = 10;
+    
+    var expectedCacheKey1 = $"group:{groupId1}:history:{take}";
+    var expectedCacheKey2 = $"group:{groupId2}:history:{take}";
+
+    var cachedMessages1 = new List<GroupMessage> { new("sender1", "content1") };
+    var cachedMessages2 = new List<GroupMessage> { new("sender2", "content2") };
+
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey1))
+        .ReturnsAsync(cachedMessages1);
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey2))
+        .ReturnsAsync(cachedMessages2);
+
+    // Act
+    var result1 = await _orchestrator.LoadChatHistory(groupId1, take);
+    var result2 = await _orchestrator.LoadChatHistory(groupId2, take);
+
+    // Assert
+    Assert.Equal(cachedMessages1, result1);
+    Assert.Equal(cachedMessages2, result2);
+
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey1), Times.Once);
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey2), Times.Once);
+}
+
+        [Fact]
+        public async Task LoadChatHistory_WithDifferentTakeValues_ShouldUseDifferentCacheKeys()
+{
+    // Arrange
+    var groupId = Guid.NewGuid();
+    const int take1 = 10;
+    const int take2 = 20;
+    
+    var expectedCacheKey1 = $"group:{groupId}:history:{take1}";
+    var expectedCacheKey2 = $"group:{groupId}:history:{take2}";
+
+    var cachedMessages1 = new List<GroupMessage> { new("sender1", "content1") };
+    var cachedMessages2 = new List<GroupMessage> { new("sender2", "content2") };
+
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey1))
+        .ReturnsAsync(cachedMessages1);
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey2))
+        .ReturnsAsync(cachedMessages2);
+
+    // Act
+    var result1 = await _orchestrator.LoadChatHistory(groupId, take1);
+    var result2 = await _orchestrator.LoadChatHistory(groupId, take2);
+
+    // Assert
+    Assert.Equal(cachedMessages1, result1);
+    Assert.Equal(cachedMessages2, result2);
+
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey1), Times.Once);
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey2), Times.Once);
+}
+        
+        [Fact]
+        public async Task LoadChatHistory_WhenCacheMissWithEmptyRepository_ShouldCacheEmptyResult()
+{
+    // Arrange
+    var groupId = Guid.NewGuid();
+    const int take = 10;
+    var expectedCacheKey = $"group:{groupId}:history:{take}";
+    var emptyResult = new List<GroupMessage>();
+
+    // Setup cache miss
+    _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey))
+        .ReturnsAsync((List<GroupMessage>?)null);
+
+    _messageRepositoryMock.Setup(x => x.GetMessageStoryAsync(groupId, take))
+        .ReturnsAsync(emptyResult);
+
+    // Act
+    var result = await _orchestrator.LoadChatHistory(groupId, take);
+
+    // Assert
+    Assert.NotNull(result);
+    Assert.Empty(result);
+
+    // Verify cache operations
+    _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey), Times.Once);
+    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, take), Times.Once);
+    _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
+}
+        
         [Fact]
         public async Task LoadChatHistory_WithEmptyResult_ShouldReturnEmptyList()
         {

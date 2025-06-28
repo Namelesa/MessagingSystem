@@ -28,6 +28,64 @@ public class UsersControllerTests
     }
 
     [Fact]
+    public async Task GetUserProfileAsync_WithValidNickName_ReturnsOkResult()
+    {
+        // Arrange
+        var nickName = "testUser123";
+        var userData = new UserDto("firstName", "lastName", "loginUser123", "test@example.com", "testUser123", "");
+        var operationResult = OperationResult<UserDto>.Ok(userData);
+
+        _userOrchestratorMock
+            .Setup(o => o.GetUserInfoAsync(nickName))
+            .ReturnsAsync(operationResult);
+
+        // Act
+        var result = await _sut.GetUserProfileAsync(nickName);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(userData, okResult.Value);
+    }
+
+    [Fact]
+    public async Task GetUserProfileAsync_WithNonExistentUser_ReturnsBadRequestResult()
+    {
+        // Arrange
+        var nickName = "nonExistentUser";
+        var operationResult = OperationResult<UserDto>.Fail("User not found");
+
+        _userOrchestratorMock
+            .Setup(o => o.GetUserInfoAsync(nickName))
+            .ReturnsAsync(operationResult);
+
+        // Act
+        var result = await _sut.GetUserProfileAsync(nickName);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("User not found", badRequestResult.Value);
+    }
+
+    [Fact]
+    public async Task GetUserProfileAsync_WithDatabaseError_ReturnsBadRequestResult()
+    {
+        // Arrange
+        var nickName = "testUser123";
+        var operationResult = OperationResult<UserDto>.Fail("Database connection failed");
+
+        _userOrchestratorMock
+            .Setup(o => o.GetUserInfoAsync(nickName))
+            .ReturnsAsync(operationResult);
+
+        // Act
+        var result = await _sut.GetUserProfileAsync(nickName);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Database connection failed", badRequestResult.Value);
+    }
+    
+    [Fact]
     public async Task EditUserAsync_WithValidData_ReturnsOkResult()
     {
         // Arrange
