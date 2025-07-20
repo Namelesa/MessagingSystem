@@ -11,6 +11,7 @@ using MessagingSystem.Services.User.Application.User.Dto;
 using MessagingSystem.Services.User.Core.User;
 using MessagingSystem.Services.User.Infrastructure.HasherInfo;
 using MessagingSystem.Services.User.Infrastructure.ImageLoader;
+using MessagingSystem.Services.User.Infrastructure.Jwt;
 using MessagingSystem.Services.User.Infrastructure.Keys;
 
 namespace MessagingSystem.Services.User.Application.User;
@@ -27,7 +28,8 @@ public class UserOrchestrator(
     IRequestClient<DeleteUserInfoRequest> deleteClient,
     IPublicKeyStorage publicKeyStorage,
     IImageLoaderService imageLoaderService,
-    IHttpContextAccessor httpContextAccessor) : IUserOrchestrator
+    IHttpContextAccessor httpContextAccessor,
+    IJwtService jwtService) : IUserOrchestrator
 {
     public async Task<OperationResult<UserDto>> GetUserInfoAsync(string nickName)
     {
@@ -74,20 +76,29 @@ public class UserOrchestrator(
         var hashLogin = hasher.Hash(userDto.Login);
         var hashEmail = hasher.Hash(userDto.Email);
         var hashNickName = hasher.Hash(userDto.NickName);
-        
-        if (existingUser.Image != null)
+
+        if (!string.IsNullOrEmpty(userDto.Image) && !string.IsNullOrEmpty(existingUser.Image))
+        {
             await DeleteImage(decryptionInfo.Decrypt(existingUser.Image));
+        }
+        
+        var oldImage = existingUser.Image;
         
         mapper.Map(userDto, existingUser);
         existingUser.SetHashes(hashLogin, hashEmail, hashNickName);
         
         encryptInfo.EncryptObjectStringsForUpdate(existingUser);
         
+        if (string.IsNullOrEmpty(userDto.Image))
+        {
+            existingUser.SetImage(oldImage);
+        }
+        
         if (existingUser.UserName == null 
             || existingUser.Email == null 
             || existingUser.HashNickName == null
-            || existingUser.Image == null
-            || oldHashNick == null) 
+            || oldHashNick == null
+            || existingUser.Image == null) 
             return OperationResult<string>.Fail("User can not have null properties");
         
         try
@@ -105,6 +116,7 @@ public class UserOrchestrator(
                 return OperationResult<string>.Fail("Can't update user info");
             
             await userRepository.UpdateUserAsync(existingUser);
+            jwtService.RemoveTokenCookie();
             
             var editUserInfo = new EditUserEmail(existingUser.Email, existingUser.UserName);
             encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKeyNotification);
@@ -121,8 +133,9 @@ public class UserOrchestrator(
     {
         var publicKeyNotification = GetPublicKey("Notification");
         var publicKeyMessaging = GetPublicKey("Messaging");
+        var hashNickName = hasher.Hash(nickName);
         
-        var user = await userRepository.FindUserByHashNickNameAsync(nickName);
+        var user = await userRepository.FindUserByHashNickNameAsync(hashNickName);
         if (user == null || publicKeyNotification == null || publicKeyMessaging == null)
             return OperationResult<string>.Fail("Not found user");
         
@@ -154,6 +167,7 @@ public class UserOrchestrator(
                 await DeleteImage(decryptionInfo.Decrypt(user.Image));
             
             await userRepository.DeleteUserAsync(user);
+            jwtService.RemoveTokenCookie();
             
             var editUserInfo = new DeleteUserEmail(user.Email, user.UserName);
             encryptInfo.EncryptRsaObjectStrings(editUserInfo, publicKeyNotification);

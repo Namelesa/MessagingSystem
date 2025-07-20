@@ -62,6 +62,11 @@ public class JwtService(
         return true;
     }
 
+    public void RemoveTokenCookie()
+    {
+        _httpContextAccessor.HttpContext?.Response.Cookies.Delete("access_token");
+    }
+    
     private bool ValidateUserCredentials(LoginDto? user, string passwordRequest)
     {
         if (user?.Password == null) 

@@ -502,7 +502,7 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
 
             // Assert
             Assert.NotNull(policy);
-            Assert.Contains("http://localhost:63342", policy.Origins);
+            Assert.Contains("http://localhost:4200", policy.Origins);
             Assert.True(policy.SupportsCredentials);
         }
 

@@ -8,6 +8,7 @@ using MessagingSystem.Services.User.WebApi.User.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using Newtonsoft.Json;
 
 namespace MessagingSystem.Tests.User.UnitTests.WebApi.User;
 
@@ -118,7 +119,8 @@ public class UsersControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("User updated successfully", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("User updated successfully", json);
     }
 
     [Fact]
@@ -276,7 +278,8 @@ public class UsersControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("User updated successfully", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("User updated successfully", json);
         
         // Verify image upload was called
         _imageLoaderServiceMock.Verify(
@@ -329,7 +332,8 @@ public class UsersControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("User updated successfully", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("User updated successfully", json);
         
         // Verify image upload was NOT called
         _imageLoaderServiceMock.Verify(
@@ -376,7 +380,8 @@ public class UsersControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("User updated successfully", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("User updated successfully", json);
         
         // Verify image upload was NOT called
         _imageLoaderServiceMock.Verify(
@@ -448,7 +453,8 @@ public class UsersControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("User deleted successfully", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("User deleted successfully", json);
     }
 
     [Fact]

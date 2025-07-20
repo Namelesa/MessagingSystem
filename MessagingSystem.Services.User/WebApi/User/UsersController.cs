@@ -45,8 +45,7 @@ public class UsersController(
         if (!result.Success) 
             return BadRequest($"{result.Message}");
         
-        Redirect("api/auth/login");
-        return Ok($"{result.Data}");
+        return Ok(new { message = result.Data });
     }
 
     [HttpDelete("delete")]
@@ -57,7 +56,6 @@ public class UsersController(
         if (!result.Success) 
             return BadRequest($"{result.Message}");
         
-        Redirect("api/auth/register");
-        return Ok($"{result.Data}");
+        return Ok(new {message = result.Data});
     }
 }

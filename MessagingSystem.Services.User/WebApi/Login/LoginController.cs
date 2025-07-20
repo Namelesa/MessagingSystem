@@ -18,7 +18,7 @@ public class LoginController(IMapper mapper, ILoginOrchestrator loginOrchestrato
         var result = await loginOrchestrator.LoginUserAsync(loginDto);
 
         return result.Success
-            ? Ok($"{result.Data}")
-            : BadRequest($"{result.Message}");
+            ? Ok(new { message = result.Data })
+            : BadRequest(new { message = result.Message });
     }
 }

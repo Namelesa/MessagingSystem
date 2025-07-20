@@ -18,5 +18,9 @@ public class User(string login, string nickName, string? image) : IdentityUser
         HashEmail = emailHash;
         HashNickName = nickNameHash;
     }
-
+    
+    public void SetImage(string? image)
+    {
+        Image = image;
+    }
 }

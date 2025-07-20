@@ -10,7 +10,7 @@ namespace MessagingSystem.Tests.User.IntegrationTests
         [Fact]
         public async Task Swagger_Endpoint_ReturnsSuccess()
         {
-            var response = await _client.GetAsync("/swagger");
+            var response = await _client.GetAsync("/swagger/index.html");
             response.EnsureSuccessStatusCode();
         }
     }

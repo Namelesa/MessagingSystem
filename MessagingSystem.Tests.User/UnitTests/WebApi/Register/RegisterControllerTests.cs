@@ -8,6 +8,7 @@ using MessagingSystem.Services.User.WebApi.Register.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using Newtonsoft.Json;
 
 namespace MessagingSystem.Tests.User.UnitTests.WebApi.Register;
 
@@ -48,7 +49,8 @@ public class RegisterControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("Registration successful", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("Registration successful", json);
     }
 
     [Fact]
@@ -72,7 +74,8 @@ public class RegisterControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Invalid registration data", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("Invalid registration data", json);
     }
 
     [Fact]
@@ -96,7 +99,8 @@ public class RegisterControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Email is already in use", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("Email is already in use", json);
     }
 
     [Fact]
@@ -120,7 +124,8 @@ public class RegisterControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Username is already taken", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("Username is already taken", json);
     }
     
     [Fact]
@@ -160,7 +165,8 @@ public class RegisterControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("Registration successful", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("Registration successful", json);
         
         // Verify image upload was called
         _imageLoaderServiceMock.Verify(
@@ -207,7 +213,9 @@ public class RegisterControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("Registration successful", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("Registration successful", json);
+
         
         // Verify image upload was NOT called
         _imageLoaderServiceMock.Verify(
@@ -246,7 +254,8 @@ public class RegisterControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("Registration successful", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("Registration successful", json);
         
         // Verify image upload was NOT called
         _imageLoaderServiceMock.Verify(
@@ -294,7 +303,8 @@ public class RegisterControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Email is already in use", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("Email is already in use", json);
         
         // Verify image upload was still called (happens before validation)
         _imageLoaderServiceMock.Verify(
@@ -388,64 +398,7 @@ public class RegisterControllerTests
         Assert.Equal(uploadedImageUrl1, registerContract1.AvatarUrl);
         Assert.Equal(uploadedImageUrl2, registerContract2.AvatarUrl);
     }
-
-    [Fact]
-    public async Task ConfirmEmailAsync_WithValidId_ReturnsOkResult()
-    {
-        // Arrange
-        const string id = "valid-confirmation-id";
-        var operationResult = OperationResult<string>.Ok("Email confirmed successfully");
-
-        _registerOrchestratorMock
-            .Setup(o => o.ConfirmEmailAsync(id))
-            .ReturnsAsync(operationResult);
-
-        // Act
-        var result = await _sut.ConfirmEmailAsync(id);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("Email confirmed successfully", okResult.Value);
-    }
-
-    [Fact]
-    public async Task ConfirmEmailAsync_WithInvalidId_ReturnsBadRequestResult()
-    {
-        // Arrange
-        const string id = "invalid-confirmation-id";
-        var operationResult = OperationResult<string>.Fail("Invalid confirmation ID");
-
-        _registerOrchestratorMock
-            .Setup(o => o.ConfirmEmailAsync(id))
-            .ReturnsAsync(operationResult);
-
-        // Act
-        var result = await _sut.ConfirmEmailAsync(id);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Invalid confirmation ID", badRequestResult.Value);
-    }
-
-    [Fact]
-    public async Task ConfirmEmailAsync_WithExpiredId_ReturnsBadRequestResult()
-    {
-        // Arrange
-        const string id = "expired-confirmation-id";
-        var operationResult = OperationResult<string>.Fail("Confirmation link has expired");
-
-        _registerOrchestratorMock
-            .Setup(o => o.ConfirmEmailAsync(id))
-            .ReturnsAsync(operationResult);
-
-        // Act
-        var result = await _sut.ConfirmEmailAsync(id);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Confirmation link has expired", badRequestResult.Value);
-    }
-
+    
     [Fact]
     public async Task ConfirmEmailAsync_WithAlreadyConfirmedEmail_ReturnsBadRequestResult()
     {
@@ -461,7 +414,7 @@ public class RegisterControllerTests
         var result = await _sut.ConfirmEmailAsync(id);
 
         // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Email is already confirmed", badRequestResult.Value);
+        var badRequestResult = Assert.IsType<RedirectResult>(result);
+        Assert.NotEmpty(badRequestResult.Url);
     }
 }

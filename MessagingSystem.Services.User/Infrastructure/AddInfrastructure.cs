@@ -103,6 +103,17 @@ public static class AddInfrastructure
             });
         });
         
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins("http://localhost:4200")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+        
         services.AddAuthorization();
     }
 }

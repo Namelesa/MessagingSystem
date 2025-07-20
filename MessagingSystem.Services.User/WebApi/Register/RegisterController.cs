@@ -32,8 +32,8 @@ public class RegisterController(
         var result = await registerOrchestrator.RegisterUserAsync(registerDto);
 
         return result.Success
-            ? Ok($"{result.Data}")
-            : BadRequest($"{result.Message}");
+            ? Ok(new { message = result.Data })
+            : BadRequest(new { message = result.Message });
     } 
     
     [HttpGet("confirm-email")]
@@ -41,8 +41,14 @@ public class RegisterController(
     public async Task<IActionResult> ConfirmEmailAsync([FromQuery] string id)
     {
         var result = await registerOrchestrator.ConfirmEmailAsync(id);
-        return result.Success
-            ? Ok($"{result.Data}")
-            : BadRequest($"{result.Message}");
+
+        const string frontendUrl = "http://localhost:4200";
+        
+        var redirectUrl = result.Success
+            ? $"{frontendUrl}/email-confirmed?status=success"
+            : $"{frontendUrl}/email-confirmed?status=error&message={Uri.EscapeDataString(result.Message)}";
+
+        return Redirect(redirectUrl);
     }
+
 }

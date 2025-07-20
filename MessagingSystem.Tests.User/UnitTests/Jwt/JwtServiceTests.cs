@@ -350,6 +350,30 @@ public class JwtServiceTests
         Assert.Equal("JWT key is not configured properly.", ex.InnerException!.Message);
     }
     
+    [Fact]
+    public void RemoveTokenCookie_ShouldDeleteAccessTokenCookie()
+    {
+        // Arrange
+        var mockCookies = new Mock<IResponseCookies>();
+        mockCookies.Setup(c => c.Delete("access_token")).Verifiable();
+
+        var mockResponse = new Mock<HttpResponse>();
+        mockResponse.Setup(r => r.Cookies).Returns(mockCookies.Object);
+
+        var mockHttpContext = new Mock<HttpContext>();
+        mockHttpContext.Setup(c => c.Response).Returns(mockResponse.Object);
+
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(mockHttpContext.Object);
+
+        var service = CreateService();
+
+        // Act
+        service.RemoveTokenCookie();
+
+        // Assert
+        mockCookies.Verify(c => c.Delete("access_token"), Times.Once);
+    }
+    
     private static bool InvokeValidateUserCredentials(JwtService service, LoginDto? user, string password)
     {
         var method = typeof(JwtService).GetMethod("ValidateUserCredentials", BindingFlags.NonPublic | BindingFlags.Instance);

@@ -5,4 +5,5 @@ namespace MessagingSystem.Services.User.Infrastructure.Jwt;
 public interface IJwtService
 {
     Task<bool> AuthenticateAndSetCookieAsync(LoginDto? user, string passwordRequest);
+    void RemoveTokenCookie();
 }

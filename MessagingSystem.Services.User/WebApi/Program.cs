@@ -39,7 +39,9 @@ public class Program
             await publisher.PublishAsync();
             await dbInitializer.Initialize();
         }
-
+        
+        app.UseRouting();
+        app.UseCors("AllowFrontend");
         app.UseHttpsRedirection();
 
         app.UseAuthentication();

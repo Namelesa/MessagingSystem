@@ -6,6 +6,7 @@ using MessagingSystem.Services.User.WebApi.Login;
 using MessagingSystem.Services.User.WebApi.Login.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using Newtonsoft.Json;
 
 namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login;
 
@@ -44,7 +45,8 @@ public class LoginControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("True", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("True", json);
     }
 
     [Fact]
@@ -68,7 +70,8 @@ public class LoginControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Invalid credentials", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("Invalid credentials", json);
     }
 
     [Fact]
@@ -92,7 +95,8 @@ public class LoginControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("User not found", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("User not found", json);
     }
 
     [Fact]
@@ -116,7 +120,8 @@ public class LoginControllerTests
 
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Please confirm email", badRequestResult.Value);
+        var json = JsonConvert.SerializeObject(badRequestResult.Value);
+        Assert.Contains("Please confirm email", json);
     }
 
     [Fact]
@@ -140,6 +145,7 @@ public class LoginControllerTests
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("False", okResult.Value);
+        var json = JsonConvert.SerializeObject(okResult.Value);
+        Assert.Contains("False", json);
     }
 }
