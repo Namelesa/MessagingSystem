@@ -101,7 +101,8 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     // Arrange
     var groupId = Guid.NewGuid();
     const int take = 10;
-    var expectedCacheKey = $"group:{groupId}:history:{take}";
+    const int skip = 0;
+    var expectedCacheKey = $"group:{groupId}:history:{take}:skip:{skip}";
     
     var cachedMessages = new List<GroupMessage>
     {
@@ -113,7 +114,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         .ReturnsAsync(cachedMessages);
 
     // Act
-    var result = await _orchestrator.LoadChatHistory(groupId, take);
+    var result = await _orchestrator.LoadChatHistory(groupId, skip, take);
 
     // Assert
     Assert.NotNull(result);
@@ -125,7 +126,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey), Times.Once);
     
     // Verify repository was NOT called when cache hit
-    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     _cacheServiceMock.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<GroupMessage>>(), It.IsAny<TimeSpan>()), Times.Never);
 }
 
@@ -135,7 +136,8 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     // Arrange
     var groupId = Guid.NewGuid();
     const int take = 10;
-    var expectedCacheKey = $"group:{groupId}:history:{take}";
+    const int skip = 0;
+    var expectedCacheKey = $"group:{groupId}:history:{take}:skip:{skip}";
     
     var repositoryMessages = new List<GroupMessage>
     {
@@ -147,11 +149,11 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey))
         .ReturnsAsync((List<GroupMessage>?)null);
 
-    _messageRepositoryMock.Setup(x => x.GetMessageStoryAsync(groupId, take))
+    _messageRepositoryMock.Setup(x => x.GetMessageStoryAsync(groupId, skip, take))
         .ReturnsAsync(repositoryMessages);
 
     // Act
-    var result = await _orchestrator.LoadChatHistory(groupId, take);
+    var result = await _orchestrator.LoadChatHistory(groupId, skip ,take);
 
     // Assert
     Assert.NotNull(result);
@@ -159,7 +161,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
 
     // Verify cache miss was handled
     _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey), Times.Once);
-    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, take), Times.Once);
+    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, skip, take), Times.Once);
     _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
 }
 
@@ -170,9 +172,10 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     var groupId1 = Guid.NewGuid();
     var groupId2 = Guid.NewGuid();
     const int take = 10;
+    const int skip = 0;
     
-    var expectedCacheKey1 = $"group:{groupId1}:history:{take}";
-    var expectedCacheKey2 = $"group:{groupId2}:history:{take}";
+    var expectedCacheKey1 = $"group:{groupId1}:history:{take}:skip:{skip}";
+    var expectedCacheKey2 = $"group:{groupId2}:history:{take}:skip:{skip}";
 
     var cachedMessages1 = new List<GroupMessage> { new("sender1", "content1") };
     var cachedMessages2 = new List<GroupMessage> { new("sender2", "content2") };
@@ -183,8 +186,8 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         .ReturnsAsync(cachedMessages2);
 
     // Act
-    var result1 = await _orchestrator.LoadChatHistory(groupId1, take);
-    var result2 = await _orchestrator.LoadChatHistory(groupId2, take);
+    var result1 = await _orchestrator.LoadChatHistory(groupId1, skip, take);
+    var result2 = await _orchestrator.LoadChatHistory(groupId2, skip, take);
 
     // Assert
     Assert.Equal(cachedMessages1, result1);
@@ -201,9 +204,10 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     var groupId = Guid.NewGuid();
     const int take1 = 10;
     const int take2 = 20;
+    const int skip = 0;
     
-    var expectedCacheKey1 = $"group:{groupId}:history:{take1}";
-    var expectedCacheKey2 = $"group:{groupId}:history:{take2}";
+    var expectedCacheKey1 = $"group:{groupId}:history:{take1}:skip:{skip}";
+    var expectedCacheKey2 = $"group:{groupId}:history:{take2}:skip:{skip}";
 
     var cachedMessages1 = new List<GroupMessage> { new("sender1", "content1") };
     var cachedMessages2 = new List<GroupMessage> { new("sender2", "content2") };
@@ -214,8 +218,8 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         .ReturnsAsync(cachedMessages2);
 
     // Act
-    var result1 = await _orchestrator.LoadChatHistory(groupId, take1);
-    var result2 = await _orchestrator.LoadChatHistory(groupId, take2);
+    var result1 = await _orchestrator.LoadChatHistory(groupId, skip, take1);
+    var result2 = await _orchestrator.LoadChatHistory(groupId, skip, take2);
 
     // Assert
     Assert.Equal(cachedMessages1, result1);
@@ -231,18 +235,19 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
     // Arrange
     var groupId = Guid.NewGuid();
     const int take = 10;
-    var expectedCacheKey = $"group:{groupId}:history:{take}";
+    const int skip = 0;
+    var expectedCacheKey = $"group:{groupId}:history:{take}:skip:{skip}";
     var emptyResult = new List<GroupMessage>();
 
     // Setup cache miss
     _cacheServiceMock.Setup(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey))
         .ReturnsAsync((List<GroupMessage>?)null);
 
-    _messageRepositoryMock.Setup(x => x.GetMessageStoryAsync(groupId, take))
+    _messageRepositoryMock.Setup(x => x.GetMessageStoryAsync(groupId, skip, take))
         .ReturnsAsync(emptyResult);
 
     // Act
-    var result = await _orchestrator.LoadChatHistory(groupId, take);
+    var result = await _orchestrator.LoadChatHistory(groupId, skip, take);
 
     // Assert
     Assert.NotNull(result);
@@ -250,7 +255,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
 
     // Verify cache operations
     _cacheServiceMock.Verify(x => x.GetAsync<List<GroupMessage>>(expectedCacheKey), Times.Once);
-    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, take), Times.Once);
+    _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, skip, take), Times.Once);
     _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
 }
         
@@ -260,14 +265,15 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             // Arrange
             var groupId = Guid.NewGuid();
             var take = 10;
+            var skip = 0;
             var emptyMessages = new List<GroupMessage>();
 
             _messageRepositoryMock
-                .Setup(x => x.GetMessageStoryAsync(groupId, take))
+                .Setup(x => x.GetMessageStoryAsync(groupId, skip, take))
                 .ReturnsAsync(emptyMessages);
 
             // Act
-            var result = await _orchestrator.LoadChatHistory(groupId, take);
+            var result = await _orchestrator.LoadChatHistory(groupId, skip, take);
 
             // Assert
             Assert.NotNull(result);
@@ -278,21 +284,21 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         [InlineData(1)]
         [InlineData(50)]
         [InlineData(100)]
-        public async Task LoadChatHistory_WithDifferentTakeValues_ShouldPassCorrectParameters(int take)
+        public async Task LoadChatHistory_WithDifferentTakeValues_ShouldPassCorrectParameters(int take, int skip = 0)
         {
             // Arrange
             var groupId = Guid.NewGuid();
             var messages = new List<GroupMessage>();
 
             _messageRepositoryMock
-                .Setup(x => x.GetMessageStoryAsync(groupId, take))
+                .Setup(x => x.GetMessageStoryAsync(groupId, skip, take))
                 .ReturnsAsync(messages);
 
             // Act
-            await _orchestrator.LoadChatHistory(groupId, take);
+            await _orchestrator.LoadChatHistory(groupId, skip, take);
 
             // Assert
-            _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, take), Times.Once);
+            _messageRepositoryMock.Verify(x => x.GetMessageStoryAsync(groupId, skip, take), Times.Once);
         }
 
         [Fact]
@@ -364,15 +370,16 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             // Arrange
             var groupId = Guid.NewGuid();
             var take = 10;
+            var skip = 0;
             var expectedException = new InvalidOperationException("Database error");
 
             _messageRepositoryMock
-                .Setup(x => x.GetMessageStoryAsync(groupId, take))
+                .Setup(x => x.GetMessageStoryAsync(groupId, skip, take))
                 .ThrowsAsync(expectedException);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _orchestrator.LoadChatHistory(groupId, take));
+                () => _orchestrator.LoadChatHistory(groupId, skip, take));
             
             Assert.Equal("Database error", exception.Message);
         }

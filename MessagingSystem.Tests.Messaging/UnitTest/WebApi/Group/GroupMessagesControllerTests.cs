@@ -292,22 +292,23 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.WebApi.Group
             // Arrange
             var groupId = Guid.NewGuid();
             var take = 50;
+            var skip = 5;
             var expectedMessages = new List<GroupMessage>
             {
                 new GroupMessage("sender1", "content1"),
                 new GroupMessage("sender2", "content2")
             };
             
-            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, take))
+            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, skip, take))
                            .ReturnsAsync(expectedMessages);
 
             // Act
-            var result = await _controller.LoadChatMessagesAsync(groupId, take);
+            var result = await _controller.LoadChatMessagesAsync(groupId, skip, take);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(expectedMessages, okResult.Value);
-            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, take), Times.Once);
+            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, skip, take), Times.Once);
         }
 
         [Fact]
@@ -316,18 +317,19 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.WebApi.Group
             // Arrange
             var groupId = Guid.Empty;
             var take = 10;
+            var skip = 0;
             var expectedResult = new List<GroupMessage>();
 
-            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, take))
+            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, skip, take))
                            .ReturnsAsync(expectedResult);
 
             // Act
-            var result = await _controller.LoadChatMessagesAsync(groupId, take);
+            var result = await _controller.LoadChatMessagesAsync(groupId, skip, take);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(expectedResult, okResult.Value);
-            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, take), Times.Once);
+            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, skip, take), Times.Once);
         }
 
         [Fact]
@@ -336,18 +338,19 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.WebApi.Group
             // Arrange
             var groupId = Guid.NewGuid();
             var take = 0;
+            var skip = 0;
             var expectedResult = new List<GroupMessage>();
 
-            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, take))
+            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, skip, take))
                            .ReturnsAsync(expectedResult);
 
             // Act
-            var result = await _controller.LoadChatMessagesAsync(groupId, take);
+            var result = await _controller.LoadChatMessagesAsync(groupId, skip, take);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(expectedResult, okResult.Value);
-            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, take), Times.Once);
+            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, skip, take), Times.Once);
         }
 
         [Fact]
@@ -356,18 +359,19 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.WebApi.Group
             // Arrange
             var groupId = Guid.NewGuid();
             var take = -5;
+            var skip = 1;
             var expectedResult = new List<GroupMessage>();
 
-            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, take))
+            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, skip, take))
                            .ReturnsAsync(expectedResult);
 
             // Act
-            var result = await _controller.LoadChatMessagesAsync(groupId, take);
+            var result = await _controller.LoadChatMessagesAsync(groupId, skip, take);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(expectedResult, okResult.Value);
-            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, take), Times.Once);
+            _orchestratorMock.Verify(o => o.LoadChatHistory(groupId, skip, take), Times.Once);
         }
 
         [Fact]
@@ -376,14 +380,15 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.WebApi.Group
             // Arrange
             var groupId = Guid.NewGuid();
             var take = 50;
+            var skip = 1;
             var expectedException = new ArgumentException("Invalid group ID");
 
-            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, take))
+            _orchestratorMock.Setup(o => o.LoadChatHistory(groupId, skip, take))
                            .ThrowsAsync(expectedException);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => _controller.LoadChatMessagesAsync(groupId, take));
+                () => _controller.LoadChatMessagesAsync(groupId, skip, take));
             Assert.Equal("Invalid group ID", exception.Message);
         }
         #endregion

@@ -119,9 +119,9 @@ public class GroupChatHub(
     {
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, groupId.ToString());
     }
-    public async Task<List<GroupMessage>> LoadChatHistoryAsync(Guid groupId, int take)
+    public async Task<List<GroupMessage>> LoadChatHistoryAsync(Guid groupId, int skip, int take)
     {
-        var messages = await groupMessagesOrchestrator.LoadChatHistory(groupId, take);
+        var messages = await groupMessagesOrchestrator.LoadChatHistory(groupId, skip, take);
         return messages;
     }
     public async Task<CreatedMessageResult> SendMessageAsync(string content, Guid groupId)

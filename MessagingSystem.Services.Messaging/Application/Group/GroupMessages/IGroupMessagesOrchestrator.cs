@@ -6,5 +6,5 @@ namespace MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 
 public interface IGroupMessagesOrchestrator : IMessageOrchestratorBase<GroupMessage ,GroupMessageDto>
 {
-    Task<List<GroupMessage>> LoadChatHistory(Guid groupId, int take);
+    Task<List<GroupMessage>> LoadChatHistory(Guid groupId, int skip, int take);
 }

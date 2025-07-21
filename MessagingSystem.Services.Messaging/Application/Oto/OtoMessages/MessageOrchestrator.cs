@@ -43,6 +43,7 @@ public class MessageOrchestrator(
         result = DecryptListOfMessage(result);
 
         await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(1));
+        await cacheService.RemoveAsync(cacheKey);
         return result;
     }
 

@@ -26,16 +26,17 @@ public class GroupMessagesOrchestrator(
 {
     private readonly IHasher _hasher = hasher;
     
-    public async Task<List<GroupMessage>> LoadChatHistory(Guid groupId, int take)
+    public async Task<List<GroupMessage>> LoadChatHistory(Guid groupId, int skip, int take)
     {
-        var cacheKey = $"group:{groupId}:history:{take}";
+        var cacheKey = $"group:{groupId}:history:{take}:skip:{skip}";
         var cached = await  cacheService.GetAsync<List<GroupMessage>>(cacheKey);
         if (cached != null) return cached;
 
-        var result = await messageRepository.GetMessageStoryAsync(groupId, take);
+        var result = await messageRepository.GetMessageStoryAsync(groupId, skip, take);
         result = DecryptListOfMessage(result);
 
         await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(1));
+        await cacheService.RemoveAsync(cacheKey);
         return result;
     }
 

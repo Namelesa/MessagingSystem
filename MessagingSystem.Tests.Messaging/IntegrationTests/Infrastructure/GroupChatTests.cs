@@ -300,19 +300,20 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
     var nickname = "testuser";
     var groupId = Guid.NewGuid();
     var take = 10;
+    var skip = 0;
     var expectedMessages = new List<GroupMessage>
     {
         new(nickname, "Message 1"),
         new(nickname, "Message 2")
     };
 
-    _groupMessagesOrchestrator.Setup(x => x.LoadChatHistory(groupId, take))
+    _groupMessagesOrchestrator.Setup(x => x.LoadChatHistory(groupId, skip, take))
         .ReturnsAsync(expectedMessages);
 
     var connection = await CreateConnectionAsync(nickname);
 
     // Act
-    var result = await connection.InvokeAsync<List<GroupMessage>>("LoadChatHistoryAsync", groupId, take);
+    var result = await connection.InvokeAsync<List<GroupMessage>>("LoadChatHistoryAsync", groupId, skip, take);
 
     // Assert
     Assert.NotNull(result);

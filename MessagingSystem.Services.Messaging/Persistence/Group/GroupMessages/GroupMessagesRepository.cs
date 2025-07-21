@@ -51,9 +51,10 @@ public class GroupMessagesRepository(GroupAppDbContext db)
 
         return deleted;
     }
-    public async Task<List<GroupMessage>> GetMessageStoryAsync(Guid groupId, int take) =>
+    public async Task<List<GroupMessage>> GetMessageStoryAsync(Guid groupId, int skip, int take) =>
         await db.GroupMessages.Where(u=> u.GroupId == groupId)
             .OrderByDescending(u => u.SendTime)
+            .Skip(skip)
             .Take(take)
             .ToListAsync();
     public override async Task<GroupMessage> ReplyMessageAsync(Guid replyId, GroupMessage message)

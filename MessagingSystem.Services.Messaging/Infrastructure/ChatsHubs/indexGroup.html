@@ -553,8 +553,9 @@
                 log('Select group');
                 return;
             }
-
-            const messages = await connection.invoke("LoadChatHistoryAsync", groupId, take);
+            
+            const skip = 0;
+            const messages = await connection.invoke("LoadChatHistoryAsync", groupId, skip, take);
             log(`History loaded: ${messages.length} messages`);
 
             const historyDiv = document.getElementById('messagesHistory');

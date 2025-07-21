@@ -59,9 +59,9 @@ public class GroupMessagesController(
     }
     
     [HttpGet("load-chat-history")]
-    public async Task<IActionResult> LoadChatMessagesAsync([Required] Guid groupId, int take)
+    public async Task<IActionResult> LoadChatMessagesAsync([Required] Guid groupId, int skip, int take)
     {
-        var messages = await groupMessagesOrchestrator.LoadChatHistory(groupId, take);
+        var messages = await groupMessagesOrchestrator.LoadChatHistory(groupId, skip, take);
         
         return Ok(messages);
     }

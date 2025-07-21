@@ -481,7 +481,7 @@ public class GroupMessagesRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetMessageStoryAsync(groupGuid, 10);
+        var result = await _repository.GetMessageStoryAsync(groupGuid, 0, 10);
 
         // Assert
         Assert.Equal(3, result.Count);
@@ -529,7 +529,7 @@ public class GroupMessagesRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetMessageStoryAsync(groupGuid, 3);
+        var result = await _repository.GetMessageStoryAsync(groupGuid, 2, 20);
 
         // Assert
         Assert.Equal(3, result.Count);
@@ -543,7 +543,7 @@ public class GroupMessagesRepositoryTests : IDisposable
         var groupId = Guid.NewGuid();
 
         // Act
-        var result = await _repository.GetMessageStoryAsync(groupId, 10);
+        var result = await _repository.GetMessageStoryAsync(groupId, 1, 10);
 
         // Assert
         Assert.Empty(result);
