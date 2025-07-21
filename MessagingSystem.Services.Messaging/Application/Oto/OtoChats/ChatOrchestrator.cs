@@ -27,10 +27,17 @@ public class ChatOrchestrator(
             return [];
         
         foreach (var chat in encryptedChats)
-            (chat.NickName, chat.Image) = (decryptionInfo.Decrypt(chat.NickName), decryptionInfo.Decrypt(chat.Image));
+        {
+            chat.NickName = decryptionInfo.Decrypt(chat.NickName);
+            chat.Image = decryptionInfo.Decrypt(chat.Image);
+        }
         
-        var result = mapper.Map<List<ChatDto>>(encryptedChats)
+        var distinctChats = encryptedChats
+            .GroupBy(c => c.NickName)
+            .Select(g => g.First())
             .ToList();
+
+        var result = mapper.Map<List<ChatDto>>(distinctChats).ToList();
         
         await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
         return result;
