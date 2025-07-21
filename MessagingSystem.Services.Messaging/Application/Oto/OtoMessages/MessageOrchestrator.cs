@@ -27,19 +27,19 @@ public class MessageOrchestrator(
 {
     private readonly IHasher _hasher = hasher;
 
-    public async Task<List<Message>> LoadChatHistory(string sender, string recipient, int take)
+    public async Task<List<Message>> LoadChatHistory(string sender, string recipient, int skip, int take)
     {
         var hashSender = _hasher.Hash(sender);
         var hashRecipient = _hasher.Hash(recipient);
-        
-        var keyPair = new [] { hashSender, hashRecipient }.OrderBy(x => x).ToArray();
-        var cacheKey = $"oto:{keyPair[0]}:{keyPair[1]}:history:{take}";
+
+        var keyPair = new[] { hashSender, hashRecipient }.OrderBy(x => x).ToArray();
+        var cacheKey = $"oto:{keyPair[0]}:{keyPair[1]}:history:{skip}:{take}";
 
         var cached = await cacheService.GetAsync<List<Message>>(cacheKey);
         if (cached != null)
             return cached;
 
-        var result = await otoMessageRepository.GetMessageStoryAsync(hashSender, hashRecipient, take);
+        var result = await otoMessageRepository.GetMessageStoryAsync(hashSender, hashRecipient, skip, take);
         result = DecryptListOfMessage(result);
 
         await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(1));

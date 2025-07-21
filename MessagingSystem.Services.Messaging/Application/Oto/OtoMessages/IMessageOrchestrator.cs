@@ -6,5 +6,5 @@ namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 
 public interface IMessageOrchestrator : IMessageOrchestratorBase<Message, MessagesDto>
 {
-    Task<List<Message>> LoadChatHistory(string sender, string recipient, int take);
+    Task<List<Message>> LoadChatHistory(string sender, string recipient, int skip, int take);
 }

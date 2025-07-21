@@ -4,6 +4,7 @@ using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
 using MassTransit;
+using MessagingSystem.SendingModels.UserMessaging.Add;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.Auth.Register;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
@@ -27,6 +28,7 @@ public class RegisterUserOrchestratorTests
     private readonly Mock<IHasher> _hasher = new();
     private readonly Mock<IPublishEndpoint> _publishEndpoint = new();
     private readonly Mock<IPublicKeyStorage> _publicKeyStorage = new();
+    private readonly Mock<IRequestClient<AddUserRequest>> _client = new();
 
     private readonly RegisterDto _dto = new(
         "user@example.com", "login123456", "Max", "Bilyk", "nick123456", "P@ssword123", "");
@@ -43,24 +45,27 @@ public class RegisterUserOrchestratorTests
             _encryptInfo.Object,
             _hasher.Object,
             _publishEndpoint.Object,
-            _publicKeyStorage.Object);
+            _publicKeyStorage.Object,
+            _client.Object);
     }
 
     [Fact]
     public async Task RegisterUserAsync_ShouldReturnFail_WhenPublicKeyIsMissing()
     {
         _publicKeyStorage.Setup(p => p.Get("Notification")).Returns((string?)null);
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns((string?)null);
 
         var result = await _orchestrator.RegisterUserAsync(_dto);
 
         result.Success.Should().BeFalse();
-        result.Message.Should().Contain("Public key for Notification service not found");
+        result.Message.Should().Contain("Public key for Notification or Messaging service not found");
     }
 
     [Fact]
     public async Task RegisterUserAsync_ShouldReturnFail_WhenValidationFails()
     {
         _publicKeyStorage.Setup(p => p.Get("Notification")).Returns("fake-key");
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns("fake-key");
 
         _validator.Setup(v => v.ValidateAsync(_dto, default))
             .ReturnsAsync(new ValidationResult(new[] { new ValidationFailure("Email", "Invalid") }));
@@ -75,6 +80,7 @@ public class RegisterUserOrchestratorTests
     public async Task RegisterUserAsync_ShouldReturnFail_WhenUserHasNullFields()
     {
         _publicKeyStorage.Setup(p => p.Get("Notification")).Returns("key");
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns("key");
         _validator.Setup(v => v.ValidateAsync(_dto, default)).ReturnsAsync(new ValidationResult());
         _hasherPassword.Setup(h => h.Hash(_dto.Password)).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
@@ -91,11 +97,16 @@ public class RegisterUserOrchestratorTests
     public async Task RegisterUserAsync_ShouldReturnFail_WhenRepositoryThrows()
     {
         _publicKeyStorage.Setup(p => p.Get("Notification")).Returns("key");
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns("key");
         _validator.Setup(v => v.ValidateAsync(_dto, default)).ReturnsAsync(new ValidationResult());
         _hasherPassword.Setup(h => h.Hash(_dto.Password)).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
 
-        var user = new UserModel("login123456", "TopNick123", "testImage");
+        var user = new UserModel("login123456", "TopNick123", "testImage")
+        {
+            Email = "test@gmail.com",
+            UserName = "TestValidUser",
+        };
         _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
         _userRepository.Setup(r => r.AddUserAsync(user)).ThrowsAsync(new Exception("DB Error"));
 
@@ -109,6 +120,7 @@ public class RegisterUserOrchestratorTests
     public async Task RegisterUserAsync_ShouldFailed_WhenDataIsInValid()
     {
         _publicKeyStorage.Setup(p => p.Get("Notification")).Returns("public-key");
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns("public-key");
         _validator.Setup(v => v.ValidateAsync(_dto, default)).ReturnsAsync(new ValidationResult());
         _hasherPassword.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
@@ -125,9 +137,45 @@ public class RegisterUserOrchestratorTests
     }
     
     [Fact]
+    public async Task RegisterUserAsync_ShouldReturnFail_WhenUserAlreadyExists()
+    {
+        // Arrange
+        _publicKeyStorage.Setup(p => p.Get("Notification")).Returns("public-key");
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns("public-key");
+        _validator.Setup(v => v.ValidateAsync(_dto, default)).ReturnsAsync(new ValidationResult());
+        _hasherPassword.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed_pwd");
+        _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
+        
+        _encryptInfo.Setup(e => e.EncryptObjectStrings(It.IsAny<UserModel>()));
+        _encryptInfo.Setup(e => e.EncryptRsa(It.IsAny<string>(), It.IsAny<string>())).Returns("encrypted");
+        
+        var user = new UserModel("login123456", "CoolNickName", "testImage")
+        {
+            Email = "test@gmail.com",
+            UserName = "TestValidUser",
+            NormalizedEmail = "TEST@GMAIL.COM",
+            NormalizedUserName = "TESTVALIDUSER"
+        };
+        _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
+
+        var addUserResponse = new AddUserResponse(false);
+        var mockResponse = Mock.Of<Response<AddUserResponse>>(r => r.Message == addUserResponse);
+        _client.Setup(c => c.GetResponse<AddUserResponse>(It.IsAny<AddUserRequest>(), default, default))
+            .ReturnsAsync(mockResponse);
+
+        // Act
+        var result = await _orchestrator.RegisterUserAsync(_dto);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("User already exists");
+    }
+    
+    [Fact]
     public async Task RegisterUserAsync_ShouldSuccess_WhenDataIsValid()
     {
         _publicKeyStorage.Setup(p => p.Get("Notification")).Returns("public-key");
+        _publicKeyStorage.Setup(p => p.Get("Messaging")).Returns("public-key");
         _validator.Setup(v => v.ValidateAsync(_dto, default)).ReturnsAsync(new ValidationResult());
         _hasherPassword.Setup(h => h.Hash(It.IsAny<string>())).Returns("hashed_pwd");
         _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("hash");
@@ -141,6 +189,12 @@ public class RegisterUserOrchestratorTests
         };
 
         _mapper.Setup(m => m.Map<UserModel>(_dto)).Returns(user);
+        
+        var mockResponse = new Mock<Response<AddUserResponse>>();
+        mockResponse.Setup(r => r.Message).Returns(new AddUserResponse(true));
+        _client.Setup(c => c.GetResponse<AddUserResponse>(It.IsAny<AddUserRequest>(), default, default))
+            .ReturnsAsync(mockResponse.Object);
+
         _userRepository.Setup(r => r.AddUserAsync(user)).Returns(Task.CompletedTask);
         _publishEndpoint.Setup(p => p.Publish(It.IsAny<ConfirmUserEmail>(), default)).Returns(Task.CompletedTask);
 

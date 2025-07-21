@@ -331,7 +331,7 @@ public class OtoMessageRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, 10);
+        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, 0, 10);
 
         // Assert
         result.Should().HaveCount(3);
@@ -362,7 +362,7 @@ public class OtoMessageRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, 3);
+        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, 0, 3);
 
         // Assert
         result.Should().HaveCount(3);
@@ -382,12 +382,43 @@ public class OtoMessageRepositoryTests : IDisposable
         await _context.SaveChangesAsync();
 
         // Act
-        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, 10);
+        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, 0, 10);
 
         // Assert
         result.Should().BeEmpty();
     }
+    
+    [Fact]
+    public async Task GetMessageStoryAsync_WithSkip_ShouldSkipMessages()
+    {
+        // Arrange
+        var user1Hash = "user1Hash";
+        var user2Hash = "user2Hash";
 
+        var messages = new List<Message>();
+        for (int i = 0; i < 5; i++)
+        {
+            var message = new Message($"user{i % 2 + 1}", $"user{(i + 1) % 2 + 1}", $"Message {i}");
+            message.SetHashes(i % 2 == 0 ? user1Hash : user2Hash, i % 2 == 0 ? user2Hash : user1Hash);
+            messages.Add(message);
+        }
+
+        _context.UsersMessages.AddRange(messages);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetMessageStoryAsync(user1Hash, user2Hash, skip: 2, take: 10);
+
+        // Assert
+        result.Should().HaveCount(3);
+        var expectedMessages = messages
+            .OrderByDescending(m => m.SendTime)
+            .Skip(2)
+            .Select(m => m.Content);
+
+        result.Select(m => m.Content).Should().ContainInOrder(expectedMessages);
+    }
+    
     #endregion
 
     #region ReplyMessageAsync Tests

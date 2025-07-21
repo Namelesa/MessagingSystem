@@ -2,6 +2,7 @@ using AutoMapper;
 using Encryptor.Encryption;
 using FluentValidation;
 using MassTransit;
+using MessagingSystem.SendingModels.UserMessaging.Add;
 using MessagingSystem.SendingModels.UserNotification;
 using MessagingSystem.Services.User.Application.Auth.Register.Dto;
 using MessagingSystem.Services.User.Core.User;
@@ -19,14 +20,16 @@ public class RegisterOrchestrator(
     IEncryptionInfo encryptInfo,
     IHasher hasher,
     IPublishEndpoint publishEndpoint,
-    IPublicKeyStorage publicKeyStorage) : IRegisterOrchestrator
+    IPublicKeyStorage publicKeyStorage,
+    IRequestClient<AddUserRequest> client) : IRegisterOrchestrator
 {
     public async Task<OperationResult<string>> RegisterUserAsync(RegisterDto registerDto)
     {
-        var publicKey = publicKeyStorage.Get("Notification");
-
-        if (publicKey == null)
-            return OperationResult<string>.Fail("Public key for Notification service not found");
+        var publicKeyNotification = GetPublicKey("Notification");
+        var publicKeyMessaging = GetPublicKey("Messaging");
+        
+        if (publicKeyNotification == null || publicKeyMessaging == null)
+            return OperationResult<string>.Fail("Public key for Notification or Messaging service not found");
         
         var validationResult = await validator.ValidateAsync(registerDto);
         if (!validationResult.IsValid) 
@@ -45,13 +48,20 @@ public class RegisterOrchestrator(
         
         try
         {
-            await userRepository.AddUserAsync(user);
-
-            if (user.UserName == null || user.Email == null) 
+            if(user.HashNickName == null || user.Image == null || user.UserName == null || user.Email == null)
                 return OperationResult<string>.Fail("User can not have null properties");
             
+            var existingUserResponse = await client.GetResponse<AddUserResponse>(
+                new AddUserRequest(encryptInfo.EncryptRsa(user.HashNickName, publicKeyMessaging), 
+                    encryptInfo.EncryptRsa(user.Image, publicKeyMessaging)));
+            
+            if (!existingUserResponse.Message.Success)
+                return OperationResult<string>.Fail("User already exists");
+            
+            await userRepository.AddUserAsync(user);
+            
             var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email, hashNickName);
-            encryptInfo.EncryptRsaObjectStrings(confirmUserEmail, publicKey);
+            encryptInfo.EncryptRsaObjectStrings(confirmUserEmail, publicKeyNotification);
             
             await publishEndpoint.Publish(confirmUserEmail);
 
@@ -83,4 +93,6 @@ public class RegisterOrchestrator(
             return OperationResult<string>.Fail($"Error {e}");
         }
     }
+    private string? GetPublicKey(string key) 
+        => publicKeyStorage.Get(key);
 }

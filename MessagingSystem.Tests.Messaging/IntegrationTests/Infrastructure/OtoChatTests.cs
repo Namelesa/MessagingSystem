@@ -213,19 +213,19 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
         };
 
         _messageOrchestratorMock
-            .Setup(x => x.LoadChatHistory(currentUser, withUser, take))
+            .Setup(x => x.LoadChatHistory(currentUser, withUser, 0, take))
             .ReturnsAsync(messages);
 
         var connection = await CreateConnectionAsync(currentUser);
 
         // Act
-        var result = await connection.InvokeAsync<List<object>>("LoadChatHistoryAsync", withUser, take);
+        var result = await connection.InvokeAsync<List<object>>("LoadChatHistoryAsync", withUser, take, 0);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
 
-        _messageOrchestratorMock.Verify(x => x.LoadChatHistory(currentUser, withUser, take), Times.Once);
+        _messageOrchestratorMock.Verify(x => x.LoadChatHistory(currentUser, withUser, 0, take), Times.Once);
 
         await connection.DisposeAsync();
     }
@@ -587,13 +587,13 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
         var take = 10;
 
         _messageOrchestratorMock
-            .Setup(x => x.LoadChatHistory(currentUser, withUser, take))
+            .Setup(x => x.LoadChatHistory(currentUser, withUser, 0, take))
             .ReturnsAsync(new List<Message>());
 
         var connection = await CreateConnectionAsync(currentUser);
 
         // Act
-        var result = await connection.InvokeAsync<List<object>>("LoadChatHistoryAsync", withUser, take);
+        var result = await connection.InvokeAsync<List<object>>("LoadChatHistoryAsync", withUser, take, 0);
 
         // Assert
         Assert.NotNull(result);

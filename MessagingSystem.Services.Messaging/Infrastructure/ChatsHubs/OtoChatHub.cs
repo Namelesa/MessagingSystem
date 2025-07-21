@@ -101,11 +101,11 @@ public class OtoChatHub(
 
         await NotifyUsersAsync(sender, messageOwner.Data, "MessageDeleted", deletedInfo);
     }
-    public async Task<List<object>> LoadChatHistoryAsync(string withUser, int take)
+    public async Task<List<object>> LoadChatHistoryAsync(string withUser, int take, int skip)
     {
         var currentUser = CurrentUserNickname;
 
-        var messages = await messageOrchestrator.LoadChatHistory(currentUser, withUser, take);
+        var messages = await messageOrchestrator.LoadChatHistory(currentUser, withUser, skip, take);
         return messages.Select(m => new
         {
             messageId = m.Id,

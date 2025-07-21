@@ -4,8 +4,6 @@ using FluentValidation;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.SendingModels.UserMessaging.Edit;
-using MessagingSystem.SendingModels.UserMessaging.IsExist.User;
-using MessagingSystem.SendingModels.UserMessaging.IsExist.Users;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
@@ -166,14 +164,10 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             // Assert
             var busControl = serviceProvider.GetService<IBusControl>();
             Assert.NotNull(busControl);
-
-            var existingUserClient = serviceProvider.GetService<IRequestClient<ExistingUserRequest>>();
-            var existingUsersClient = serviceProvider.GetService<IRequestClient<ExistingUsersRequest>>();
+            
             var editUserClient = serviceProvider.GetService<IRequestClient<EditUserInfoRequest>>();
             var deleteUserClient = serviceProvider.GetService<IRequestClient<DeleteUserInfoRequest>>();
-
-            Assert.NotNull(existingUserClient);
-            Assert.NotNull(existingUsersClient);
+            
             Assert.NotNull(editUserClient);
             Assert.NotNull(deleteUserClient);
         }

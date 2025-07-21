@@ -171,6 +171,7 @@
     <div class="flex">
         <input type="text" id="historyUser" placeholder="User nickname" style="width: 200px;">
         <input type="number" id="historyCount" placeholder="Count" value="50" style="width: 80px;">
+        <input type="number" id="historySkip" placeholder="Skip count (default 0)">
         <button onclick="loadHistory()">Load</button>
     </div>
 </div>
@@ -439,14 +440,15 @@
 
         const user = document.getElementById('historyUser').value.trim();
         const count = parseInt(document.getElementById('historyCount').value) || 50;
-
+        const skip = parseInt(document.getElementById('historySkip').value) || 0;
+        
         if (!user) {
             addMessage("❌ Please provide user nickname", 'error');
             return;
         }
 
         try {
-            const result = await connection.invoke("LoadChatHistoryAsync", user, count);
+            const result = await connection.invoke("LoadChatHistoryAsync", user, count, skip);
             addMessage(`✅ Chat history loaded (${result.length} messages): ${JSON.stringify(result, null, 2)}`, 'success');
             result.forEach(msg => {
                 addMessage(`📜 History message from ${msg.sender}: "${msg.content}"`, 'info', msg);

@@ -4,8 +4,7 @@ using Encryptor.Encryption;
 using MassTransit;
 using MessagingSystem.SendingModels.UserMessaging.Delete;
 using MessagingSystem.SendingModels.UserMessaging.Edit;
-using MessagingSystem.SendingModels.UserMessaging.IsExist.User;
-using MessagingSystem.SendingModels.UserMessaging.IsExist.Users;
+using MessagingSystem.Services.Messaging.Application.MessageBroker.AddUser;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
@@ -40,16 +39,14 @@ public static class AddInfrastructure
 
     services.AddMassTransit(busConfiguration =>
     {
-        busConfiguration.AddRequestClient<ExistingUserRequest>(new Uri("queue:existing-user-request"));
-        busConfiguration.AddRequestClient<ExistingUsersRequest>(new Uri("queue:existing-users-request"));
         busConfiguration.AddRequestClient<EditUserInfoRequest>(new Uri("queue:edit-user-request"));
         busConfiguration.AddRequestClient<DeleteUserInfoRequest>(new Uri("queue:delete-user-request"));
 
         busConfiguration.AddConsumer<PublicKeyConsumer>();
         busConfiguration.AddConsumer<EditUserInfoConsumer>();
         busConfiguration.AddConsumer<DeleteUserInfoConsumer>();
-
-
+        busConfiguration.AddConsumer<AddUserConsumer>();
+        
         busConfiguration.UsingRabbitMq((context, configurator) =>
         {
             var settings = context.GetRequiredService<IOptions<MessageBrokerSettings>>().Value;
@@ -69,6 +66,10 @@ public static class AddInfrastructure
             configurator.ReceiveEndpoint("delete-user-request", e =>
             {
                 e.ConfigureConsumer<DeleteUserInfoConsumer>(context);
+            });
+            configurator.ReceiveEndpoint("add-user-request", e =>
+            {
+                e.ConfigureConsumer<AddUserConsumer>(context);
             });
         });
     });
@@ -143,7 +144,8 @@ public static class AddInfrastructure
         {
             options.AddPolicy("AllowFrontend", policy =>
             {
-                policy.WithOrigins("http://localhost:4200")
+                policy.WithOrigins("http://localhost:4200",
+                        "http://localhost:63342")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

@@ -56,6 +56,7 @@ public class MessageOrchestratorTests
         const string hashedSender = "hashedSender";
         const string hashedRecipient = "hashedRecipient";
         const int take = 10;
+        const int skip = 0;
 
         var cachedMessages = new List<Message>
         {
@@ -66,12 +67,12 @@ public class MessageOrchestratorTests
         _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
         _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
 
-        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{take}";
+        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{skip}:{take}";
         _cacheServiceMock.Setup(x => x.GetAsync<List<Message>>(expectedCacheKey))
             .ReturnsAsync(cachedMessages);
 
         // Act
-        var result = await _orchestrator.LoadChatHistory(sender, recipient, take);
+        var result = await _orchestrator.LoadChatHistory(sender, recipient, skip, take);
 
         // Assert
         Assert.NotNull(result);
@@ -81,7 +82,7 @@ public class MessageOrchestratorTests
         _hasherMock.Verify(x => x.Hash(sender), Times.Once);
         _hasherMock.Verify(x => x.Hash(recipient), Times.Once);
         _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
-        _repositoryMock.Verify(x => x.GetMessageStoryAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+        _repositoryMock.Verify(x => x.GetMessageStoryAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         _cacheServiceMock.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<Message>>(), It.IsAny<TimeSpan>()), Times.Never);
     }
 
@@ -94,6 +95,7 @@ public class MessageOrchestratorTests
         const string hashedSender = "hashedSender";
         const string hashedRecipient = "hashedRecipient";
         const int take = 10;
+        const int skip = 0;
 
         var encryptedMessages = new List<Message>
         {
@@ -104,11 +106,11 @@ public class MessageOrchestratorTests
         _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
         _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
 
-        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{take}"; // Отсортированный порядок
+        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{skip}:{take}";
         _cacheServiceMock.Setup(x => x.GetAsync<List<Message>>(expectedCacheKey))
             .ReturnsAsync((List<Message>)null);
 
-        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take))
+        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip, take))
             .ReturnsAsync(encryptedMessages);
 
         _decryptionInfoMock
@@ -116,14 +118,14 @@ public class MessageOrchestratorTests
             .Callback<Message>(_ => { });
 
         // Act
-        var result = await _orchestrator.LoadChatHistory(sender, recipient, take);
+        var result = await _orchestrator.LoadChatHistory(sender, recipient, skip, take);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
 
         _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
-        _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take), Times.Once);
+        _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip ,take), Times.Once);
         _decryptionInfoMock.Verify(x => x.DecryptObjectStrings(It.IsAny<Message>()), Times.Exactly(2));
         _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
     }
@@ -137,19 +139,20 @@ public class MessageOrchestratorTests
         const string hashedSender = "zzz";
         const string hashedRecipient = "aaa";
         const int take = 5;
+        const int skip = 0;
 
         _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
         _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
 
-        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{take}"; // aaa:zzz (отсортированный)
+        var expectedCacheKey = $"oto:{hashedRecipient}:{hashedSender}:history:{skip}:{take}";
         _cacheServiceMock.Setup(x => x.GetAsync<List<Message>>(expectedCacheKey))
             .ReturnsAsync((List<Message>)null);
 
-        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take))
+        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip,take))
             .ReturnsAsync(new List<Message>());
 
         // Act
-        await _orchestrator.LoadChatHistory(sender, recipient, take);
+        await _orchestrator.LoadChatHistory(sender, recipient, skip, take);
 
         // Assert
         _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
@@ -219,6 +222,7 @@ public class MessageOrchestratorTests
         const string hashedSender = "hashedSender";
         const string hashedRecipient = "hashedRecipient";
         const int take = 10;
+        const int skip = 0;
 
         var encryptedMessages = new List<Message>
         {
@@ -229,7 +233,7 @@ public class MessageOrchestratorTests
         _hasherMock.Setup(x => x.Hash(sender)).Returns(hashedSender);
         _hasherMock.Setup(x => x.Hash(recipient)).Returns(hashedRecipient);
 
-        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take))
+        _repositoryMock.Setup(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip, take))
             .ReturnsAsync(encryptedMessages);
 
         _decryptionInfoMock
@@ -237,7 +241,7 @@ public class MessageOrchestratorTests
             .Callback<Message>(_ => { });
 
         // Act
-        var result = await _orchestrator.LoadChatHistory(sender, recipient, take);
+        var result = await _orchestrator.LoadChatHistory(sender, recipient, skip, take);
 
         // Assert
         Assert.NotNull(result);
@@ -245,7 +249,7 @@ public class MessageOrchestratorTests
 
         _hasherMock.Verify(x => x.Hash(sender), Times.Once);
         _hasherMock.Verify(x => x.Hash(recipient), Times.Once);
-        _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, take), Times.Once);
+        _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip , take), Times.Once);
         _decryptionInfoMock.Verify(x => x.DecryptObjectStrings(It.IsAny<Message>()), Times.Exactly(2));
     }
 

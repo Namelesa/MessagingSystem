@@ -57,13 +57,14 @@ public class OtoMessageRepository(OtoAppDbContext db)
 
         return deleted;
     }
-    public async Task<List<Message>> GetMessageStoryAsync(string sender, string recipient, int take)
+    public async Task<List<Message>> GetMessageStoryAsync(string sender, string recipient, int skip, int take)
     {
         return await db.UsersMessages
             .Where(m =>
                 (m.SenderHash == sender && m.RecipientHash == recipient) ||
                 (m.SenderHash == recipient && m.RecipientHash == sender))
             .OrderByDescending(m => m.SendTime)
+            .Skip(skip)
             .Take(take)
             .ToListAsync();
     }

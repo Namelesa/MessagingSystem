@@ -25,12 +25,13 @@ public class ChatOrchestrator(
         var encryptedChats = await chatRepository.GetChatsAsync(hasher.Hash(currentUserName));
         if (encryptedChats == null)
             return [];
-
+        
         foreach (var chat in encryptedChats)
             (chat.NickName, chat.Image) = (decryptionInfo.Decrypt(chat.NickName), decryptionInfo.Decrypt(chat.Image));
-
-        var result = mapper.Map<List<ChatDto>>(encryptedChats);
-
+        
+        var result = mapper.Map<List<ChatDto>>(encryptedChats)
+            .ToList();
+        
         await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
         return result;
     }
