@@ -51,6 +51,7 @@ public class OtoChatHub(
         {
             messageId = result.Data.MessageId,
             sender,
+            recipient = recipientNickname,
             content = message,
             sentAt = result.Data.SentTime
         };
