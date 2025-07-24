@@ -5,6 +5,7 @@ using Encryptor.Encryption;
 using FluentAssertions;
 using FluentValidation;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
@@ -23,6 +24,7 @@ public class MessageOrchestratorTests
     private readonly Mock<IHasher> _hasherMock;
     private readonly Mock<ICacheService> _cacheServiceMock;
     private readonly MessageOrchestrator _orchestrator;
+    private readonly IChatOrchestrator _chatOrchestrator;
 
     public MessageOrchestratorTests()
     {
@@ -34,6 +36,7 @@ public class MessageOrchestratorTests
         _decryptionInfoMock = new Mock<IDecryptionInfo>();
         _hasherMock = new Mock<IHasher>();
         _cacheServiceMock = new Mock<ICacheService>();
+        _chatOrchestrator = new Mock<IChatOrchestrator>().Object;
         new Mock<IValidator<EditMessageDto>>();
 
         _orchestrator = new MessageOrchestrator(
@@ -44,7 +47,8 @@ public class MessageOrchestratorTests
             encryptionInfoMock.Object,
             _decryptionInfoMock.Object,
             _hasherMock.Object,
-            _cacheServiceMock.Object);
+            _cacheServiceMock.Object,
+            _chatOrchestrator);
     }
 
     [Fact]
@@ -179,7 +183,7 @@ public class MessageOrchestratorTests
             .GetMethod("InvalidateCacheAsync", BindingFlags.NonPublic | BindingFlags.Instance);
 
         // Act
-        await (Task)method.Invoke(_orchestrator, new object[] { message });
+        await (Task)method.Invoke(_orchestrator, [message]);
 
         // Assert
         var ordered = new[] { "aaa", "zzz" }.OrderBy(x => x).ToArray();
@@ -349,5 +353,21 @@ public class MessageOrchestratorTests
         // Assert
         await act.Should().NotThrowAsync();
         _cacheServiceMock.Verify(c => c.RemoveAsync(It.IsAny<string>()));
+    }
+    [Fact]
+    public async Task InvalidateCacheByUserHashAsync_ShouldDoNothing_WhenNoMessagesFound()
+    {
+        // Arrange
+        _repositoryMock.Setup(r => r.FindMessagesByHashAsync(It.IsAny<string>()))
+            .ReturnsAsync(new List<Message>());
+
+        var method = typeof(MessageOrchestrator)
+            .GetMethod("InvalidateCacheByUserHashAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        var act = () => (Task)method.Invoke(_orchestrator, new object[] { "anyUserHash" });
+
+        // Assert
+        await act.Should().NotThrowAsync();
     }
 }

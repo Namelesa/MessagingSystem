@@ -4,6 +4,7 @@ using Encryptor.Encryption;
 using FluentValidation;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Messages;
+using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
@@ -19,7 +20,8 @@ public class MessageOrchestrator(
     IEncryptionInfo encryptionInfo,
     IDecryptionInfo decryptionInfo,
     IHasher hasher,
-    ICacheService cacheService
+    ICacheService cacheService,
+    IChatOrchestrator chatOrchestrator
     )
     : MessageOrchestratorBase<Message, MessagesDto>(hasher, mapper, 
         encryptionInfo, decryptionInfo, createValidator,
@@ -51,20 +53,7 @@ public class MessageOrchestrator(
         var messages = await otoMessageRepository.FindMessagesByHashAsync(userHash);
         foreach (var message in messages)
         {
-            try
-            {
-                var sender = decryptionInfo.Decrypt(message.Sender);
-                var recipient = decryptionInfo.Decrypt(message.Recipient);
-
-                await cacheService.RemoveAsync($"user_chats:{sender}");
-                await cacheService.RemoveAsync($"user_chats:{recipient}");
-                
-                await InvalidateCacheAsync(message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Cache] Failed to invalidate for message: {ex.Message}");
-            }
+            await InvalidateCacheAsync(message);
         }
     }
     protected override void ApplyHashAndSet(MessagesDto dto, Message message)
@@ -99,5 +88,8 @@ public class MessageOrchestrator(
         {
             Console.WriteLine($"[Cache] Failed to decrypt nicknames for cache invalidation: {ex.Message}");
         }
+        
+        await chatOrchestrator.InvalidateUserChatsCacheAsync(message.Sender);
+        await chatOrchestrator.InvalidateUserChatsCacheAsync(message.Recipient);
     }
 }
