@@ -92,7 +92,6 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         var reply = await messageRepository.ReplyMessageAsync(replyId, message);
         decryptionInfo.DecryptObjectStrings(reply);
         await InvalidateCacheAsync(message);
-        
         return OperationResult<TMessage>.Ok(reply);
     }
     public async Task<OperationResult<string>> DeleteUserInfoInMessageAsync(string userHash)
@@ -100,6 +99,9 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         try
         {
             var result = await messageRepository.DeleteUserHashesAsync(userHash);
+            
+            await InvalidateCacheByUserHashAsync(userHash);
+            
             return result >= 0 
                 ? OperationResult<string>.Ok($"Delete successful. Rows affected: {result}") 
                 : OperationResult<string>.Fail("No rows were deleted. Possibly invalid user hash.");
@@ -117,6 +119,9 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         try
         {
             var affectedRows = await messageRepository.UpdateUserHashesAsync(oldUserHashName, newEncryptedNickName, newUserHash);
+            
+            await InvalidateCacheByUserHashAsync(oldUserHashName);
+
             return affectedRows >= 0 
                 ? OperationResult<string>.Ok($"Update successful. Rows affected: {affectedRows}") 
                 : OperationResult<string>.Fail("No rows were updated. Possibly invalid user hash.");
@@ -144,11 +149,8 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         encryptedMessages.ForEach(decryptionInfo.DecryptObjectStrings);
         return encryptedMessages;
     }
-    protected virtual Task InvalidateCacheAsync(TMessage message)
-    {
-        return Task.CompletedTask;
-    }
-    
+    protected abstract Task InvalidateCacheAsync(TMessage message);
+    protected abstract Task InvalidateCacheByUserHashAsync(string userHash);
     protected abstract void ApplyHashAndSet(TCreateDto dto, TMessage message);
     protected abstract void EditMessage(TMessage message, EditMessageDto editDto);
 }

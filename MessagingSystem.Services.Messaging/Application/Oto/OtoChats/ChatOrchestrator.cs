@@ -42,4 +42,9 @@ public class ChatOrchestrator(
         await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
         return result;
     }
+    
+    public async Task InvalidateUserChatsCacheAsync(string nickName)
+    {
+        await cacheService.RemoveAsync($"user_chats:{nickName}");
+    }
 }

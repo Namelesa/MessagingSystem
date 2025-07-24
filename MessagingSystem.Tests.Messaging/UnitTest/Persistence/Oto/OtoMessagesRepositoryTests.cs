@@ -449,6 +449,68 @@ public class OtoMessageRepositoryTests : IDisposable
     
     #endregion
     
+    [Fact]
+    public async Task FindMessagesByHashAsync_WithMatchingSenderOrRecipientHash_ShouldReturnMessages()
+    {
+        // Arrange
+        var userHash = "hash123";
+        var otherHash = "hash456";
+
+        var message1 = new Message("sender1", "recipient1", "Hello");
+        message1.SetHashes(userHash, otherHash);
+        
+        var message2 = new Message("sender2", "recipient2", "Hi");
+        message2.SetHashes(userHash, otherHash);
+        
+        var message3 = new Message("sender3", "recipient3", "No match");
+        message3.SetHashes("zzz", "yyy");
+        
+        var messages = new List<Message>
+        {
+            message1,
+            message2,
+            message3
+        };
+
+        _context.UsersMessages.AddRange(messages);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.FindMessagesByHashAsync(userHash);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.All(m => m.SenderHash == userHash || m.RecipientHash == userHash).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task FindMessagesByHashAsync_WithNoMatchingHashes_ShouldReturnEmptyList()
+    {
+        // Arrange
+        var userHash = "nonexistent";
+
+        var message1 = new Message("senderA", "recipientA", "A");
+        message1.SetHashes("hash1", "hash2");
+        
+        var message2 = new Message("senderB", "recipientB", "B");
+        message2.SetHashes("hash3", "hash4");
+        
+        var messages = new List<Message>
+        {
+            message1,
+            message2
+        };
+
+        _context.UsersMessages.AddRange(messages);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.FindMessagesByHashAsync(userHash);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
+    
     private DbContextOptions<OtoAppDbContext> CreateRelationalOptions()
     {
         var connection = new SqliteConnection("Filename=:memory:");

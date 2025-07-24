@@ -46,24 +46,58 @@ public class MessageOrchestrator(
         await cacheService.RemoveAsync(cacheKey);
         return result;
     }
+    protected override async Task InvalidateCacheByUserHashAsync(string userHash)
+    {
+        var messages = await otoMessageRepository.FindMessagesByHashAsync(userHash);
+        foreach (var message in messages)
+        {
+            try
+            {
+                var sender = decryptionInfo.Decrypt(message.Sender);
+                var recipient = decryptionInfo.Decrypt(message.Recipient);
 
+                await cacheService.RemoveAsync($"user_chats:{sender}");
+                await cacheService.RemoveAsync($"user_chats:{recipient}");
+                
+                await InvalidateCacheAsync(message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Cache] Failed to invalidate for message: {ex.Message}");
+            }
+        }
+    }
     protected override void ApplyHashAndSet(MessagesDto dto, Message message)
     {
         var hashSender = _hasher.Hash(dto.Sender);
         var hashRecipient = _hasher.Hash(dto.Recipient);
         message.SetHashes(hashSender, hashRecipient);
     }
-
     protected override void EditMessage(Message message, EditMessageDto editDto)
     {
         message.EditInfo(editDto.Content);
     }
-    
     protected override async Task InvalidateCacheAsync(Message message)
     {
         var participants = new[] { message.SenderHash, message.RecipientHash }.OrderBy(x => x).ToArray();
-        var cacheKey = $"oto:{participants[0]}:{participants[1]}:history:100";
+        
+        for (var skip = 0; skip <= 500; skip += 100)
+        {
+            var key = $"oto:{participants[0]}:{participants[1]}:history:{skip}:100";
+            await cacheService.RemoveAsync(key);
+        }
+        
+        try
+        {
+            var senderNick = decryptionInfo.Decrypt(message.Sender);
+            var recipientNick = decryptionInfo.Decrypt(message.Recipient);
 
-        await cacheService.RemoveAsync(cacheKey);
+            await cacheService.RemoveAsync($"user_chats:{senderNick}");
+            await cacheService.RemoveAsync($"user_chats:{recipientNick}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Cache] Failed to decrypt nicknames for cache invalidation: {ex.Message}");
+        }
     }
 }

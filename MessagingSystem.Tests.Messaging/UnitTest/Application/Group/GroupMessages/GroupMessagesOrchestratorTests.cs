@@ -465,5 +465,20 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Assert.Equal(originalIsDeleted, message.IsDeleted);
             Assert.Equal("hash123", message.SenderHash);
         }
+        
+        [Fact]
+        public async Task InvalidateCacheByUserHashAsync_ShouldCompleteWithoutException()
+        {
+            // Arrange
+            var method = typeof(GroupMessagesOrchestrator)
+                .GetMethod("InvalidateCacheByUserHashAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            // Act
+            var task = (Task)method?.Invoke(_orchestrator, ["someUserHash"]);
+
+            // Assert
+            await task;
+            Assert.True(task.IsCompletedSuccessfully);
+        }
     }
 }

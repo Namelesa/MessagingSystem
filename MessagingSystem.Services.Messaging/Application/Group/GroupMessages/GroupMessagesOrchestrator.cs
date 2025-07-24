@@ -40,6 +40,11 @@ public class GroupMessagesOrchestrator(
         return result;
     }
 
+    protected override Task InvalidateCacheByUserHashAsync(string userHash)
+    {
+        return Task.CompletedTask;
+    }
+
     protected override void ApplyHashAndSet(GroupMessageDto dto, GroupMessage message)
     {
         var hashSender = _hasher.Hash(dto.Sender);

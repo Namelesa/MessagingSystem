@@ -68,6 +68,12 @@ public class OtoMessageRepository(OtoAppDbContext db)
             .Take(take)
             .ToListAsync();
     }
+    public async Task<List<Message>> FindMessagesByHashAsync(string userHash)
+    {
+        return await db.UsersMessages
+            .Where(m => m.SenderHash == userHash || m.RecipientHash == userHash)
+            .ToListAsync();
+    }
     public override async Task<Message> ReplyMessageAsync(Guid replyId, Message message)
     {
         message.Reply(replyId);

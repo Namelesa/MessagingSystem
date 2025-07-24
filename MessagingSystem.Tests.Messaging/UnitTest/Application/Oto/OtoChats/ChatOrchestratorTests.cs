@@ -300,4 +300,18 @@ public class ChatOrchestratorTests
         Assert.Equal("decrypted2", encryptedChats[1].NickName);
         Assert.Equal("decrypted3", encryptedChats[2].NickName);
     }
+    
+    [Fact]
+    public async Task InvalidateUserChatsCacheAsync_ShouldCallRemoveAsyncWithCorrectKey()
+    {
+        // Arrange
+        const string nickName = "testUser";
+        var expectedCacheKey = $"user_chats:{nickName}";
+
+        // Act
+        await _orchestrator.InvalidateUserChatsCacheAsync(nickName);
+
+        // Assert
+        _cacheServiceMock.Verify(x => x.RemoveAsync(expectedCacheKey), Times.Once);
+    }
 }

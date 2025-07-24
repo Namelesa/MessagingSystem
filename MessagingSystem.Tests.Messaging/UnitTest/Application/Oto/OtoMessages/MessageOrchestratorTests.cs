@@ -22,7 +22,6 @@ public class MessageOrchestratorTests
     private readonly Mock<IDecryptionInfo> _decryptionInfoMock;
     private readonly Mock<IHasher> _hasherMock;
     private readonly Mock<ICacheService> _cacheServiceMock;
-
     private readonly MessageOrchestrator _orchestrator;
 
     public MessageOrchestratorTests()
@@ -35,6 +34,7 @@ public class MessageOrchestratorTests
         _decryptionInfoMock = new Mock<IDecryptionInfo>();
         _hasherMock = new Mock<IHasher>();
         _cacheServiceMock = new Mock<ICacheService>();
+        new Mock<IValidator<EditMessageDto>>();
 
         _orchestrator = new MessageOrchestrator(
             _repositoryMock.Object,
@@ -160,29 +160,37 @@ public class MessageOrchestratorTests
     }
 
     [Fact]
-    public async Task InvalidateCacheAsync_ShouldRemoveCorrectCacheKey()
+    public async Task InvalidateCacheAsync_ShouldRemoveAllRelevantCacheKeys()
     {
         // Arrange
         var message = new Message("sender", "recipient", "content");
-    
-        var senderHashProperty = typeof(Message).GetProperty("SenderHash");
-        var recipientHashProperty = typeof(Message).GetProperty("RecipientHash");
-    
-        senderHashProperty?.SetValue(message, "zzz");
-        recipientHashProperty?.SetValue(message, "aaa");
+        typeof(Message).GetProperty("SenderHash")?.SetValue(message, "zzz");
+        typeof(Message).GetProperty("RecipientHash")?.SetValue(message, "aaa");
+        
+        _decryptionInfoMock.Setup(x => x.Decrypt("sender")).Returns("senderNick");
+        _decryptionInfoMock.Setup(x => x.Decrypt("recipient")).Returns("recipientNick");
 
-        var expectedCacheKey = "oto:aaa:zzz:history:100";
-
+        var removedKeys = new List<string>();
+        _cacheServiceMock.Setup(c => c.RemoveAsync(It.IsAny<string>()))
+            .Callback<string>(key => removedKeys.Add(key))
+            .Returns(Task.CompletedTask);
+        
         var method = typeof(MessageOrchestrator)
             .GetMethod("InvalidateCacheAsync", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        method.Should().NotBeNull();
-
         // Act
-        await (Task)method.Invoke(_orchestrator, [message]);
+        await (Task)method.Invoke(_orchestrator, new object[] { message });
 
         // Assert
-        _cacheServiceMock.Verify(x => x.RemoveAsync(expectedCacheKey), Times.Once);
+        var ordered = new[] { "aaa", "zzz" }.OrderBy(x => x).ToArray();
+        for (var skip = 0; skip <= 500; skip += 100)
+        {
+            var expectedKey = $"oto:{ordered[0]}:{ordered[1]}:history:{skip}:100";
+            Assert.Contains(expectedKey, removedKeys);
+        }
+
+        Assert.Contains("user_chats:senderNick", removedKeys);
+        Assert.Contains("user_chats:recipientNick", removedKeys);
     }
     
     [Fact]
@@ -252,7 +260,6 @@ public class MessageOrchestratorTests
         _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip , take), Times.Once);
         _decryptionInfoMock.Verify(x => x.DecryptObjectStrings(It.IsAny<Message>()), Times.Exactly(2));
     }
-
     
     [Fact]
     public void EditMessage_ShouldUpdateMessageContent()
@@ -269,5 +276,78 @@ public class MessageOrchestratorTests
 
         // Assert
         Assert.True(true);
+    }
+    
+    [Fact]
+    public async Task InvalidateCacheAsync_ShouldHandleDecryptionException()
+    {
+        // Arrange
+        var message = new Message("sender", "recipient", "content");
+        typeof(Message).GetProperty("SenderHash")?.SetValue(message, "zzz");
+        typeof(Message).GetProperty("RecipientHash")?.SetValue(message, "aaa");
+
+        _decryptionInfoMock
+            .Setup(x => x.Decrypt(It.IsAny<string>()))
+            .Throws(new Exception("Decryption failed"));
+
+        var method = typeof(MessageOrchestrator)
+            .GetMethod("InvalidateCacheAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        var act = () => (Task)method.Invoke(_orchestrator, new object[] { message });
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+    
+    [Fact]
+    public async Task InvalidateCacheByUserHashAsync_ShouldHandleExceptionInLoop()
+    {
+        // Arrange
+        var message = new Message("sender", "recipient", "content");
+        typeof(Message).GetProperty("SenderHash")?.SetValue(message, "hash1");
+        typeof(Message).GetProperty("RecipientHash")?.SetValue(message, "hash2");
+
+        _repositoryMock.Setup(r => r.FindMessagesByHashAsync(It.IsAny<string>()))
+            .ReturnsAsync([ message ]);
+
+        _decryptionInfoMock
+            .Setup(x => x.Decrypt(It.IsAny<string>()))
+            .Throws(new Exception("Boom!"));
+
+        var method = typeof(MessageOrchestrator)
+            .GetMethod("InvalidateCacheByUserHashAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        var act = () => (Task)method.Invoke(_orchestrator, new object[] { "anyUserHash" });
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
+    
+    [Fact]
+    public async Task InvalidateCacheByUserHashAsync_ShouldSkipNullNicknames()
+    {
+        // Arrange
+        var message = new Message("sender", "recipient", "content");
+        typeof(Message).GetProperty("SenderHash")?.SetValue(message, "hash1");
+        typeof(Message).GetProperty("RecipientHash")?.SetValue(message, "hash2");
+
+        _repositoryMock.Setup(r => r.FindMessagesByHashAsync(It.IsAny<string>()))
+            .ReturnsAsync([ message ]);
+
+        _decryptionInfoMock
+            .Setup(x => x.Decrypt(It.IsAny<string>()))
+            .Returns((string)null!);
+
+        var method = typeof(MessageOrchestrator)
+            .GetMethod("InvalidateCacheByUserHashAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        var act = () => (Task)method.Invoke(_orchestrator, ["anyUserHash"]);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+        _cacheServiceMock.Verify(c => c.RemoveAsync(It.IsAny<string>()));
     }
 }

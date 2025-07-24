@@ -25,6 +25,16 @@ public class TestMessageOrchestrator(
     : MessageOrchestratorBase<TestMessage, TestCreateDto>(hasher, mapper, encryptionInfo, decryptionInfo,
         createValidator, editValidator, messageRepository)
 {
+    protected override Task InvalidateCacheAsync(TestMessage message)
+    {
+        return Task.CompletedTask;
+    }
+
+    protected override Task InvalidateCacheByUserHashAsync(string userHash)
+    {
+        return Task.CompletedTask;
+    }
+    
     protected override void ApplyHashAndSet(TestCreateDto dto, TestMessage message)
     {
         message.SenderHash = "hashed_" + dto.Sender;
@@ -821,6 +831,5 @@ public class MessageOrchestratorBaseTests
             f.Sender == "hashed_empty" &&
             f.Recipient == "hashed_empty")), Times.Once);
     }
-
     #endregion
 }
