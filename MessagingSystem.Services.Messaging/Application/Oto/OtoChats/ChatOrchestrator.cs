@@ -39,7 +39,7 @@ public class ChatOrchestrator(
 
         var result = mapper.Map<List<ChatDto>>(distinctChats).ToList();
         
-        await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
+        await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
         return result;
     }
     

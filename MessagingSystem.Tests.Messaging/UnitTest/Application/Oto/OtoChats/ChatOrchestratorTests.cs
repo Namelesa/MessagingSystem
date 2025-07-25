@@ -118,7 +118,7 @@ public class ChatOrchestratorTests
 
         // Verify cache operations
         _cacheServiceMock.Verify(x => x.GetAsync<List<ChatDto>>(expectedCacheKey), Times.Once);
-        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, mappedResult, TimeSpan.FromMinutes(10)), Times.Once);
+        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, mappedResult, TimeSpan.FromMinutes(5)), Times.Once);
 
         // Verify other operations were called
         _hasherMock.Verify(x => x.Hash(userName), Times.Once);

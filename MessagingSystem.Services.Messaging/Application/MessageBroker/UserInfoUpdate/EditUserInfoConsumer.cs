@@ -39,13 +39,13 @@ public class EditUserInfoConsumer(
 
             decryptionInfo.DecryptRsaObjectStrings(msg);
             decryptionInfo.DecryptObjectStrings(msg);
-
+            
             var (memberTask, groupTask, messageTask, groupMessageTask, userImageTask) = (
                 groupMemberOrchestrator.UpdateMemberInfoAsync(msg.UserHash, msg.UserNickName, msg.Image),
                 groupInfoOrchestrator.EditGroupsAdminAsync(msg.UserHash, msg.UserNickName),
                 messageOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash),
                 groupMessagesOrchestrator.UpdateUserInfoInMessageAsync(msg.UserNickName, msg.UserHash),
-                userOrchestrator.UpdateUserAsync(msg.UserHash, encryptionInfo.Encrypt(msg.Image))
+                userOrchestrator.UpdateUserAsync(msg.UserNickName, msg.UserHash, encryptionInfo.Encrypt(msg.Image))
             );
 
             await Task.WhenAll(memberTask, groupTask, messageTask, groupMessageTask, userImageTask);

@@ -98,9 +98,9 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
     {
         try
         {
-            var result = await messageRepository.DeleteUserHashesAsync(userHash);
-            
             await InvalidateCacheByUserHashAsync(userHash);
+            
+            var result = await messageRepository.DeleteUserHashesAsync(userHash);
             
             return result >= 0 
                 ? OperationResult<string>.Ok($"Delete successful. Rows affected: {result}") 
@@ -121,6 +121,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
             var affectedRows = await messageRepository.UpdateUserHashesAsync(oldUserHashName, newEncryptedNickName, newUserHash);
             
             await InvalidateCacheByUserHashAsync(oldUserHashName);
+            await InvalidateCacheByUserHashAsync(newUserHash);
 
             return affectedRows >= 0 
                 ? OperationResult<string>.Ok($"Update successful. Rows affected: {affectedRows}") 

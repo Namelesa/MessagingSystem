@@ -43,22 +43,23 @@ public class UserOrchestrator(
             ? OperationResult<List<FoundedUser>>.Fail("No users found")
             : OperationResult<List<FoundedUser>>.Ok(foundUsers);
     }
-    public async Task<OperationResult<string>> DeleteUserAsync(string nickName)
+    public async Task<OperationResult<string>> DeleteUserAsync(string nickNameHash)
     {
-        var user = await FindUserAsync(nickName); 
+        var user = await FindUserAsync(nickNameHash); 
         await userImageRepository.DeleteUserImageAsync(user);
         return OperationResult<string>.Ok("User deleted successfully");
     }
-    public async Task<OperationResult<string>> UpdateUserAsync(string nickName, string image)
+    public async Task<OperationResult<string>> UpdateUserAsync(string nickName, string oldNickNameHash, string image)
     {
-        var user = await FindUserAsync(nickName);
+        var user = await FindUserAsync(oldNickNameHash);
+        nickName = hasher.Hash(nickName);
         user.EditInfo(nickName, image);
         await userImageRepository.EditUserImageAsync(user);
         return OperationResult<string>.Ok("User updated successfully");
     }
-    private async Task<UserImage> FindUserAsync(string nickName)
+    private async Task<UserImage> FindUserAsync(string nickNameHash)
     {
-        var user = await userImageRepository.FindUserImageByHashAsync(nickName);
-        return user ?? new UserImage(hasher.Hash(nickName), "");
+        var user = await userImageRepository.FindUserImageByHashAsync(nickNameHash);
+        return user ?? new UserImage(hasher.Hash(nickNameHash), "");
     }
 }

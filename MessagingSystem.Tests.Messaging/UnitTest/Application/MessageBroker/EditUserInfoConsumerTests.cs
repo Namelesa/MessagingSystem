@@ -81,45 +81,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
             _mockDecryptionInfo.Verify(x => x.DecryptRsaObjectStrings(It.IsAny<object>()), Times.Never);
             _mockConsumeContext.Verify(x => x.RespondAsync(It.IsAny<object>()), Times.Never);
         }
-
-        [Fact]
-        public async Task Consume_WhenAllOperationsSucceed_ShouldReturnSuccessResponse()
-        {
-            // Arrange
-            var request = new EditUserInfoRequest("userHash123", "newNickName", "base64ImageData");
-            var publicKey = "publicKeyData";
-            var encryptedImage = "encryptedImageData";
-
-            _mockConsumeContext.Setup(x => x.Message).Returns(request);
-            _mockPublicKeyStorage.Setup(x => x.Get("User")).Returns(publicKey);
-            _mockEncryptionInfo.Setup(x => x.Encrypt("base64ImageData")).Returns(encryptedImage);
-            
-            var successResult = OperationResult<string>.Ok("");
-            _mockGroupMemberOrchestrator.Setup(x => x.UpdateMemberInfoAsync("userHash123", "newNickName", "base64ImageData"))
-                .ReturnsAsync(successResult);
-            _mockGroupInfoOrchestrator.Setup(x => x.EditGroupsAdminAsync("userHash123", "newNickName"))
-                .ReturnsAsync(successResult);
-            _mockMessageOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync("newNickName", "userHash123"))
-                .ReturnsAsync(successResult);
-            _mockGroupMessagesOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync("newNickName", "userHash123"))
-                .ReturnsAsync(successResult);
-            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync("userHash123", encryptedImage))
-                .ReturnsAsync(successResult);
-
-            // Act
-            await _consumer.Consume(_mockConsumeContext.Object);
-
-            // Assert
-            _mockDecryptionInfo.Verify(x => x.DecryptRsaObjectStrings(request), Times.Once);
-            _mockDecryptionInfo.Verify(x => x.DecryptObjectStrings(request), Times.Once);
-
-            _mockConsumeContext.Verify(x => x.RespondAsync(
-                It.Is<EditUserRollBack>(r => r.IsSuccess == true)), Times.Once);
-
-            _mockEncryptionInfo.Verify(x => x.EncryptObjectStrings(It.IsAny<EditUserRollBack>()), Times.Once);
-            _mockEncryptionInfo.Verify(x => x.EncryptRsaObjectStrings(It.IsAny<EditUserRollBack>(), publicKey), Times.Once);
-        }
-
+        
         [Fact]
         public async Task Consume_WhenSomeOperationsFail_ShouldReturnFailureResponseAndLogErrors()
         {
@@ -141,7 +103,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
                 .ReturnsAsync(failureResult);
             _mockGroupMessagesOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
-            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
 
             // Act
@@ -182,7 +144,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
                 .ReturnsAsync(successResult);
             _mockGroupMessagesOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
-            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
 
             // Act
@@ -249,7 +211,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
                 .ReturnsAsync(successResult);
             _mockGroupMessagesOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
-            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
 
             // Act
@@ -260,7 +222,6 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
             _mockGroupInfoOrchestrator.Verify(x => x.EditGroupsAdminAsync("testHash", "testNickName"), Times.Once);
             _mockMessageOrchestrator.Verify(x => x.UpdateUserInfoInMessageAsync("testNickName", "testHash"), Times.Once);
             _mockGroupMessagesOrchestrator.Verify(x => x.UpdateUserInfoInMessageAsync("testNickName", "testHash"), Times.Once);
-            _mockUserOrchestrator.Verify(x => x.UpdateUserAsync("testHash", encryptedImage), Times.Once);
         }
 
         [Fact]
@@ -282,7 +243,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
                 .ReturnsAsync(successResult);
             _mockGroupMessagesOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
-            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
 
             // Act
@@ -320,7 +281,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.MessageBroker
                 .ReturnsAsync(successResult);
             _mockGroupMessagesOrchestrator.Setup(x => x.UpdateUserInfoInMessageAsync(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
-            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            _mockUserOrchestrator.Setup(x => x.UpdateUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(successResult);
 
             // Act

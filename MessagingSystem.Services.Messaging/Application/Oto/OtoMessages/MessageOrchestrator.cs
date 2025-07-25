@@ -44,7 +44,7 @@ public class MessageOrchestrator(
         var result = await otoMessageRepository.GetMessageStoryAsync(hashSender, hashRecipient, skip, take);
         result = DecryptListOfMessage(result);
 
-        await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(1));
+        await cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
         await cacheService.RemoveAsync(cacheKey);
         return result;
     }

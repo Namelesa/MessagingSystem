@@ -131,7 +131,7 @@ public class MessageOrchestratorTests
         _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
         _repositoryMock.Verify(x => x.GetMessageStoryAsync(hashedSender, hashedRecipient, skip ,take), Times.Once);
         _decryptionInfoMock.Verify(x => x.DecryptObjectStrings(It.IsAny<Message>()), Times.Exactly(2));
-        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(1)), Times.Once);
+        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, result, TimeSpan.FromMinutes(5)), Times.Once);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class MessageOrchestratorTests
 
         // Assert
         _cacheServiceMock.Verify(x => x.GetAsync<List<Message>>(expectedCacheKey), Times.Once);
-        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, It.IsAny<List<Message>>(), TimeSpan.FromMinutes(1)), Times.Once);
+        _cacheServiceMock.Verify(x => x.SetAsync(expectedCacheKey, It.IsAny<List<Message>>(), TimeSpan.FromMinutes(5)), Times.Once);
     }
 
     [Fact]
