@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 using Xunit;
 using Assert = Xunit.Assert;
 

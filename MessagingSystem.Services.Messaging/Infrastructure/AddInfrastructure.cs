@@ -10,6 +10,7 @@ using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelet
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
 using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
+using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,10 +31,17 @@ public static class AddInfrastructure
         services.AddScoped<IDecryptionInfo, DecryptionInfo>();
         services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
         services.AddScoped<ICacheService, CacheService>();
+        services.AddScoped<IImageLoaderService, ImageLoaderService>();
         services.AddScoped<KeyPublisher>();
         
         services.Configure<MessageBrokerSettings>(configuration.GetSection("MessageBroker"));
 
+        services.Configure<DigitalOceanSpacesSettings>(
+            configuration.GetSection("DigitalOceanSpacesSettings"));
+        
+        services.AddSingleton(sp =>
+            sp.GetRequiredService<IOptions<DigitalOceanSpacesSettings>>().Value);
+        
     services.AddSingleton(sp =>
         sp.GetRequiredService<IOptions<MessageBrokerSettings>>().Value);
 

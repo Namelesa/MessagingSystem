@@ -8,6 +8,7 @@ using MessagingSystem.Services.Messaging.Application.User.Dto;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
+using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 
 namespace MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 
@@ -20,7 +21,8 @@ public class GroupInfoOrchestrator(
     IValidator<EditGroupDto> editValidator,
     IGroupEncryption groupEncryption,
     ILogger<GroupInfoOrchestrator> logger,
-    IUserOrchestrator userOrchestrator
+    IUserOrchestrator userOrchestrator,
+    IImageLoaderService imageLoaderService
     ) : IGroupInfoOrchestrator
 {
     public async Task<OperationResult<GroupDto>> CreateGroupAsync(GroupDto groupInfo)
@@ -83,7 +85,11 @@ public class GroupInfoOrchestrator(
             return OperationResult<GroupDto>.Fail(validation.Message);
         
         var group = await GetGroupByIdOrThrowAsync(id);
+        
         groupEncryption.Decrypt(group);
+        
+        if (!string.IsNullOrEmpty(groupInfo.Image) && !string.IsNullOrEmpty(group.Image))
+            await DeleteImage(group.Image);
         
         var updatedHash = hasher.Hash(groupInfo.GroupName);
         group.EditInfo(groupInfo.GroupName, 
@@ -123,6 +129,8 @@ public class GroupInfoOrchestrator(
 
         return await SafeExecuteAsync(async () =>
         {
+            if (group.Image != null)
+                await DeleteImage(groupEncryption.DecryptMembers(group.Image));
             await groupInfoRepository.DeleteGroupAsync(group);
             return OperationResult<string>.Ok("Group deleted successfully");
         }, "Cannot delete group");
@@ -251,5 +259,18 @@ public class GroupInfoOrchestrator(
         if (group == null)
             throw new InvalidOperationException("Group not found");
         return group;
+    }
+    private async Task DeleteImage(string image)
+    {    
+        if (string.IsNullOrEmpty(image))
+            return;
+        
+        var uri = new Uri(image);
+        var path = uri.AbsolutePath.TrimStart('/');
+
+        var segments = path.Split('/', 2);
+        var key = segments.Length == 2 ? segments[1] : segments[0];
+            
+        await imageLoaderService.DeleteAsync(key);
     }
 }

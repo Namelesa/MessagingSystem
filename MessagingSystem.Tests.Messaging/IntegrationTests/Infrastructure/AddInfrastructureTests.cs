@@ -24,6 +24,7 @@ using MessagingSystem.Services.Messaging.Core.Oto.Users;
 using MessagingSystem.Services.Messaging.Infrastructure;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
+using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
 using MessagingSystem.Services.Messaging.Infrastructure.MessageBroker;
 using MessagingSystem.Services.Messaging.Persistence.Group;
@@ -75,30 +76,40 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
 
             _mockConfiguration.Setup(x => x.GetSection("MessageBroker"))
                 .Returns(messageBrokerSection.Object);
-            
+
             var encryptionSection = new Mock<IConfigurationSection>();
             encryptionSection.Setup(x => x["ChaChaKey"])
                 .Returns("ThisIsAVeryLongSecretKeyForTesting12345");
 
             _mockConfiguration.Setup(x => x.GetSection("Encryption"))
                 .Returns(encryptionSection.Object);
-            
+
             _mockConfiguration.Setup(x => x["Encryption:ChaChaKey"])
                 .Returns("ThisIsAVeryLongSecretKeyForTesting12345");
-            
+
             var redisSection = new Mock<IConfigurationSection>();
             redisSection.Setup(x => x["Host"]).Returns("localhost:6379");
 
             _mockConfiguration.Setup(x => x.GetSection("Redis"))
                 .Returns(redisSection.Object);
-            
+
             _mockConfiguration.Setup(x => x["Redis:Host"])
                 .Returns("localhost:6379");
-            
+
             _mockConfiguration.Setup(x => x["JWTConfig:Issuer"]).Returns("TestIssuer");
             _mockConfiguration.Setup(x => x["JWTConfig:Audience"]).Returns("TestAudience");
             _mockConfiguration.Setup(x => x["JWTConfig:Key"]).Returns("ThisIsAVeryLongSecretKeyForTesting12345");
             _mockConfiguration.Setup(x => x["Redis:Host"]).Returns("localhost:6379");
+
+            var digitalOceanSection = new Mock<IConfigurationSection>();
+            digitalOceanSection.Setup(x => x["AccessKey"]).Returns("TestAccessKey");
+            digitalOceanSection.Setup(x => x["SecretKey"]).Returns("TestSecretKey");
+            digitalOceanSection.Setup(x => x["BucketName"]).Returns("TestBucket");
+            digitalOceanSection.Setup(x => x["Region"]).Returns("TestRegion");
+            digitalOceanSection.Setup(x => x["Endpoint"]).Returns("TestEndpoint");
+
+            _mockConfiguration.Setup(x => x.GetSection("DigitalOceanSpacesSettings"))
+                .Returns(digitalOceanSection.Object);
         }
 
         [Fact]
@@ -188,7 +199,11 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
                 {"Redis:Host", "localhost:6379"},
                 {"JWTConfig:Issuer", "TestIssuer"},
                 {"JWTConfig:Audience", "TestAudience"},
-                {"JWTConfig:Key", "ThisIsAVeryLongSecretKeyForTesting12345"}
+                {"DigitalOceanSpacesSettings:AccessKey", "test-access-key"},
+                {"DigitalOceanSpacesSettings:SecretKey", "test-secret-key"},
+                {"DigitalOceanSpacesSettings:BucketName", "TestBucket"},
+                {"DigitalOceanSpacesSettings:Region", "TestRegion"},
+                {"DigitalOceanSpacesSettings:Endpoint", "https://nyc3.digitaloceanspaces.com"}
             };
 
             var configuration = new ConfigurationBuilder()
@@ -222,6 +237,7 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             _services.AddScoped<IGroupMemberOrchestrator, GroupMemberOrchestrator>();
             _services.AddScoped<IMessageOrchestrator, MessageOrchestrator>();
             _services.AddScoped<IGroupEncryption, GroupEncryptionDecorator>();
+            _services.AddScoped<IImageLoaderService, ImageLoaderService>();
             _services.AddLogging();
 
             _services.AddSingleton(Options.Create(new MessageBrokerSettings
@@ -430,6 +446,14 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             mockConfiguration.Setup(x => x["JWTConfig:Audience"]).Returns("TestAudience");
             mockConfiguration.Setup(x => x["JWTConfig:Key"]).Returns("ThisIsAVeryLongSecretKeyForTesting12345");
 
+            mockConfiguration.Setup(x => x.GetSection("DigitalOceanSpacesSettings")).Returns(messageBrokerSection.Object);
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:AccessKey"]).Returns("test-access-key");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:SecretKey"]).Returns("test-secret-key");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:BucketName"]).Returns("TestBucket");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:Region"]).Returns("TestRegion");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:EndpointEndpoint"]).Returns("https://nyc3.digitaloceanspaces.com");
+
+            
             // Act
             services.AddInfrastructureLayer(mockConfiguration.Object);
 
@@ -463,7 +487,14 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             mockConfiguration.Setup(x => x["JWTConfig:Issuer"]).Returns("TestIssuer");
             mockConfiguration.Setup(x => x["JWTConfig:Audience"]).Returns("TestAudience");
             mockConfiguration.Setup(x => x["JWTConfig:Key"]).Returns((string)null);
-
+            
+            mockConfiguration.Setup(x => x.GetSection("DigitalOceanSpacesSettings")).Returns(messageBrokerSection.Object);
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:AccessKey"]).Returns("test-access-key");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:SecretKey"]).Returns("test-secret-key");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:BucketName"]).Returns("TestBucket");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:Region"]).Returns("TestRegion");
+            mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:EndpointEndpoint"]).Returns("https://nyc3.digitaloceanspaces.com");
+            
             // Act & Assert
             services.AddInfrastructureLayer(mockConfiguration.Object);
             var serviceProvider = services.BuildServiceProvider();
@@ -771,10 +802,80 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
 
     // Assert
     Assert.Equal("decrypted-token", context.Token);
-    // Verify that decryption was called since we used cookie token
     mockDecryption.Verify(x => x.Decrypt("encrypted-cookie-token"), Times.Once);
-    // Verify that cookies were accessed to cover (string,out string) branch
     mockCookies.Verify(x => x.TryGetValue("access_token", out It.Ref<string>.IsAny), Times.Once);
+}
+        
+        [Fact]
+public void AddInfrastructureLayer_ShouldResolveDigitalOceanSpacesSettingsFromServiceProvider()
+{
+    // Arrange
+    var services = new ServiceCollection();
+    var configuration = new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string>
+        {
+            ["DigitalOceanSpacesSettings:AccessKey"] = "test-access-key",
+            ["DigitalOceanSpacesSettings:SecretKey"] = "test-secret-key", 
+            ["DigitalOceanSpacesSettings:BucketName"] = "test-bucket",
+            ["DigitalOceanSpacesSettings:Region"] = "test-region",
+            ["DigitalOceanSpacesSettings:Endpoint"] = "https://test.endpoint.com",
+            ["MessageBroker:Host"] = "amqp://localhost:5672",
+            ["MessageBroker:UserName"] = "guest",
+            ["MessageBroker:Password"] = "guest",
+            ["JWTConfig:Issuer"] = "test-issuer",
+            ["JWTConfig:Audience"] = "test-audience",
+            ["JWTConfig:Key"] = "test-key-with-at-least-256-bits-length-for-security",
+            ["Redis:Host"] = "localhost:6379"
+        })
+        .Build();
+
+    // Act
+    services.AddInfrastructureLayer(configuration);
+    var serviceProvider = services.BuildServiceProvider();
+
+    // Assert
+    var digitalOceanSettings = serviceProvider.GetService<DigitalOceanSpacesSettings>();
+    Assert.NotNull(digitalOceanSettings);
+    Assert.Equal("test-access-key", digitalOceanSettings.AccessKey);
+    Assert.Equal("test-secret-key", digitalOceanSettings.SecretKey);
+    Assert.Equal("test-bucket", digitalOceanSettings.BucketName);
+    Assert.Equal("test-region", digitalOceanSettings.Region);
+    Assert.Equal("https://test.endpoint.com", digitalOceanSettings.Endpoint);
+}
+
+[Fact]
+public void AddInfrastructureLayer_ShouldResolveMessageBrokerSettingsFromServiceProvider()
+{
+    // Arrange
+    var services = new ServiceCollection();
+    var configuration = new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string>
+        {
+            ["MessageBroker:Host"] = "amqp://localhost:5672",
+            ["MessageBroker:UserName"] = "test-user",
+            ["MessageBroker:Password"] = "test-password",
+            ["JWTConfig:Issuer"] = "test-issuer",
+            ["JWTConfig:Audience"] = "test-audience", 
+            ["JWTConfig:Key"] = "test-key-with-at-least-256-bits-length-for-security",
+            ["DigitalOceanSpacesSettings:AccessKey"] = "test-access-key",
+            ["DigitalOceanSpacesSettings:SecretKey"] = "test-secret-key",
+            ["DigitalOceanSpacesSettings:BucketName"] = "test-bucket",
+            ["DigitalOceanSpacesSettings:Region"] = "test-region",
+            ["DigitalOceanSpacesSettings:Endpoint"] = "https://test.endpoint.com",
+            ["Redis:Host"] = "localhost:6379"
+        })
+        .Build();
+
+    // Act
+    services.AddInfrastructureLayer(configuration);
+    var serviceProvider = services.BuildServiceProvider();
+
+    // Assert
+    var messageBrokerSettings = serviceProvider.GetService<MessageBrokerSettings>();
+    Assert.NotNull(messageBrokerSettings);
+    Assert.Equal("amqp://localhost:5672", messageBrokerSettings.Host);
+    Assert.Equal("test-user", messageBrokerSettings.UserName);
+    Assert.Equal("test-password", messageBrokerSettings.Password);
 }
     }
 }

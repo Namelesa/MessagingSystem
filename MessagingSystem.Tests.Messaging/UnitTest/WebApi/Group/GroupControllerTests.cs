@@ -3,9 +3,11 @@ using FluentAssertions;
 using MessagingSystem.Services.Messaging.Application;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
@@ -17,13 +19,15 @@ public class GroupControllerTests
 {
     private readonly Mock<IGroupInfoOrchestrator> _orchestratorMock;
     private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<IImageLoaderService> _imageLoaderServiceMock;
     private readonly GroupController _controller;
 
     public GroupControllerTests()
     {
         _orchestratorMock = new Mock<IGroupInfoOrchestrator>();
         _mapperMock = new Mock<IMapper>();
-        _controller = new GroupController(_orchestratorMock.Object, _mapperMock.Object);
+        _imageLoaderServiceMock = new Mock<IImageLoaderService>();
+        _controller = new GroupController(_orchestratorMock.Object, _mapperMock.Object, _imageLoaderServiceMock.Object);
     }
 
     #region CreateGroupAsync Tests
@@ -491,4 +495,52 @@ public class GroupControllerTests
     }
 
     #endregion
+    
+    [Fact]
+    public async Task CreateGroupAsync_WithValidImageFile_ShouldCallImageLoaderAndSetImageUrl()
+    {
+        // Arrange
+        var groupName = "Test Group";
+        var description = "Test Description";
+        var admin = "adminUser";
+
+        var fileMock = new Mock<IFormFile>();
+        fileMock.Setup(f => f.Length).Returns(100);
+        fileMock.Setup(f => f.OpenReadStream()).Returns(new MemoryStream());
+
+        var imageUrl = "https://cdn.example.com/test.jpg";
+
+        _imageLoaderServiceMock
+            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync(imageUrl);
+
+        var inputModel = new CreateGroup
+        {
+            GroupName = groupName,
+            Description = description,
+            Admin = admin,
+            ImageFile = fileMock.Object
+        };
+
+        var mappedGroupDto = new GroupDto("Test Group", imageUrl, description, admin, new List<string>(), new byte[8]); 
+
+        _mapperMock
+            .Setup(m => m.Map<GroupDto>(inputModel))
+            .Returns(mappedGroupDto);
+
+        _orchestratorMock
+            .Setup(o => o.CreateGroupAsync(mappedGroupDto))
+            .ReturnsAsync(OperationResult<GroupDto>.Ok(mappedGroupDto));
+
+        // Act
+        var result = await _controller.CreateGroupAsync(inputModel);
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+
+        _imageLoaderServiceMock.Verify(s =>
+            s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Once);
+
+        inputModel.Image.Should().Be(imageUrl); // Ensure Image was set correctly
+    }
 }

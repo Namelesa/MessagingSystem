@@ -1,5 +1,7 @@
 using FluentAssertions;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+using Microsoft.AspNetCore.Http;
+using Moq;
 using Xunit;
 
 namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupInformation.Dto;
@@ -150,5 +152,22 @@ public class EditGroupDtoTests
         // Assert
         stringRepresentation.Should().NotBeNullOrEmpty();
         stringRepresentation.Should().Contain(nameof(EditGroupDto));
+    }
+    
+    [Fact]
+    public void ImageFile_Property_ShouldBeSettableAndGettable()
+    {
+        // Arrange
+        var mockFormFile = new Mock<IFormFile>();
+        mockFormFile.Setup(f => f.FileName).Returns("test.png");
+
+        var dto = new EditGroupDto("Test Group", "image.jpg", "Test Description")
+        {
+            ImageFile = mockFormFile.Object
+        };
+
+        // Act & Assert
+        dto.ImageFile.Should().NotBeNull();
+        dto.ImageFile!.FileName.Should().Be("test.png");
     }
 }

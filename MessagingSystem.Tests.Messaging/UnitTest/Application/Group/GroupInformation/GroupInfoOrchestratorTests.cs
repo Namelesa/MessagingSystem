@@ -12,6 +12,7 @@ using MessagingSystem.Services.Messaging.Application.User.Dto;
 using MessagingSystem.Services.Messaging.Core.Groups.Group;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMember;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
+using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -30,6 +31,7 @@ public class GroupInfoOrchestratorTests
     private readonly Mock<IGroupEncryption> _groupEncryptionMock;
     private readonly Mock<IUserOrchestrator> _userOrchestratorMock;
     private readonly GroupInfoOrchestrator _orchestrator;
+    private readonly Mock<IImageLoaderService> _imageLoaderServiceMock;
 
     public GroupInfoOrchestratorTests()
     {
@@ -42,6 +44,7 @@ public class GroupInfoOrchestratorTests
         _groupEncryptionMock = new Mock<IGroupEncryption>();
         Mock<ILogger<GroupInfoOrchestrator>> loggerMock = new();
         _userOrchestratorMock = new Mock<IUserOrchestrator>();
+        _imageLoaderServiceMock = new Mock<IImageLoaderService>();
 
         _orchestrator = new GroupInfoOrchestrator(
             _groupInfoRepositoryMock.Object,
@@ -52,7 +55,8 @@ public class GroupInfoOrchestratorTests
             _editValidatorMock.Object,
             _groupEncryptionMock.Object,
             loggerMock.Object,
-            _userOrchestratorMock.Object
+            _userOrchestratorMock.Object,
+            _imageLoaderServiceMock.Object
         );
     }
 
@@ -306,9 +310,9 @@ public class GroupInfoOrchestratorTests
     {
         // Arrange
         var groupId = Guid.NewGuid();
-        var editGroupDto = new EditGroupDto("NewGroupName", "new-image.jpg", "New Description");
-        var groupInfo = new GroupInfo("OldGroupName", "old-image.jpg", "Old Description", "admin");
-        var groupDto = new GroupDto("NewGroupName", "new-image.jpg", "New Description", "admin", new List<string>(),
+        var editGroupDto = new EditGroupDto("NewGroupName", "http://new-image.jpg", "New Description");
+        var groupInfo = new GroupInfo("OldGroupName", "http://old-image.jpg", "Old Description", "admin");
+        var groupDto = new GroupDto("NewGroupName", "http://new-image.jpg", "New Description", "admin", new List<string>(),
             new byte[] { 1, 2, 3 });
 
         _editValidatorMock.Setup(v => v.ValidateAsync(It.IsAny<EditGroupDto>(), default))
@@ -353,8 +357,8 @@ public class GroupInfoOrchestratorTests
     {
         // Arrange
         var groupId = Guid.NewGuid();
-        var editGroupDto = new EditGroupDto("NewGroupName", "new-image.jpg", "New Description");
-        var groupInfo = new GroupInfo("OldGroupName", "old-image.jpg", "Old Description", "admin");
+        var editGroupDto = new EditGroupDto("NewGroupName", "http://new-image.jpg", "New Description");
+        var groupInfo = new GroupInfo("OldGroupName", "http://old-image.jpg", "Old Description", "admin");
 
         _editValidatorMock.Setup(v => v.ValidateAsync(It.IsAny<EditGroupDto>(), default))
             .ReturnsAsync(new ValidationResult());

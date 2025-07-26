@@ -62,7 +62,7 @@ public class DecryptionInfo : IDecryptionInfo
         var excludedProps = new[]
         {
             "SenderHash", "RecipientHash", "GroupNameHash", "AdminHash", "UserNickNameHash"
-            ,"HashEmail", "HashLogin", "HashNickName"
+            ,"HashEmail", "HashLogin", "HashNickName", "RowVersion"
         };
 
         var props = typeof(T).GetProperties()
