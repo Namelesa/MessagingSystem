@@ -87,13 +87,17 @@ public class GroupInfoOrchestrator(
         var group = await GetGroupByIdOrThrowAsync(id);
         
         groupEncryption.Decrypt(group);
-        
+        var image = group.Image;
+
         if (!string.IsNullOrEmpty(groupInfo.Image) && !string.IsNullOrEmpty(group.Image))
+        {
             await DeleteImage(group.Image);
+            image = groupInfo.Image;
+        }
         
         var updatedHash = hasher.Hash(groupInfo.GroupName);
         group.EditInfo(groupInfo.GroupName, 
-            groupInfo.Image ?? groupInfo.GroupName, 
+            image ?? groupInfo.GroupName, 
             groupInfo.Description, updatedHash);
         
         groupEncryption.Encrypt(group);

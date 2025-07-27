@@ -14,48 +14,57 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         public void Constructor_WithValidParameters_ShouldInitializeProperties()
         {
             // Arrange & Act
+            var before = DateTime.UtcNow;
+            
             var dto = new GroupMessageDto(TestSender, TestContent, TestGroupId);
 
             // Assert
             Assert.Equal(TestSender, dto.Sender);
             Assert.Equal(TestContent, dto.Content);
             Assert.Equal(TestGroupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
         public void Constructor_WithNullSender_ShouldSetSenderToNull()
         {
             // Arrange & Act
+            var before = DateTime.UtcNow;
             var dto = new GroupMessageDto(null, TestContent, TestGroupId);
 
             // Assert
             Assert.Null(dto.Sender);
             Assert.Equal(TestContent, dto.Content);
             Assert.Equal(TestGroupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
         public void Constructor_WithNullContent_ShouldSetContentToNull()
         {
             // Arrange & Act
+            var before = DateTime.UtcNow;
             var dto = new GroupMessageDto(TestSender, null, TestGroupId);
 
             // Assert
             Assert.Equal(TestSender, dto.Sender);
             Assert.Null(dto.Content);
             Assert.Equal(TestGroupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
         public void Constructor_WithEmptyGuid_ShouldSetGroupIdToEmptyGuid()
         {
             // Arrange & Act
+            var before = DateTime.UtcNow;
             var dto = new GroupMessageDto(TestSender, TestContent, Guid.Empty);
 
             // Assert
             Assert.Equal(TestSender, dto.Sender);
             Assert.Equal(TestContent, dto.Content);
             Assert.Equal(Guid.Empty, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Xunit.Theory]
@@ -67,6 +76,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
         {
             // Arrange
             var groupId = Guid.Parse(groupIdString);
+            var before = DateTime.UtcNow;
 
             // Act
             var dto = new GroupMessageDto(sender, content, groupId);
@@ -75,18 +85,21 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Assert.Equal(sender, dto.Sender);
             Assert.Equal(content, dto.Content);
             Assert.Equal(groupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
         public void Properties_AreInitOnly_CannotBeSetAfterConstruction()
         {
             // Arrange
+            var before = DateTime.UtcNow;
             var dto = new GroupMessageDto(TestSender, TestContent, TestGroupId);
 
             // Act & Assert
             Assert.Equal(TestSender, dto.Sender);
             Assert.Equal(TestContent, dto.Content);
             Assert.Equal(TestGroupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
@@ -96,6 +109,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             var newSender = "initializedSender";
             var newContent = "initializedContent";
             var newGroupId = Guid.NewGuid();
+            var before = DateTime.UtcNow;
 
             // Act
             var dto = new GroupMessageDto(TestSender, TestContent, TestGroupId)
@@ -109,6 +123,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Assert.Equal(newSender, dto.Sender);
             Assert.Equal(newContent, dto.Content);
             Assert.Equal(newGroupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
@@ -134,6 +149,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Assert.IsType<string>(dto.Sender);
             Assert.IsType<string>(dto.Content);
             Assert.IsType<Guid>(dto.GroupId);
+            Assert.IsType<DateTime>(dto.SendTime);
         }
 
         [Fact]
@@ -142,6 +158,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             // Arrange
             var specialSender = "user@domain.com";
             var specialContent = "Message with 🚀 emojis and special chars: äöü";
+            var before = DateTime.UtcNow;
 
             // Act
             var dto = new GroupMessageDto(specialSender, specialContent, TestGroupId);
@@ -150,6 +167,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Assert.Equal(specialSender, dto.Sender);
             Assert.Equal(specialContent, dto.Content);
             Assert.Equal(TestGroupId, dto.GroupId);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
         }
 
         [Fact]
@@ -158,6 +176,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             // Arrange
             var longSender = new string('a', 1000);
             var longContent = new string('b', 10000);
+            var before = DateTime.UtcNow;
 
             // Act
             var dto = new GroupMessageDto(longSender, longContent, TestGroupId);
@@ -168,6 +187,43 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             Assert.Equal(TestGroupId, dto.GroupId);
             Assert.Equal(1000, dto.Sender.Length);
             Assert.Equal(10000, dto.Content.Length);
+            Assert.InRange(dto.SendTime, before, DateTime.UtcNow);
+        }
+        
+        [Fact]
+        public void GroupMessageDto_InitProperties_ShouldSetCorrectValues()
+        {
+            // Arrange
+            var sender = "TestUser";
+            var content = "Test message";
+            var groupId = Guid.NewGuid();
+            var customTime = DateTime.UtcNow.AddMinutes(-5);
+
+            // Act
+            var dto = new GroupMessageDto(sender, content, groupId)
+            {
+                SendTime = customTime
+            };
+
+            // Assert
+            Assert.Equal(sender, dto.Sender);
+            Assert.Equal(content, dto.Content);
+            Assert.Equal(groupId, dto.GroupId);
+            Assert.Equal(customTime, dto.SendTime);
+        }
+
+        [Fact]
+        public void GroupMessageDto_DefaultSendTime_ShouldBeSetToUtcNow()
+        {
+            // Arrange
+            var before = DateTime.UtcNow;
+    
+            // Act
+            var dto = new GroupMessageDto("user", "message", Guid.NewGuid());
+    
+            // Assert
+            var after = DateTime.UtcNow;
+            Assert.True(dto.SendTime >= before && dto.SendTime <= after);
         }
     }
 }

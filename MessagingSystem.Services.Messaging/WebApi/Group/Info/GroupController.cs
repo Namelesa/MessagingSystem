@@ -69,7 +69,7 @@ public class GroupController(
     }
 
     [HttpPut("edit-group")]
-    public async Task<IActionResult> EditGroupAsync([Required] Guid id, EditGroup groupDto)
+    public async Task<IActionResult> EditGroupAsync([Required, FromQuery] Guid id, [Required, FromForm] EditGroup groupDto)
     {
         groupDto.Image = GetImageUrl(groupDto.ImageFile);
         
