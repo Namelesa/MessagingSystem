@@ -9,7 +9,7 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
-using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+using MessagingSystem.Services.Messaging.Infrastructure.Caching;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using Moq;
 using Xunit;
@@ -369,5 +369,47 @@ public class MessageOrchestratorTests
 
         // Assert
         await act.Should().NotThrowAsync();
+    }
+    
+    [Fact]
+    public async Task FindMessageWithRecipientByIdAsync_ShouldReturnMessage_WhenMessageExists()
+    {
+        // Arrange
+        var messageId = Guid.NewGuid();
+        var message = new Message("sender", "recipient", "encryptedContent");
+
+        _repositoryMock.Setup(r => r.FindMessageByIdAsync(messageId))
+            .ReturnsAsync(message);
+
+        _decryptionInfoMock.Setup(d => d.DecryptObjectStrings(message));
+
+        // Act
+        var result = await _orchestrator.FindMessageWithRecipientByIdAsync(messageId);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.Data.Should().Be(message);
+        _repositoryMock.Verify(r => r.FindMessageByIdAsync(messageId), Times.Once);
+        _decryptionInfoMock.Verify(d => d.DecryptObjectStrings(message), Times.Once);
+    }
+    
+    [Fact]
+    public async Task FindMessageWithRecipientByIdAsync_ShouldFail_WhenMessageNotFound()
+    {
+        // Arrange
+        var messageId = Guid.NewGuid();
+
+        _repositoryMock.Setup(r => r.FindMessageByIdAsync(messageId))
+            .ReturnsAsync((Message)null!);
+
+        // Act
+        var result = await _orchestrator.FindMessageWithRecipientByIdAsync(messageId);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Message.Should().Be("Message not found");
+        result.Data.Should().BeNull();
+        _repositoryMock.Verify(r => r.FindMessageByIdAsync(messageId), Times.Once);
+        _decryptionInfoMock.Verify(d => d.DecryptObjectStrings(It.IsAny<Message>()), Times.Never);
     }
 }

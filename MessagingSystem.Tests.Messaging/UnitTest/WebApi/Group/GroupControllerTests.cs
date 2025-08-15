@@ -3,12 +3,15 @@ using FluentAssertions;
 using MessagingSystem.Services.Messaging.Application;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
+using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Group;
 using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info;
-using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.Members;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Moq;
 using Xunit;
 using Assert = Xunit.Assert;
@@ -35,15 +38,31 @@ public class GroupControllerTests
     [Fact]
     public async Task CreateGroupAsync_ValidRequest_ReturnsOkResult()
     {
-        // Arrange
-        var createGroupRequest = new CreateGroup("TestGroup", "TestImage", "TestDescription", "admin123");
-        var groupDto = new GroupDto("TestGroup", "TestImage", "TestDescription", "admin123",["TestUser"], new byte [8]);
+        var fileMock = new Mock<IFormFile>();
+        fileMock.Setup(f => f.FileName).Returns("test.png");
+        fileMock.Setup(f => f.Length).Returns(1234);
+        fileMock.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+
+        var createGroupRequest = new CreateGroup("Test Group", null, "Test Description", "admin123")
+        {
+            ImageFile = fileMock.Object
+        };
+
+        var groupDto = new GroupDto("Test Group", "mocked-image.jpg", "Test Description", "admin123", new List<string>(), new byte[8]);
         var successResult = OperationResult<GroupDto>.Ok(groupDto);
 
+        _imageLoaderServiceMock
+            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("mocked-image.jpg");
+    
         _mapperMock.Setup(m => m.Map<GroupDto>(createGroupRequest))
-                   .Returns(groupDto);
+            .Returns(groupDto);
+
         _orchestratorMock.Setup(o => o.CreateGroupAsync(groupDto))
-                        .ReturnsAsync(successResult);
+            .ReturnsAsync(successResult);
+
+        // Mock HttpContext and ServiceProvider for SignalR Hub
+        SetupSignalRMocks();
 
         // Act
         var result = await _controller.CreateGroupAsync(createGroupRequest);
@@ -58,20 +77,34 @@ public class GroupControllerTests
     public async Task CreateGroupAsync_OrchestratorReturnsFailure_ReturnsBadRequest()
     {
         // Arrange
-        var createGroupRequest = new CreateGroup("TestGroup", "TestImage", "TestDescription", "admin123");
-        var groupDto = new GroupDto("TestGroup", "TestImage", "TestDescription", "admin123",["TestUser"], new byte [8]);
-        var failureResult = OperationResult<GroupDto>.Ok(groupDto);
+        var fileMock = new Mock<IFormFile>();
+        fileMock.Setup(f => f.FileName).Returns("test.png");
+        fileMock.Setup(f => f.Length).Returns(1234);
+        fileMock.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+
+        var createGroupRequest = new CreateGroup("Test Group", null, "Test Description", "admin123")
+        {
+            ImageFile = fileMock.Object
+        };
+
+        var groupDto = new GroupDto("Test Group", "mocked-image.jpg", "Test Description", "admin123", new List<string>(), new byte[8]);
+        var failureResult = OperationResult<GroupDto>.Fail("Group creation failed"); 
+
+        _imageLoaderServiceMock
+            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("mocked-image.jpg");
 
         _mapperMock.Setup(m => m.Map<GroupDto>(createGroupRequest))
-                   .Returns(groupDto);
+            .Returns(groupDto);
+
         _orchestratorMock.Setup(o => o.CreateGroupAsync(groupDto))
-                        .ReturnsAsync(failureResult);
+            .ReturnsAsync(failureResult); 
 
         // Act
         var result = await _controller.CreateGroupAsync(createGroupRequest);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        result.Should().BeOfType<BadRequestObjectResult>(); 
         var badRequestResult = result as BadRequestObjectResult;
         badRequestResult?.Value.Should().Be(failureResult);
     }
@@ -243,26 +276,54 @@ public class GroupControllerTests
 
     [Fact]
     public async Task EditGroupAsync_ValidRequest_ReturnsOkResult()
+{
+    // Arrange
+    var groupId = Guid.NewGuid();
+    var editGroupRequest = new EditGroup("Updated Group", "Updated Image", "Updated Description");
+    var editGroupDto = new EditGroupDto("Updated Group", "Updated Image", "Updated Description");
+    var successResult = OperationResult<GroupDto>.Ok(new GroupDto("Updated Group", "Updated Image", "Updated Description", "admin123", new List<string>(), new byte[8]));
+
+    _mapperMock.Setup(m => m.Map<EditGroupDto>(editGroupRequest))
+               .Returns(editGroupDto);
+    _orchestratorMock.Setup(o => o.EditGroupInfoAsync(groupId, editGroupDto))
+                    .ReturnsAsync(successResult);
+    
+    var mockServiceProvider = new Mock<IServiceProvider>();
+    var mockHubContext = new Mock<IHubContext<GroupChatHub>>();
+    var mockClients = new Mock<IHubClients>();
+    var mockClientProxy = new Mock<IClientProxy>();
+
+    mockServiceProvider
+        .Setup(sp => sp.GetService(typeof(IHubContext<GroupChatHub>)))
+        .Returns(mockHubContext.Object);
+
+    mockHubContext.Setup(h => h.Clients).Returns(mockClients.Object);
+    mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
+    mockClientProxy
+        .Setup(cp => cp.SendCoreAsync("EditGroupAsync", It.IsAny<object[]>(), default))
+        .Returns(Task.CompletedTask);
+
+    var mockHttpContext = new Mock<HttpContext>();
+    mockHttpContext.Setup(ctx => ctx.RequestServices).Returns(mockServiceProvider.Object);
+
+    _controller.ControllerContext = new ControllerContext()
     {
-        // Arrange
-        var groupId = Guid.NewGuid();
-        var editGroupRequest = new EditGroup("Updated Group", "Updated Image", "Updated Description");
-        var editGroupDto = new EditGroupDto("Updated Group", "Updated Image", "Updated Description");
-        var successResult = OperationResult<GroupDto>.Ok(new GroupDto("Updated Group", "Updated Image", "Updated Description", "admin123", new List<string>(), new byte[8]));
+        HttpContext = mockHttpContext.Object
+    };
 
-        _mapperMock.Setup(m => m.Map<EditGroupDto>(editGroupRequest))
-                   .Returns(editGroupDto);
-        _orchestratorMock.Setup(o => o.EditGroupInfoAsync(groupId, editGroupDto))
-                        .ReturnsAsync(successResult);
+    // Act
+    var result = await _controller.EditGroupAsync(groupId, editGroupRequest);
 
-        // Act
-        var result = await _controller.EditGroupAsync(groupId, editGroupRequest);
-
-        // Assert
-        result.Should().BeOfType<OkObjectResult>();
-        var okResult = result as OkObjectResult;
-        okResult?.Value.Should().Be(successResult.Data);
-    }
+    // Assert
+    result.Should().BeOfType<OkObjectResult>();
+    var okResult = result as OkObjectResult;
+    okResult?.Value.Should().Be(successResult.Data);
+    
+    // Verify SignalR hub was called
+    mockClientProxy.Verify(cp => cp.SendCoreAsync("EditGroupAsync", 
+        It.Is<object[]>(args => args.Length == 1 && args[0] == successResult.Data), 
+        default), Times.Once);
+}
 
     [Fact]
     public async Task EditGroupAsync_EditFails_ReturnsBadRequest()
@@ -443,21 +504,65 @@ public class GroupControllerTests
     public async Task CreateGroupAsync_CallsMapperAndOrchestrator()
     {
         // Arrange
-        var createGroupRequest = new CreateGroup("Test Group", "Test Image", "Test Description", "admin123");
-        var groupDto = new GroupDto("Test Group", "Test Image", "Test Description", "admin123", new List<string>(), new byte[8]);
+        var fileMock = new Mock<IFormFile>();
+        fileMock.Setup(f => f.FileName).Returns("test.png");
+        fileMock.Setup(f => f.Length).Returns(1234);
+        fileMock.Setup(f => f.OpenReadStream()).Returns(new MemoryStream([1, 2, 3]));
+
+        var createGroupRequest = new CreateGroup("Test Group", null, "Test Description", "admin123")
+        {
+            ImageFile = fileMock.Object
+        };
+
+        var groupDto = new GroupDto("Test Group", "mocked-image.jpg", "Test Description", "admin123", new List<string>(), new byte[8]);
         var successResult = OperationResult<GroupDto>.Ok(groupDto);
 
+        _imageLoaderServiceMock
+            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+            .ReturnsAsync("mocked-image.jpg");
+    
         _mapperMock.Setup(m => m.Map<GroupDto>(createGroupRequest))
-                   .Returns(groupDto);
+            .Returns(groupDto);
+
         _orchestratorMock.Setup(o => o.CreateGroupAsync(groupDto))
-                        .ReturnsAsync(successResult);
+            .ReturnsAsync(successResult);
+
+        // Mock HttpContext and ServiceProvider for SignalR Hub
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        var mockHubContext = new Mock<IHubContext<GroupChatHub>>();
+        var mockClients = new Mock<IHubClients>();
+        var mockClientProxy = new Mock<IClientProxy>();
+
+        mockServiceProvider
+            .Setup(sp => sp.GetService(typeof(IHubContext<GroupChatHub>)))
+            .Returns(mockHubContext.Object);
+
+        mockHubContext.Setup(h => h.Clients).Returns(mockClients.Object);
+        mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
+        mockClientProxy
+            .Setup(cp => cp.SendCoreAsync("CreateGroupAsync", It.IsAny<object[]>(), default))
+            .Returns(Task.CompletedTask);
+
+        var mockHttpContext = new Mock<HttpContext>();
+        mockHttpContext.Setup(ctx => ctx.RequestServices).Returns(mockServiceProvider.Object);
+
+        _controller.ControllerContext = new ControllerContext()
+        {
+            HttpContext = mockHttpContext.Object
+        };
 
         // Act
         await _controller.CreateGroupAsync(createGroupRequest);
 
         // Assert
+        _imageLoaderServiceMock.Verify(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Once);
         _mapperMock.Verify(m => m.Map<GroupDto>(createGroupRequest), Times.Once);
         _orchestratorMock.Verify(o => o.CreateGroupAsync(groupDto), Times.Once);
+    
+        // Verify SignalR hub was called
+        mockClientProxy.Verify(cp => cp.SendCoreAsync("CreateGroupAsync", 
+            It.Is<object[]>(args => args.Length == 1 && args[0] == successResult.Data), 
+            default), Times.Once);
     }
 
     [Fact]
@@ -498,49 +603,109 @@ public class GroupControllerTests
     
     [Fact]
     public async Task CreateGroupAsync_WithValidImageFile_ShouldCallImageLoaderAndSetImageUrl()
+{
+    // Arrange
+    var groupName = "Test Group";
+    var description = "Test Description";
+    var admin = "adminUser";
+
+    var fileMock = new Mock<IFormFile>();
+    fileMock.Setup(f => f.Length).Returns(100);
+    fileMock.Setup(f => f.OpenReadStream()).Returns(new MemoryStream());
+
+    var imageUrl = "https://cdn.example.com/test.jpg";
+
+    _imageLoaderServiceMock
+        .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
+        .ReturnsAsync(imageUrl);
+
+    var inputModel = new CreateGroup
+    {
+        GroupName = groupName,
+        Description = description,
+        Admin = admin,
+        ImageFile = fileMock.Object
+    };
+
+    var mappedGroupDto = new GroupDto("Test Group", imageUrl, description, admin, new List<string>(), new byte[8]); 
+
+    _mapperMock
+        .Setup(m => m.Map<GroupDto>(inputModel))
+        .Returns(mappedGroupDto);
+
+    _orchestratorMock
+        .Setup(o => o.CreateGroupAsync(mappedGroupDto))
+        .ReturnsAsync(OperationResult<GroupDto>.Ok(mappedGroupDto));
+
+    // Mock HttpContext and ServiceProvider for SignalR Hub
+    SetupSignalRMocks();
+
+    // Act
+    var result = await _controller.CreateGroupAsync(inputModel);
+
+    // Assert
+    result.Should().BeOfType<OkObjectResult>();
+
+    _imageLoaderServiceMock.Verify(s =>
+        s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Once);
+
+    inputModel.Image.Should().Be(imageUrl);
+}
+    
+    [Fact]
+    public async Task CreateGroupAsync_WithZeroLengthImageFile_ShouldSetEmptyImageUrl()
     {
         // Arrange
-        var groupName = "Test Group";
-        var description = "Test Description";
-        var admin = "adminUser";
-
         var fileMock = new Mock<IFormFile>();
-        fileMock.Setup(f => f.Length).Returns(100);
-        fileMock.Setup(f => f.OpenReadStream()).Returns(new MemoryStream());
+        fileMock.Setup(f => f.Length).Returns(0); // Zero length file
 
-        var imageUrl = "https://cdn.example.com/test.jpg";
-
-        _imageLoaderServiceMock
-            .Setup(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()))
-            .ReturnsAsync(imageUrl);
-
-        var inputModel = new CreateGroup
+        var createGroupRequest = new CreateGroup("Test Group", null, "Test Description", "admin123")
         {
-            GroupName = groupName,
-            Description = description,
-            Admin = admin,
             ImageFile = fileMock.Object
         };
 
-        var mappedGroupDto = new GroupDto("Test Group", imageUrl, description, admin, new List<string>(), new byte[8]); 
+        var groupDto = new GroupDto("Test Group", string.Empty, "Test Description", "admin123", new List<string>(), new byte[8]);
+        var successResult = OperationResult<GroupDto>.Ok(groupDto);
 
-        _mapperMock
-            .Setup(m => m.Map<GroupDto>(inputModel))
-            .Returns(mappedGroupDto);
+        _mapperMock.Setup(m => m.Map<GroupDto>(createGroupRequest))
+            .Returns(groupDto);
+        _orchestratorMock.Setup(o => o.CreateGroupAsync(groupDto))
+            .ReturnsAsync(successResult);
 
-        _orchestratorMock
-            .Setup(o => o.CreateGroupAsync(mappedGroupDto))
-            .ReturnsAsync(OperationResult<GroupDto>.Ok(mappedGroupDto));
+        SetupSignalRMocks();
 
         // Act
-        var result = await _controller.CreateGroupAsync(inputModel);
+        var result = await _controller.CreateGroupAsync(createGroupRequest);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
+        createGroupRequest.Image.Should().Be(string.Empty);
+        _imageLoaderServiceMock.Verify(s => s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Never);
+    }
+    
+    private void SetupSignalRMocks()
+    {
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        var mockHubContext = new Mock<IHubContext<GroupChatHub>>();
+        var mockClients = new Mock<IHubClients>();
+        var mockClientProxy = new Mock<IClientProxy>();
 
-        _imageLoaderServiceMock.Verify(s =>
-            s.UploadOrReplaceAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Once);
+        mockServiceProvider
+            .Setup(sp => sp.GetService(typeof(IHubContext<GroupChatHub>)))
+            .Returns(mockHubContext.Object);
 
-        inputModel.Image.Should().Be(imageUrl); // Ensure Image was set correctly
+        mockHubContext.Setup(h => h.Clients).Returns(mockClients.Object);
+        mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
+        mockClientProxy
+            .Setup(cp => cp.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), default))
+            .Returns(Task.CompletedTask);
+
+        var mockHttpContext = new Mock<HttpContext>();
+        mockHttpContext.Setup(ctx => ctx.RequestServices).Returns(mockServiceProvider.Object);
+
+        _controller.ControllerContext = new ControllerContext()
+        {
+            HttpContext = mockHttpContext.Object
+        };
     }
 }

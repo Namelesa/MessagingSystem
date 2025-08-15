@@ -1,6 +1,6 @@
 using System.Text;
 using System.Text.Json;
-using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+using MessagingSystem.Services.Messaging.Infrastructure.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Moq;

@@ -2,11 +2,14 @@ using System.ComponentModel.DataAnnotations;
 using AutoMapper;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation;
 using MessagingSystem.Services.Messaging.Application.Group.GroupsInformation.Dto;
+using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
+using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Group;
 using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
-using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.Members;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace MessagingSystem.Services.Messaging.WebApi.Group.Info;
 
@@ -25,15 +28,19 @@ public class GroupController(
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        groupInfo.Image = GetImageUrl(groupInfo.ImageFile);
+        groupInfo.Image = await GetImageUrl(groupInfo.ImageFile);
         
         var createGroup = mapper.Map<GroupDto>(groupInfo);
         
         var result = await groupInfoOrchestrator.CreateGroupAsync(createGroup);
 
-        return result.Success 
-            ? Ok(result) 
-            : BadRequest(result);
+        if (!result.Success)
+            return BadRequest(result);
+        
+        var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<GroupChatHub>>();
+        await hubContext.Clients.All.SendAsync("CreateGroupAsync", result.Data);
+
+        return Ok(result);
     }
     
     [HttpGet("find-group")]
@@ -71,15 +78,19 @@ public class GroupController(
     [HttpPut("edit-group")]
     public async Task<IActionResult> EditGroupAsync([Required, FromQuery] Guid id, [Required, FromForm] EditGroup groupDto)
     {
-        groupDto.Image = GetImageUrl(groupDto.ImageFile);
+        groupDto.Image = await GetImageUrl(groupDto.ImageFile);
         
         var group = mapper.Map<EditGroupDto>(groupDto);
         
         var result = await groupInfoOrchestrator.EditGroupInfoAsync(id, group);
 
-        return result.Success 
-            ? Ok(result.Data) 
-            : BadRequest(result.Message);
+        if(!result.Success)
+            return BadRequest(result.Message);
+        
+        var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<GroupChatHub>>();
+        await hubContext.Clients.All.SendAsync("EditGroupAsync", result.Data);
+        
+        return Ok(result.Data);
     }
     
     [HttpPut("add-members")]
@@ -116,12 +127,12 @@ public class GroupController(
             : BadRequest(result.Message);
     }
     
-    private string GetImageUrl(IFormFile? imageFile)
+    private async Task<string> GetImageUrl(IFormFile? imageFile)
     {
         if (imageFile == null || imageFile.Length == 0)
             return string.Empty;
 
         var fileName = $"{Guid.NewGuid()}.jpg";
-        return imageLoaderService.UploadOrReplaceAsync(imageFile.OpenReadStream(), fileName).Result;
+        return await imageLoaderService.UploadOrReplaceAsync(imageFile.OpenReadStream(), fileName);
     }
 }

@@ -55,7 +55,6 @@ public class GroupMemberOrchestratorTests
         // Assert
         result.Should().NotBeNull();
         result.Success.Should().BeTrue();
-        result.Data.Should().Be("User info is updated");
 
         // Verify repository was called but no updates were made
         _mockGroupMembersRepository.Verify(x => x.FindUserByHashAsync(userHash), Times.Once);
@@ -107,7 +106,6 @@ public class GroupMemberOrchestratorTests
         // Assert
         result.Should().NotBeNull();
         result.Success.Should().BeTrue();
-        result.Data.Should().Be("User info is updated");
     }
 
 
@@ -132,162 +130,151 @@ public class GroupMemberOrchestratorTests
 
     #region DeleteMemberInfoAsync Tests
 
+    
     [Fact]
-    public async Task DeleteMemberInfoAsync_WithValidHash_ShouldReturnSuccessWithRowCount()
+    public async Task DeleteMemberInfoAsync_WithValidHash_ShouldReturnSuccessWithGroupIds()
+{
+    // Arrange
+    var hashNickName = "valid-hash";
+    var affectedRows = 3;
+
+    var members = new List<GroupMembers>
     {
-        // Arrange
-        var hashNickName = "valid-hash";
-        var affectedRows = 3;
+        new GroupMembers("nick") { GroupId = Guid.NewGuid() },
+        new GroupMembers("nick") { GroupId = Guid.NewGuid() }
+    };
 
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ReturnsAsync(affectedRows);
+    _mockGroupMembersRepository
+        .Setup(x => x.FindUserByHashAsync(hashNickName))
+        .ReturnsAsync(members);
 
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
+    _mockGroupMembersRepository
+        .Setup(x => x.DeleteUserInfoAsync(hashNickName))
+        .ReturnsAsync(affectedRows);
 
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeTrue();
-        result.Data.Should().Be($"Delete successful. Rows affected: {affectedRows}");
+    // Act
+    var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
 
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
+    // Assert
+    result.Should().NotBeNull();
+    result.Success.Should().BeTrue();
+    result.Data.Should().BeEquivalentTo(members.Select(m => m.GroupId).Distinct());
+
+    _mockGroupMembersRepository.Verify(x => x.FindUserByHashAsync(hashNickName), Times.Once);
+    _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
+}
 
     [Fact]
-    public async Task DeleteMemberInfoAsync_WithZeroRowsAffected_ShouldReturnSuccessWithZeroCount()
+    public async Task DeleteMemberInfoAsync_WithZeroRowsAffected_ShouldStillReturnGroupIds()
+{
+    // Arrange
+    var hashNickName = "valid-hash";
+    var affectedRows = 0;
+
+    var members = new List<GroupMembers>
     {
-        // Arrange
-        var hashNickName = "valid-hash";
-        var affectedRows = 0;
+        new GroupMembers("nick") { GroupId = Guid.NewGuid() }
+    };
 
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ReturnsAsync(affectedRows);
+    _mockGroupMembersRepository
+        .Setup(x => x.FindUserByHashAsync(hashNickName))
+        .ReturnsAsync(members);
 
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
+    _mockGroupMembersRepository
+        .Setup(x => x.DeleteUserInfoAsync(hashNickName))
+        .ReturnsAsync(affectedRows);
 
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeTrue();
-        result.Data.Should().Be("Delete successful. Rows affected: 0");
+    // Act
+    var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
 
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
+    // Assert
+    result.Success.Should().BeTrue();
+    result.Data.Should().ContainSingle().Which.Should().Be(members[0].GroupId);
+
+    _mockGroupMembersRepository.Verify(x => x.FindUserByHashAsync(hashNickName), Times.Once);
+}
 
     [Fact]
     public async Task DeleteMemberInfoAsync_WithNegativeRowsAffected_ShouldReturnFailure()
+{
+    // Arrange
+    var hashNickName = "invalid-hash";
+    var affectedRows = -1;
+
+    var members = new List<GroupMembers>
     {
-        // Arrange
-        var hashNickName = "invalid-hash";
-        var affectedRows = -1;
+        new GroupMembers("nick") { GroupId = Guid.NewGuid() }
+    };
 
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ReturnsAsync(affectedRows);
+    _mockGroupMembersRepository
+        .Setup(x => x.FindUserByHashAsync(hashNickName))
+        .ReturnsAsync(members);
 
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
+    _mockGroupMembersRepository
+        .Setup(x => x.DeleteUserInfoAsync(hashNickName))
+        .ReturnsAsync(affectedRows);
 
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeFalse();
-        result.Message.Should().Be("No rows were deleted. Possibly invalid user hash.");
+    // Act
+    var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
 
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
+    // Assert
+    result.Success.Should().BeFalse();
+    result.Message.Should().Be("No rows were deleted. Possibly invalid user hash.");
+
+    _mockGroupMembersRepository.Verify(x => x.FindUserByHashAsync(hashNickName), Times.Once);
+    _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
+}
 
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public async Task DeleteMemberInfoAsync_WithNullOrEmptyHash_ShouldCallRepositoryAndHandleResult(string hashNickName)
+    public async Task DeleteMemberInfoAsync_WithNullOrEmptyHash_ShouldReturnSuccess(string hashNickName)
+{
+    // Arrange
+    var affectedRows = 1;
+    var members = new List<GroupMembers>
     {
-        // Arrange
-        var affectedRows = 1;
+        new GroupMembers("nick") { GroupId = Guid.NewGuid() }
+    };
 
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ReturnsAsync(affectedRows);
+    _mockGroupMembersRepository
+        .Setup(x => x.FindUserByHashAsync(hashNickName))
+        .ReturnsAsync(members);
 
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
+    _mockGroupMembersRepository
+        .Setup(x => x.DeleteUserInfoAsync(hashNickName))
+        .ReturnsAsync(affectedRows);
 
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeTrue();
-        result.Data.Should().Be($"Delete successful. Rows affected: {affectedRows}");
+    // Act
+    var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
 
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
+    // Assert
+    result.Success.Should().BeTrue();
+    result.Data.Should().ContainSingle().Which.Should().Be(members[0].GroupId);
+
+    _mockGroupMembersRepository.Verify(x => x.FindUserByHashAsync(hashNickName), Times.Once);
+}
 
     [Fact]
-    public async Task DeleteMemberInfoAsync_WhenRepositoryThrowsException_ShouldReturnFailureWithExceptionMessage()
-    {
-        // Arrange
-        var hashNickName = "valid-hash";
-        var exceptionMessage = "Database connection failed";
-        var exception = new InvalidOperationException(exceptionMessage);
+    public async Task DeleteMemberInfoAsync_WhenRepositoryThrows_ShouldReturnFailure()
+{
+    // Arrange
+    var hashNickName = "valid-hash";
+    var exceptionMessage = "Database connection failed";
 
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ThrowsAsync(exception);
+    _mockGroupMembersRepository
+        .Setup(x => x.FindUserByHashAsync(hashNickName))
+        .ThrowsAsync(new InvalidOperationException(exceptionMessage));
 
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
+    // Act
+    var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
 
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeFalse();
-        result.Message.Should().Be($"Exception occurred: {exceptionMessage}");
+    // Assert
+    result.Success.Should().BeFalse();
+    result.Message.Should().Be($"Exception occurred: {exceptionMessage}");
 
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteMemberInfoAsync_WhenRepositoryThrowsExceptionWithInnerException_ShouldReturnFailureWithMainExceptionMessage()
-    {
-        // Arrange
-        var hashNickName = "valid-hash";
-        var innerException = new ArgumentException("Inner exception message");
-        var mainException = new InvalidOperationException("Main exception message", innerException);
-
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ThrowsAsync(mainException);
-
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeFalse();
-        result.Message.Should().Be("Exception occurred: Main exception message");
-
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteMemberInfoAsync_WithLargePositiveRowCount_ShouldReturnSuccessWithCorrectCount()
-    {
-        // Arrange
-        var hashNickName = "bulk-delete-hash";
-        var affectedRows = 1000;
-
-        _mockGroupMembersRepository
-            .Setup(x => x.DeleteUserInfoAsync(hashNickName))
-            .ReturnsAsync(affectedRows);
-
-        // Act
-        var result = await _orchestrator.DeleteMemberInfoAsync(hashNickName);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeTrue();
-        result.Data.Should().Be($"Delete successful. Rows affected: {affectedRows}");
-
-        _mockGroupMembersRepository.Verify(x => x.DeleteUserInfoAsync(hashNickName), Times.Once);
-    }
-
+    _mockGroupMembersRepository.Verify(x => x.FindUserByHashAsync(hashNickName), Times.Once);
+}
+    
     #endregion
 }

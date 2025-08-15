@@ -8,13 +8,13 @@ using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Core;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
-using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.Members;
 using MessagingSystem.Services.Messaging.WebApi.Group.Messages.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
+namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Group;
 
 [Authorize]
 public class GroupChatHub(
@@ -66,12 +66,12 @@ public class GroupChatHub(
     public async Task<GroupDto> EditGroupAsync(Guid groupId, EditGroup groupInfo)
     {
         var dto = mapper.Map<EditGroupDto>(groupInfo);
-
+        
         var result = await groupInfoOrchestrator.EditGroupInfoAsync(groupId, dto);
 
         if (!result.Success || result.Data == null)
             throw new HubException(result.Message ?? "Failed to edit group");
-
+        
         return result.Data;
     }
     public async Task<string> DeleteGroupAsync(Guid groupId)
@@ -80,6 +80,8 @@ public class GroupChatHub(
 
         if (!result.Success || result.Data == null)
             throw new HubException(result.Message ?? "Failed to delete group");
+        
+        await Clients.All.SendAsync("DeleteGroupAsync", groupId.ToString());
 
         return result.Data;
     }
@@ -106,9 +108,10 @@ public class GroupChatHub(
 
         if (!result.Success || result.Data == null)
             throw new HubException(result.Message ?? "Failed to remove members");
-
         await NotifyUsersInGroupAsync(groupId.ToString(), "GroupMembersRemoved", result.Data);
-
+        
+        await NotifyRemovedUsersAsync(members.Users, groupId, result.Data);
+    
         return result.Data;
     }
     public Task JoinGroupAsync(Guid groupId)
@@ -124,7 +127,7 @@ public class GroupChatHub(
         var messages = await groupMessagesOrchestrator.LoadChatHistory(groupId, skip, take);
         return messages;
     }
-    public async Task<CreatedMessageResult> SendMessageAsync(string content, Guid groupId)
+    public async Task<object> SendMessageAsync(string content, Guid groupId)
     {
         var nickname = CurrentUserNickname;
         
@@ -132,14 +135,23 @@ public class GroupChatHub(
         
         var result = await groupMessagesOrchestrator.SendMessageAsync(message);
 
-        if (result?.Data == null)
+        if (result.Data == null)
             throw new HubException("Failed to send message");
-        await NotifyUsersInGroupAsync(message.GroupId.ToString(), "ReceiveMessage", message);
+
+
+        var messageResult = new
+        {
+            Id = result.Data.MessageId,
+            GroupId = groupId,
+            Sender = nickname,
+            Content = content,
+            SendTime = result.Data.SentTime,
+        };
+        await NotifyUsersInGroupAsync(message.GroupId.ToString(), "ReceiveMessage", messageResult);
         return result.Data;
     }
-    public async Task EditMessageAsync(Guid messageId, string content)
+    public async Task EditMessageAsync(Guid messageId, string content, Guid groupId)
     {
-        
         var result = await groupMessagesOrchestrator.EditMessageAsync(messageId, new EditMessageDto(content));
 
         if (!result.Success)
@@ -149,28 +161,46 @@ public class GroupChatHub(
         {
             messageId,
             newContent = content,
-            editedAt = DateTime.UtcNow
+            editedAt = DateTime.UtcNow,
+            isEdited = true 
         };
 
-        await NotifyUsersInGroupAsync(result.Data, "MessageEdited", editInfo);
+        await NotifyUsersInGroupAsync(groupId.ToString(), "MessageEdited", editInfo);
     }
-    public async Task SofDeleteMessageAsync(Guid messageId)
+    public async Task SoftDeleteMessageAsync(Guid messageId, Guid groupId)
     {
         var result = await groupMessagesOrchestrator.SoftDeleteMessageAsync(messageId);
 
         if (!result.Success)
             throw new HubException(result.Message ?? "Failed to soft delete message");
 
-        await NotifyUsersInGroupAsync(result.Data, "MessageSoftDeleted", messageId);
+        var message = await groupMessagesOrchestrator.FindMessageByIdAsync(messageId);
+        if(!message.Success)
+            throw new HubException("Message not found");
+        
+        var deleteInfo = new
+        {
+            MessageId = messageId,        
+            GroupId = groupId,            
+            isDeleted = true
+        };
+        
+        await NotifyUsersInGroupAsync(groupId.ToString(), "MessageSoftDeleted", deleteInfo);
     }
-    public async Task DeleteMessageAsync(Guid messageId)
+    public async Task DeleteMessageAsync(Guid messageId, Guid groupId)
     {
         var result = await groupMessagesOrchestrator.DeleteMessageAsync(messageId);
 
         if (!result.Success)
             throw new HubException(result.Message ?? "Failed to delete message");
-
-        await NotifyUsersInGroupAsync(result.Data, "MessageDeleted", messageId);
+        
+        var deleteInfo = new
+        {
+            MessageId = messageId,
+            GroupId = groupId
+        };
+        
+        await NotifyUsersInGroupAsync(groupId.ToString(), "MessageDeleted", deleteInfo);
     }
     public async Task<object> ReplyForMessageAsync(Guid messageId, string message, Guid groupId)
     {
@@ -186,7 +216,8 @@ public class GroupChatHub(
 
         var resultData = new
         {
-            messageId = replyResult.Data.Id,
+            messageId = replyResult.Data.Id,  
+            GroupId = groupId,                
             sender,
             content = replyResult.Data.Content,
             sentAt = replyResult.Data.SendTime,
@@ -220,8 +251,39 @@ public class GroupChatHub(
             replyFor = m.ReplyFor
         }).Cast<object>().ToList();
     }
-    private Task NotifyUsersInGroupAsync(string groupId, string method, object data)
+    private async Task NotifyUsersInGroupAsync(string groupIdOrGuid, string method, object data)
     {
-        return Clients.Group(groupId).SendAsync(method, data);
+        if (Guid.TryParse(groupIdOrGuid, out var groupId))
+        {
+            var groupResult = await groupInfoOrchestrator.FindGroupByIdAsync(groupId);
+            var members = groupResult.Data?.Users;
+            
+            if (members is { Count: > 0 })
+            {
+                var tasks = members.Select(nick => Clients.Group(nick).SendAsync(method, data));
+                await Task.WhenAll(tasks);
+                return;
+            }
+        }
+    
+        Console.WriteLine($"[Hub] Fallback - sending to group: {groupIdOrGuid}");
+        await Clients.Group(groupIdOrGuid).SendAsync(method, data);
+    }
+    private async Task NotifyRemovedUsersAsync(List<string> removedUsers, Guid groupId, GroupDto updatedGroup)
+    {
+        if (removedUsers is { Count: > 0 })
+        {
+            var removalNotification = new
+            {
+                GroupId = groupId,
+                groupName = updatedGroup.GroupName,
+                removedFromGroup = true,
+                message = "You have been removed from the group"
+            };
+
+            var tasks = removedUsers.Select(userName => Clients.Group(userName).SendAsync("UserRemovedFromGroup", removalNotification));
+        
+            await Task.WhenAll(tasks);
+        }
     }
 }

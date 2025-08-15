@@ -36,8 +36,8 @@ public class RegisterValidator : AbstractValidator<RegisterDto>
                          "include at least one letter, one number, and one special character (!, _, @).");
         RuleFor(u => u.Password)
             .NotEmpty().WithMessage("Nick name cannot be empty.")
-            .Matches(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!_@])[a-zA-Z\d!_@]{5,15}$")
-            .WithMessage("Password must be 5 to 15 characters long and " +
+            .Matches(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!_@])[a-zA-Z\d!_@]{5,115}$")
+            .WithMessage("Password must be 5 to 115 characters long and " +
                          "include at least one letter, one number, and one special character (!, _, @).");
     }
 }

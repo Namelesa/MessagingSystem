@@ -1,4 +1,4 @@
-using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.Members;
 using Xunit;
 using Assert = Xunit.Assert;
 

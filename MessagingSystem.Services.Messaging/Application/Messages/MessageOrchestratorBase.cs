@@ -50,9 +50,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
 
         EditMessage(message, messagesDto);
         await InvalidateCacheAsync(message);
-        encryptionInfo.EncryptObjectStrings(message);
         var result = await messageRepository.EditMessageAsync(message);
-
         return OperationResult<string>.Ok(result.Id.ToString());
     }
     public async Task<OperationResult<string>> DeleteMessageAsync(Guid messageId)
@@ -70,7 +68,7 @@ public abstract class MessageOrchestratorBase<TMessage, TCreateDto>
         var message = await messageRepository.FindMessageByIdAsync(messageId);
         if (message == null)
             return OperationResult<string>.Fail("Message not found");
-
+        
         var result = await messageRepository.SoftDeleteMessageAsync(message);
         await InvalidateCacheAsync(message);
         return OperationResult<string>.Ok(result.Id.ToString());

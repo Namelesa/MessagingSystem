@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+namespace MessagingSystem.Services.Messaging.Infrastructure.Caching;
 
 public interface ICacheService
 {

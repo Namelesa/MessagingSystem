@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
@@ -7,8 +5,10 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoChats.Dto;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 
-namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
+namespace MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Oto;
 
 [Authorize]
 public class OtoChatHub(
@@ -62,13 +62,13 @@ public class OtoChatHub(
     public async Task EditMessageAsync(Guid messageId, string content)
     {
         var sender = CurrentUserNickname;
-
-        logger.LogInformation("Editing message {MessageId} by {Sender} with content: {Content}", messageId, sender, content);
-
+        
         var editResult = await messageOrchestrator.EditMessageAsync(messageId, new EditMessageDto(content));
         if (!editResult.Success)
             throw new HubException(editResult.Message);
 
+        var messageOwner = await messageOrchestrator.FindMessageWithRecipientByIdAsync(messageId);
+        if (messageOwner.Data == null) return;
         var editInfo = new
         {
             messageId,
@@ -76,31 +76,47 @@ public class OtoChatHub(
             editedAt = DateTime.UtcNow
         };
 
-        var messageOwner = await messageOrchestrator.FindMessageByIdAsync(messageId);
-        await NotifyUsersAsync(sender, messageOwner.Data, "MessageEdited", editInfo);
+        await NotifyUsersAsync(sender, messageOwner.Data.Recipient, "MessageEdited", editInfo);
     }
     public async Task DeleteMessageAsync(Guid messageId, string typeOfDeleting)
     {
         var sender = CurrentUserNickname;
-        var isSoft = typeOfDeleting.Equals("soft", StringComparison.OrdinalIgnoreCase);
+        var deletedAt = DateTime.UtcNow;
 
-        var deleteResult = isSoft
-            ? await messageOrchestrator.SoftDeleteMessageAsync(messageId)
-            : await messageOrchestrator.DeleteMessageAsync(messageId);
-
-        logger.LogInformation(deleteResult.Data);
-
-        var messageOwner = await messageOrchestrator.FindMessageByIdAsync(messageId);
-        if (messageOwner.Data == null) return;
-
-        var deletedInfo = new
+        if (typeOfDeleting.Equals("soft", StringComparison.OrdinalIgnoreCase))
         {
-            messageId,
-            deletedAt = DateTime.UtcNow,
-            type = isSoft ? "soft" : "hard"
-        };
-
-        await NotifyUsersAsync(sender, messageOwner.Data, "MessageDeleted", deletedInfo);
+            var softDeleteResult = await messageOrchestrator.SoftDeleteMessageAsync(messageId);
+            if (!softDeleteResult.Success)
+                throw new HubException(softDeleteResult.Message ?? "Soft delete failed");
+            
+            var messageOwner = await messageOrchestrator.FindMessageWithRecipientByIdAsync(messageId);
+            if (messageOwner.Data == null)
+                throw new HubException("Message not found");
+            
+            await NotifyUsersAsync(sender, messageOwner.Data.Recipient, "MessageDeleted", new
+            {
+                messageId,
+                deletedAt,
+                type = "soft"
+            });
+        }
+        else
+        {
+            var messageOwner = await messageOrchestrator.FindMessageWithRecipientByIdAsync(messageId);
+            if (messageOwner.Data == null)
+                throw new HubException("Message not found");
+            
+            var deleteResult = await messageOrchestrator.DeleteMessageAsync(messageId);
+            if (!deleteResult.Success)
+                throw new HubException(deleteResult.Message ?? "Hard delete failed");
+            
+            await NotifyUsersAsync(sender, messageOwner.Data.Recipient, "MessageDeleted", new
+            {
+                messageId,
+                deletedAt,
+                type = "hard"
+            });
+        }
     }
     public async Task<List<object>> LoadChatHistoryAsync(string withUser, int take, int skip)
     {
@@ -113,6 +129,7 @@ public class OtoChatHub(
             sender = m.Sender,
             content = m.Content,
             sentAt = m.SendTime,
+            isDeleted = m.IsDeleted,
             isEdited = m.IsEdited,
             editedAt = m.EditDate,
             replyFor = m.ReplyFor
@@ -146,7 +163,7 @@ public class OtoChatHub(
             replyTo = replyToMessageId
         };
 
-        await NotifyUsersAsync(sender, recipientNickname, "ReceivePrivateMessage", resultData);
+        await NotifyUsersAsync(sender, recipientNickname, "ReplyToMessageAsync", resultData);
         return resultData;
     }
     public async Task<List<object>> FindMessagesAsync(string? recipient, DateTime? time, string? sender)

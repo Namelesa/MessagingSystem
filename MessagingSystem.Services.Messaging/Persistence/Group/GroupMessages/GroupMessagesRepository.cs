@@ -53,7 +53,7 @@ public class GroupMessagesRepository(GroupAppDbContext db)
     }
     public async Task<List<GroupMessage>> GetMessageStoryAsync(Guid groupId, int skip, int take) =>
         await db.GroupMessages.Where(u=> u.GroupId == groupId)
-            .OrderByDescending(u => u.SendTime)
+            .OrderBy(u => u.SendTime)
             .Skip(skip)
             .Take(take)
             .ToListAsync();

@@ -76,6 +76,7 @@ public class UserOrchestrator(
         var hashLogin = hasher.Hash(userDto.Login);
         var hashEmail = hasher.Hash(userDto.Email);
         var hashNickName = hasher.Hash(userDto.NickName);
+        var oldNickName = existingUser.NickName;
 
         if (!string.IsNullOrEmpty(userDto.Image) && !string.IsNullOrEmpty(existingUser.Image))
         {
@@ -103,7 +104,11 @@ public class UserOrchestrator(
         
         try
         {
-            var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick), existingUser.NickName, existingUser.Image);
+            var updateUserChats = new EditUserInfoRequest(encryptInfo.Encrypt(oldHashNick),
+                existingUser.NickName,
+                existingUser.Image,
+                oldNickName
+                );
             encryptInfo.EncryptRsaObjectStrings(updateUserChats, publicKeyMessaging);
         
             var response = await editClient.GetResponse<EditUserRollBack>(
@@ -152,7 +157,9 @@ public class UserOrchestrator(
             if (user.UserName == null || user.Email == null || user.HashNickName == null) 
                 return OperationResult<string>.Fail("User can not have null properties");
             
-            var deleteUserChats = new DeleteUserInfoRequest(encryptInfo.Encrypt(user.HashNickName));
+            var deleteUserChats = new DeleteUserInfoRequest(
+                encryptInfo.Encrypt(user.HashNickName), 
+                encryptInfo.Encrypt(user.NickName));
             encryptInfo.EncryptRsaObjectStrings(deleteUserChats, publicKeyMessaging);
         
             var response = await deleteClient.GetResponse<DeleteUserInfoRollback>(deleteUserChats);

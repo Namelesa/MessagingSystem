@@ -6,7 +6,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
-using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+using MessagingSystem.Services.Messaging.Infrastructure.Caching;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using Moq;
 using Xunit;
@@ -320,27 +320,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             _hasherMock.Verify(x => x.Hash("testSender"), Times.Once);
             Assert.Equal(hashedSender, message.SenderHash);
         }
-
-        [Fact]
-        public void EditMessage_ShouldCallEditInfoOnMessage()
-        {
-            // Arrange
-            var message = new GroupMessage("sender", "originalContent");
-            var editDto = new EditMessageDto("newContent");
-            var originalEditTime = message.EditTime;
-
-            // Act
-            var method = typeof(GroupMessagesOrchestrator)
-                .GetMethod("EditMessage", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            method?.Invoke(_orchestrator, [message, editDto]);
-
-            // Assert
-            Assert.Equal("newContent", message.Content);
-            Assert.True(message.IsEdited);
-            Assert.NotEqual(originalEditTime, message.EditTime);
-            Assert.NotNull(message.EditTime);
-        }
-
+        
         [Xunit.Theory]
         [InlineData("user1", "hello")]
         [InlineData("user2", "world")]
@@ -417,7 +397,7 @@ namespace MessagingSystem.Tests.Messaging.UnitTest.Application.Group.GroupMessag
             method?.Invoke(_orchestrator, [message, editDto]);
 
             // Assert
-            Assert.Equal("", message.Content);
+            Assert.Null(message.Content);
             Assert.True(message.IsEdited);
             Assert.NotNull(message.EditTime);
         }

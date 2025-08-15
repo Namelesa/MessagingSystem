@@ -242,4 +242,22 @@ public class RegisterUserOrchestratorTests
         result.Data.Should().Contain("confirm email");
         user.EmailConfirmed.Should().BeTrue();
     }
+    
+    [Fact]
+    public async Task ConfirmEmailAsync_ShouldFail_WhenEmailAlreadyConfirmed()
+    {
+        // Arrange
+        var user = new UserModel("login", "nick", "testImage")
+        {
+            EmailConfirmed = true
+        };
+        _userRepository.Setup(r => r.FindUserByHashNickNameAsync("hash")).ReturnsAsync(user);
+
+        // Act
+        var result = await _orchestrator.ConfirmEmailAsync("hash");
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Message.Should().Contain("Email already confirmed");
+    }
 }

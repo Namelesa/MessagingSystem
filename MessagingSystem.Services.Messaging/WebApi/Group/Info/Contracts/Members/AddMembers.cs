@@ -1,4 +1,4 @@
-namespace MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+namespace MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.Members;
 
 public class AddMembers
 {

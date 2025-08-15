@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+namespace MessagingSystem.Services.Messaging.Infrastructure.Caching;
 
 public class CacheService(IDistributedCache cache, ILogger<CacheService> logger) : ICacheService
 {

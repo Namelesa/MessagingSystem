@@ -203,8 +203,7 @@ public class MessageOrchestratorBaseTests
         // Assert
         Assert.True(result.Success);
         Assert.Equal(messageId.ToString(), result.Data);
-
-        _encryptionInfoMock.Verify(e => e.EncryptObjectStrings(existingMessage), Times.Once);
+        
         _messageRepositoryMock.Verify(r => r.EditMessageAsync(existingMessage), Times.Once);
     }
 

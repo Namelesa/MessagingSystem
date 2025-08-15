@@ -12,7 +12,7 @@ using MessagingSystem.Services.Messaging.Core;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.WebApi;
-using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts;
+using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.Members;
 using MessagingSystem.Services.Messaging.WebApi.Group.Info.Contracts.GroupInfo;
 using MessagingSystem.Services.Messaging.WebApi.Group.Messages.Contracts;
 using Microsoft.AspNetCore.Authorization.Policy;
@@ -80,6 +80,10 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
         _groupMessagesOrchestrator.Setup(m => m.SendMessageAsync(messageDto))
             .ReturnsAsync(OperationResult<CreatedMessageResult>.Ok(result));
 
+        _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(groupId))
+            .ReturnsAsync(OperationResult<GroupDto>.Ok(
+                new GroupDto("test", "img", "desc", nickname, [nickname], [1])));
+        
         var connection = await CreateConnectionAsync(nickname);
 
         var receivedMessages = new List<GroupMessageDto>();
@@ -105,7 +109,8 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
         var groupId = Guid.NewGuid();
         var nickname = "testuser";
         var members = new AddMembers { Users = ["user1", "user2"] };
-        var groupDto = new GroupDto("group", "img", "desc", nickname, ["user1"], [1]);
+        
+        var groupDto = new GroupDto("group", "img", "desc", nickname, [nickname, "user1"], [1]);
 
         _mapper.Setup(x => x.Map<GroupMembersDto>(members))
             .Returns(new GroupMembersDto());
@@ -114,13 +119,16 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
         _groupInfoOrchestrator.Setup(x =>
                 x.AddMembersToGroupAsync(groupId, It.IsAny<GroupMembersDto>(), "hashed"))
             .ReturnsAsync(OperationResult<GroupDto>.Ok(groupDto));
+    
+        _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(groupId))
+            .ReturnsAsync(OperationResult<GroupDto>.Ok(groupDto));
 
         var connection = await CreateConnectionAsync(nickname);
         var notified = new List<GroupDto>();
         connection.On<GroupDto>("GroupMembersAdded", dto => notified.Add(dto));
-
-        await connection.InvokeAsync("JoinGroupAsync", groupId);
         
+        await connection.InvokeAsync("JoinGroupAsync", groupId);
+
         await connection.InvokeAsync<GroupDto>("AddMembersToGroupAsync", groupId, members);
         await Task.Delay(100);
 
@@ -141,13 +149,17 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
         _groupMessagesOrchestrator.Setup(x => x.EditMessageAsync(messageId, It.IsAny<EditMessageDto>()))
             .ReturnsAsync(OperationResult<string>.Ok(groupId));
 
+        _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(Guid.Parse(groupId)))
+            .ReturnsAsync(OperationResult<GroupDto>.Ok(
+                new GroupDto("test", "img", "desc", nickname, [nickname], [1])));
+        
         var connection = await CreateConnectionAsync(nickname);
         var notifications = new List<object>();
         connection.On<object>("MessageEdited", o => notifications.Add(o));
 
         await connection.InvokeAsync("JoinGroupAsync", groupId);
         
-        await connection.InvokeAsync("EditMessageAsync", messageId, newContent);
+        await connection.InvokeAsync("EditMessageAsync", messageId, newContent, groupId);
         await Task.Delay(100);
 
         Assert.Single(notifications);
@@ -275,6 +287,10 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
         _groupInfoOrchestrator.Setup(x =>
                 x.DeleteMembersFromGroupAsync(groupId, It.IsAny<GroupMembersDto>(), "hashed"))
             .ReturnsAsync(OperationResult<GroupDto>.Ok(groupDto));
+        
+        _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(groupId))
+            .ReturnsAsync(OperationResult<GroupDto>.Ok(
+                new GroupDto("test", "img", "desc", nickname, [nickname], [1])));
 
         var connection = await CreateConnectionAsync(nickname);
         var notified = new List<GroupDto>();
@@ -324,7 +340,7 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
 }
 
     [Fact]
-    public async Task SofDeleteMessageAsync_ShouldNotify()
+    public async Task SoftDeleteMessageAsync_ShouldNotify()
 {
     // Arrange
     var nickname = "testuser";
@@ -332,52 +348,65 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
     var groupId = Guid.NewGuid().ToString();
 
     _groupMessagesOrchestrator.Setup(x => x.SoftDeleteMessageAsync(messageId))
-        .ReturnsAsync(OperationResult<string>.Ok(groupId));
+        .ReturnsAsync(OperationResult<string>.Ok(messageId.ToString()));
 
+    _groupMessagesOrchestrator.Setup(x => x.FindMessageByIdAsync(messageId))
+        .ReturnsAsync(OperationResult<string>.Ok(messageId.ToString()));
+    
+    _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(Guid.Parse(groupId)))
+        .ReturnsAsync(OperationResult<GroupDto>.Ok(
+            new GroupDto("test", "img", "desc", nickname, [nickname], [1])));
+    
     var connection = await CreateConnectionAsync(nickname);
-    var notifications = new List<Guid>();
-    connection.On<Guid>("MessageSoftDeleted", id => notifications.Add(id));
+    var notifications = new List<SoftDeleteMessageNotification>();
+    connection.On<SoftDeleteMessageNotification>("MessageSoftDeleted", info => notifications.Add(info));
 
     await connection.InvokeAsync("JoinGroupAsync", groupId);
 
     // Act
-    await connection.InvokeAsync("SofDeleteMessageAsync", messageId);
+    await connection.InvokeAsync("SoftDeleteMessageAsync", messageId, groupId);
     await Task.Delay(100);
 
     // Assert
     Assert.Single(notifications);
-    Assert.Equal(messageId, notifications[0]);
+    Assert.Equal(messageId, notifications[0].MessageId);
+    Assert.Equal(Guid.Parse(groupId), notifications[0].GroupId);
 
     await connection.DisposeAsync();
 }
 
     [Fact]
     public async Task DeleteMessageAsync_ShouldNotify()
-{
-    // Arrange
-    var nickname = "testuser";
-    var messageId = Guid.NewGuid();
-    var groupId = Guid.NewGuid().ToString();
+    {
+        // Arrange
+        var nickname = "testuser";
+        var messageId = Guid.NewGuid();
+        var groupId = Guid.NewGuid().ToString();
 
-    _groupMessagesOrchestrator.Setup(x => x.DeleteMessageAsync(messageId))
-        .ReturnsAsync(OperationResult<string>.Ok(groupId));
+        _groupMessagesOrchestrator.Setup(x => x.DeleteMessageAsync(messageId))
+            .ReturnsAsync(OperationResult<string>.Ok(groupId));
+        
+        _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(Guid.Parse(groupId)))
+            .ReturnsAsync(OperationResult<GroupDto>.Ok(
+                new GroupDto("test", "img", "desc", nickname, [nickname], [1])));
 
-    var connection = await CreateConnectionAsync(nickname);
-    var notifications = new List<Guid>();
-    connection.On<Guid>("MessageDeleted", id => notifications.Add(id));
+        var connection = await CreateConnectionAsync(nickname);
+        var notifications = new List<DeleteMessageNotification>();
+        connection.On<DeleteMessageNotification>("MessageDeleted", info => notifications.Add(info));
 
-    await connection.InvokeAsync("JoinGroupAsync", groupId);
+        await connection.InvokeAsync("JoinGroupAsync", groupId);
 
-    // Act
-    await connection.InvokeAsync("DeleteMessageAsync", messageId);
-    await Task.Delay(100);
+        // Act
+        await connection.InvokeAsync("DeleteMessageAsync", messageId, groupId);
+        await Task.Delay(100);
 
-    // Assert
-    Assert.Single(notifications);
-    Assert.Equal(messageId, notifications[0]);
+        // Assert
+        Assert.Single(notifications);
+        Assert.Equal(messageId, notifications[0].MessageId);
+        Assert.Equal(Guid.Parse(groupId), notifications[0].GroupId);
 
-    await connection.DisposeAsync();
-}
+        await connection.DisposeAsync();
+    }
 
     [Fact]
     public async Task ReplyForMessageAsync_ShouldCreateReplyAndNotify()
@@ -399,6 +428,10 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
     _groupMessagesOrchestrator.Setup(x => x.ReplyForMessageAsync(messageId, replyToMessageId))
         .ReturnsAsync(OperationResult<GroupMessage>.Ok(replyMessage));
 
+    _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(groupId))
+        .ReturnsAsync(OperationResult<GroupDto>.Ok(
+            new GroupDto("test", "img", "desc", nickname, [nickname], [1])));
+    
     var connection = await CreateConnectionAsync(nickname);
     var notifications = new List<object>();
     connection.On<object>("MessageReplied", obj => notifications.Add(obj));
@@ -849,7 +882,115 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
 
     await connection.DisposeAsync();
 }
+    
+[Fact]
+public async Task NotifyUsersInGroupAsync_ShouldUseFallback_WhenUsersListIsEmpty()
+{
+    // Arrange 
+    var nickname = "testuser";
+    var messageId = Guid.NewGuid();
+    var groupId = Guid.NewGuid().ToString();
 
+    _groupMessagesOrchestrator.Setup(x => x.DeleteMessageAsync(messageId))
+        .ReturnsAsync(OperationResult<string>.Ok(groupId));
+    
+    _groupInfoOrchestrator.Setup(x => x.FindGroupByIdAsync(Guid.Parse(groupId)))
+        .ReturnsAsync(OperationResult<GroupDto>.Ok(
+            new GroupDto("test", "img", "desc", nickname, [], [1])));
+
+    var connection = await CreateConnectionAsync(nickname);
+    var notifications = new List<DeleteMessageNotification>();
+    connection.On<DeleteMessageNotification>("MessageDeleted", info => notifications.Add(info));
+
+    await connection.InvokeAsync("JoinGroupAsync", Guid.Parse(groupId));
+
+    // Act
+    await connection.InvokeAsync("DeleteMessageAsync", messageId, groupId);
+    await Task.Delay(100);
+
+    // Assert
+    Assert.Single(notifications);
+    Assert.Equal(messageId, notifications[0].MessageId);
+
+    await connection.DisposeAsync();
+}
+
+[Fact]
+public async Task EditMessageAsync_ShouldThrow_WhenEditFails()
+{
+    // Arrange
+    var nickname = "testuser";
+    var messageId = Guid.NewGuid();
+    var groupId = Guid.NewGuid();
+
+    _groupMessagesOrchestrator.Setup(x => x.EditMessageAsync(messageId, It.IsAny<EditMessageDto>()))
+        .ReturnsAsync(OperationResult<string>.Fail("edit fail"));
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    // Act + Assert
+    var ex = await Assert.ThrowsAsync<HubException>(() =>
+        connection.InvokeAsync("EditMessageAsync", messageId, "new content", groupId));
+
+    Assert.Contains("An unexpected error occurred invoking ", ex.Message);
+}
+
+[Fact]
+public async Task SoftDeleteMessageAsync_ShouldThrow_WhenDeleteFails()
+{
+    var nickname = "testuser";
+    var messageId = Guid.NewGuid();
+    var groupId = Guid.NewGuid();
+
+    _groupMessagesOrchestrator.Setup(x => x.SoftDeleteMessageAsync(messageId))
+        .ReturnsAsync(OperationResult<string>.Fail("soft delete fail"));
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    var ex = await Assert.ThrowsAsync<HubException>(() =>
+        connection.InvokeAsync("SoftDeleteMessageAsync", messageId, groupId));
+
+    Assert.Contains("An unexpected error occurred invoking", ex.Message);
+}
+
+[Fact]
+public async Task DeleteMessageAsync_ShouldThrow_WhenDeleteFails()
+{
+    var nickname = "testuser";
+    var messageId = Guid.NewGuid();
+    var groupId = Guid.NewGuid();
+
+    _groupMessagesOrchestrator.Setup(x => x.DeleteMessageAsync(messageId))
+        .ReturnsAsync(OperationResult<string>.Fail("delete fail"));
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    var ex = await Assert.ThrowsAsync<HubException>(() =>
+        connection.InvokeAsync("DeleteMessageAsync", messageId, groupId));
+
+    Assert.Contains("An unexpected error occurred invoking", ex.Message);
+}
+
+[Fact]
+public async Task SoftDeleteMessageAsync_ShouldThrow_WhenMessageNotFound()
+{
+    var nickname = "testuser";
+    var messageId = Guid.NewGuid();
+    var groupId = Guid.NewGuid();
+
+    _groupMessagesOrchestrator.Setup(x => x.SoftDeleteMessageAsync(messageId))
+        .ReturnsAsync(OperationResult<string>.Ok("ok"));
+
+    _groupMessagesOrchestrator.Setup(x => x.FindMessageByIdAsync(messageId))
+        .ReturnsAsync(OperationResult<string>.Fail("not found"));
+
+    var connection = await CreateConnectionAsync(nickname);
+
+    var ex = await Assert.ThrowsAsync<HubException>(() =>
+        connection.InvokeAsync("SoftDeleteMessageAsync", messageId, groupId));
+
+    Assert.Contains("An unexpected error occurred invoking", ex.Message);
+}
     private async Task<HubConnection> CreateConnectionAsync(string nickname)
     {
         var token = GenerateJwtToken(nickname);
@@ -883,3 +1024,6 @@ public class GroupChatTests : IClassFixture<WebApplicationFactory<Program>>
         return tokenHandler.WriteToken(token);
     }
 }
+
+public record DeleteMessageNotification(Guid MessageId, Guid GroupId);
+public record SoftDeleteMessageNotification(Guid MessageId, Guid GroupId, bool isDeleted);

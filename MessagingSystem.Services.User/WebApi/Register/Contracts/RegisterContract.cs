@@ -51,9 +51,9 @@ public class RegisterContract
 
     [Required(ErrorMessage = "Password is required")]
     [DataType(DataType.Password, ErrorMessage = "Invalid password format")]
-    [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!_@])[a-zA-Z\d!_@]{5,15}$",
+    [RegularExpression(@"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!_@])[a-zA-Z\d!_@]{5,115}$",
         ErrorMessage =
-            "Password must be 5 to 15 characters long and include at least one letter, " +
+            "Password must be 5 to 115 characters long and include at least one letter, " +
             "one number, and one special character (!, _, @).")]
     public string Password { get; init; } = string.Empty;
 

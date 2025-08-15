@@ -7,7 +7,7 @@ using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
-using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+using MessagingSystem.Services.Messaging.Infrastructure.Caching;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
@@ -48,6 +48,14 @@ public class MessageOrchestrator(
         await cacheService.RemoveAsync(cacheKey);
         return result;
     }
+    public async Task<OperationResult<Message>> FindMessageWithRecipientByIdAsync(Guid messageId)
+    {
+        var message = await otoMessageRepository.FindMessageByIdAsync(messageId);
+        if (message == null)
+            return OperationResult<Message>.Fail("Message not found");
+        decryptionInfo.DecryptObjectStrings(message);
+        return OperationResult<Message>.Ok(message);
+    }
     protected override async Task InvalidateCacheByUserHashAsync(string userHash)
     {
         var messages = await otoMessageRepository.FindMessagesByHashAsync(userHash);
@@ -64,7 +72,7 @@ public class MessageOrchestrator(
     }
     protected override void EditMessage(Message message, EditMessageDto editDto)
     {
-        message.EditInfo(editDto.Content);
+        message.EditInfo(encryptionInfo.Encrypt(editDto.Content));
     }
     protected override async Task InvalidateCacheAsync(Message message)
     {

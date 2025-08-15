@@ -71,12 +71,11 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
         }
 
         [Theory]
-        [InlineData("shor", "Password must be 5 to 15 characters long")]     
-        [InlineData("password", "Password must be 5 to 15 characters long")] 
-        [InlineData("Password", "Password must be 5 to 15 characters long")] 
-        [InlineData("Pass123", "Password must be 5 to 15 characters long")]  
-        [InlineData("Pass@@@", "Password must be 5 to 15 characters long")]  
-        [InlineData("verylongpasswordover15chars1!", "Password must be 5 to 15 characters long")] 
+        [InlineData("shor", "Password must be 5 to 115 characters long")]     
+        [InlineData("password", "Password must be 5 to 115 characters long")] 
+        [InlineData("Password", "Password must be 5 to 115 characters long")] 
+        [InlineData("Pass123", "Password must be 5 to 115 characters long")]  
+        [InlineData("Pass@@@", "Password must be 5 to 115 characters long")]  
         public void LoginContract_ShouldFailWithInvalidPassword(string invalidPassword, string expectedErrorSubstring)
         {
             // Arrange
@@ -167,7 +166,7 @@ namespace MessagingSystem.Tests.User.UnitTests.WebApi.Login
 
             // Assert
             Assert.False(isValid);
-            Assert.Contains(validationResults, v => v.ErrorMessage != null && v.ErrorMessage.Contains("Password must be 5 to 15 characters long"));
+            Assert.Contains(validationResults, v => v.ErrorMessage != null && v.ErrorMessage.Contains("Password must be 5 to 115 characters long"));
         }
 
         [Theory]

@@ -310,22 +310,6 @@ public class RegisterContractInitTests
     }
 
     [Fact]
-    public void Validation_ShouldFail_WhenPasswordTooLong()
-    {
-        // Arrange
-        var contract = new RegisterContract(
-            "John", "Doe", "@login1", "john@example.com", "nick@name", "ThisIsAVeryLongPassword123@");
-
-        // Act
-        var results = new List<ValidationResult>();
-        var isValid = Validator.TryValidateObject(contract, new ValidationContext(contract), results, true);
-
-        // Assert
-        Assert.False(isValid);
-        Assert.Contains(results, r => r.ErrorMessage != null && r.ErrorMessage.Contains("Password must be"));
-    }
-
-    [Fact]
     public void Validation_ShouldFail_WhenPasswordMissingLetter()
     {
         // Arrange

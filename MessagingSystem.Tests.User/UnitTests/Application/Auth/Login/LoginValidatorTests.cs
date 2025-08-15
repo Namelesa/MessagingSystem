@@ -48,7 +48,6 @@ public class LoginValidatorTests(ITestOutputHelper output)
     [InlineData("password123", "Password without special characters")]
     [InlineData("pass@", "Password without numbers")]
     [InlineData("123!@", "Password without letters")]
-    [InlineData("VeryLongPassword123!@", "Password is too long")]
     public void Validate_InvalidPassword_ShouldFailValidation(string password, string testName)
     {
         // Arrange

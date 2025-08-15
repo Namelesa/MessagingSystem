@@ -60,7 +60,7 @@ public class RegisterOrchestrator(
             
             await userRepository.AddUserAsync(user);
             
-            var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email, hashNickName);
+            var confirmUserEmail = new ConfirmUserEmail(user.UserName, user.Email, Uri.EscapeDataString(hashNickName));
             encryptInfo.EncryptRsaObjectStrings(confirmUserEmail, publicKeyNotification);
             
             await publishEndpoint.Publish(confirmUserEmail);
@@ -76,11 +76,15 @@ public class RegisterOrchestrator(
     public async Task<OperationResult<string>> ConfirmEmailAsync(string hashNickName)
     {
         var decodedHash = Uri.UnescapeDataString(hashNickName);
+        Console.WriteLine(decodedHash);
         var user = await userRepository.FindUserByHashNickNameAsync(decodedHash);
 
         if (user == null)
             return OperationResult<string>.Fail("User not found");
 
+        if(user.EmailConfirmed)
+            return OperationResult<string>.Fail("Email already confirmed");
+        
         user.EmailConfirmed = true;
 
         try

@@ -6,7 +6,7 @@ using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
 using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
-using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+using MessagingSystem.Services.Messaging.Infrastructure.Caching;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
@@ -53,7 +53,7 @@ public class GroupMessagesOrchestrator(
 
     protected override void EditMessage(GroupMessage message, EditMessageDto editDto)
     {
-        message.EditInfo(editDto.Content);
+        message.EditInfo(encryptionInfo.Encrypt(editDto.Content));
     }
     
     protected override Task InvalidateCacheAsync(GroupMessage message)

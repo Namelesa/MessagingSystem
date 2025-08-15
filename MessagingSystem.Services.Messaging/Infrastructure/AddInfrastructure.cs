@@ -8,7 +8,7 @@ using MessagingSystem.Services.Messaging.Application.MessageBroker.AddUser;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
-using MessagingSystem.Services.Messaging.Infrastructure.Cashing;
+using MessagingSystem.Services.Messaging.Infrastructure.Caching;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;

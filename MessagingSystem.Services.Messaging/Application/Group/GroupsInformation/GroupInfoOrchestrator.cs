@@ -181,12 +181,11 @@ public class GroupInfoOrchestrator(
                 return OperationResult<GroupDto>.Fail("User list is empty");
 
             var hashedNicks = userNicks.Select(hasher.Hash).ToList();
-            
             switch (modificationType)
             {
                 case GroupMemberModificationType.Add:
-                    await AddUsersWithImagesToGroup(userNicks, group);
                     group.AddUsers(userNicks);
+                    await AddUsersWithImagesToGroup(userNicks, group);
                     break;
                 case GroupMemberModificationType.Remove:
                     if(hashedNicks.Contains(adminHash))
@@ -197,17 +196,19 @@ public class GroupInfoOrchestrator(
                 default:
                     throw new ArgumentOutOfRangeException(nameof(modificationType), modificationType, null);
             }
-            group.EncryptMembers(groupEncryption.EncryptMembers);
             group.ApplyHashToMembers(hasher.Hash);
-
+            group.EncryptMembers(groupEncryption.EncryptMembers);
+            
             var editedGroup = await groupInfoRepository.EditGroupInfoAsync(group);
-            return MapAndDecrypt(editedGroup);
+            editedGroup.EncryptMembers(groupEncryption.DecryptMembers);
+            var groupWithMembers =  MapAndDecrypt(editedGroup);
+            return groupWithMembers;
         }, "Can not modify user members in group");
     }
     private OperationResult<GroupDto> MapAndDecrypt(GroupInfo group)
     {
         var dto = mapper.Map<GroupDto>(group);
-        groupEncryption.DecryptGeneric(dto);
+        groupEncryption.DecryptGeneric(dto);   
         return OperationResult<GroupDto>.Ok(dto);
     }
     private GroupDto MapAndDecryptForLists(GroupInfo group)

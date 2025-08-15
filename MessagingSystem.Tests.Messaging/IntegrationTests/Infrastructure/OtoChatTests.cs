@@ -9,7 +9,7 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
-using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
+using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Oto;
 using MessagingSystem.Services.Messaging.WebApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -142,8 +142,8 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
             .ReturnsAsync(deleteResult);
 
         _messageOrchestratorMock
-            .Setup(x => x.FindMessageByIdAsync(messageId))
-            .ReturnsAsync(findResult);
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(new Message(sender, recipient, "original")));
 
         var connection1 = await CreateConnectionAsync(sender);
         var connection2 = await CreateConnectionAsync(recipient);
@@ -183,8 +183,8 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
             .ReturnsAsync(deleteResult);
 
         _messageOrchestratorMock
-            .Setup(x => x.FindMessageByIdAsync(messageId))
-            .ReturnsAsync(findResult);
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(new Message(sender, recipient, "original")));
 
         var connection = await CreateConnectionAsync(sender);
 
@@ -286,8 +286,8 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
         var connection2 = await CreateConnectionAsync(recipient);
 
         var receivedMessages = new List<object>();
-        connection1.On<object>("ReceivePrivateMessage", msg => receivedMessages.Add(msg));
-        connection2.On<object>("ReceivePrivateMessage", msg => receivedMessages.Add(msg));
+        connection1.On<object>("ReplyToMessageAsync", msg => receivedMessages.Add(msg));
+        connection2.On<object>("ReplyToMessageAsync", msg => receivedMessages.Add(msg));
 
         // Act
         var result = await connection1.InvokeAsync<object>("ReplyToMessageAsync", recipient, content, replyToMessageId);
@@ -407,8 +407,8 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
             .ReturnsAsync(editResult);
 
         _messageOrchestratorMock
-            .Setup(x => x.FindMessageByIdAsync(messageId))
-            .ReturnsAsync(OperationResult<string>.Ok("test string"));
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(new Message(sender, recipient, "Edited")));
 
         var connection1 = await CreateConnectionAsync(sender);
         var connection2 = await CreateConnectionAsync(recipient);
@@ -639,8 +639,8 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
             .ReturnsAsync(deleteResult);
 
         _messageOrchestratorMock
-            .Setup(x => x.FindMessageByIdAsync(messageId))
-            .ReturnsAsync(findResult);
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(new Message(sender, null, "original")));
 
         var connection = await CreateConnectionAsync(sender);
 
@@ -653,6 +653,59 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
         await connection.DisposeAsync();
     }
 
+    [Fact]
+    public async Task EditMessageAsync_MessageNotFound_ShouldReturnSilently()
+    {
+        var messageId = Guid.NewGuid();
+        var sender = "testuser";
+        var newContent = "updated content";
+
+        var editResult = OperationResult<string>.Ok("Edited");
+        _messageOrchestratorMock
+            .Setup(x => x.EditMessageAsync(messageId, It.IsAny<EditMessageDto>()))
+            .ReturnsAsync(editResult);
+        _messageOrchestratorMock
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(null));
+
+        var connection = await CreateConnectionAsync(sender);
+
+        // Act
+        await connection.InvokeAsync("EditMessageAsync", messageId, newContent);
+
+        // Assert
+        _messageOrchestratorMock.Verify(x => x.EditMessageAsync(messageId, It.IsAny<EditMessageDto>()), Times.Once);
+
+        await connection.DisposeAsync();
+    }
+    
+    [Fact]
+    public async Task DeleteMessageAsync_MessageNotFound_ShouldThrowHubException()
+    {
+        var messageId = Guid.NewGuid();
+        var sender = "testuser";
+
+        _messageOrchestratorMock
+            .Setup(x => x.SoftDeleteMessageAsync(messageId))
+            .ReturnsAsync(OperationResult<string>.Ok("deleted"));
+
+        _messageOrchestratorMock
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(null));
+
+        var connection = await CreateConnectionAsync(sender);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<HubException>(() =>
+            connection.InvokeAsync("DeleteMessageAsync", messageId, "soft"));
+
+        Assert.Contains("An unexpected error occurred invoking", ex.Message);
+
+        _messageOrchestratorMock.Verify(x => x.SoftDeleteMessageAsync(messageId), Times.Once);
+
+        await connection.DisposeAsync();
+    }
+    
     [Fact]
     public async Task FindMessagesAsync_WithValidParameters_ShouldReturnMessages()
 {
@@ -767,6 +820,51 @@ public class OtoChatHubTests : IClassFixture<WebApplicationFactory<Program>>
 
     await connection.DisposeAsync();
 }
+    
+    [Fact]
+    public async Task DeleteMessageAsync_HardDelete_MessageNotFound_ShouldThrowHubException()
+    {
+        var messageId = Guid.NewGuid();
+        var sender = "testuser";
+
+        _messageOrchestratorMock
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(null));
+
+        var connection = await CreateConnectionAsync(sender);
+
+        var ex = await Assert.ThrowsAsync<HubException>(() =>
+            connection.InvokeAsync("DeleteMessageAsync", messageId, "hard"));
+
+        Assert.Contains("An unexpected error occurred invoking", ex.Message);
+
+        await connection.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_HardDelete_FailedDelete_ShouldThrowHubException()
+    {
+        var messageId = Guid.NewGuid();
+        var sender = "testuser";
+        var recipient = "recipient";
+
+        _messageOrchestratorMock
+            .Setup(x => x.FindMessageWithRecipientByIdAsync(messageId))
+            .ReturnsAsync(OperationResult<Message>.Ok(new Message(sender, recipient, "content")));
+
+        _messageOrchestratorMock
+            .Setup(x => x.DeleteMessageAsync(messageId))
+            .ReturnsAsync(OperationResult<string>.Fail("Hard delete failed"));
+
+        var connection = await CreateConnectionAsync(sender);
+
+        var ex = await Assert.ThrowsAsync<HubException>(() =>
+            connection.InvokeAsync("DeleteMessageAsync", messageId, "hard"));
+
+        Assert.Contains("An unexpected error occurred invoking", ex.Message);
+
+        await connection.DisposeAsync();
+    }
     
     private async Task<HubConnection> CreateConnectionAsync(string nickname)
     {
