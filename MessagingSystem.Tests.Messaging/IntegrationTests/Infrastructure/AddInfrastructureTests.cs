@@ -22,9 +22,9 @@ using MessagingSystem.Services.Messaging.Core.Oto.OtoChats;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Core.Oto.Users;
 using MessagingSystem.Services.Messaging.Infrastructure;
-using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Group;
 using MessagingSystem.Services.Messaging.Infrastructure.ChatsHubs.Oto;
+using MessagingSystem.Services.Messaging.Infrastructure.FileLoaderService;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
@@ -112,6 +112,15 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
 
             _mockConfiguration.Setup(x => x.GetSection("DigitalOceanSpacesSettings"))
                 .Returns(digitalOceanSection.Object);
+            
+            var awsSpaceSettings = new Mock<IConfigurationSection>();
+            awsSpaceSettings.Setup(x => x["AccessKey"]).Returns("TestAccessKey");
+            awsSpaceSettings.Setup(x => x["SecretKey"]).Returns("TestSecretKey");
+            awsSpaceSettings.Setup(x => x["BucketName"]).Returns("TestBucket");
+            awsSpaceSettings.Setup(x => x["Region"]).Returns("TestRegion");
+
+            _mockConfiguration.Setup(x => x.GetSection("AwsSpaceSettings"))
+                .Returns(awsSpaceSettings.Object);
         }
 
         [Fact]
@@ -455,6 +464,11 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:Region"]).Returns("TestRegion");
             mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:EndpointEndpoint"]).Returns("https://nyc3.digitaloceanspaces.com");
 
+            mockConfiguration.Setup(x => x.GetSection("AwsSpaceSettings")).Returns(messageBrokerSection.Object);
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:AccessKey"]).Returns("test-access-key");
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:SecretKey"]).Returns("test-secret-key");
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:BucketName"]).Returns("TestBucket");
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:Region"]).Returns("TestRegion");
             
             // Act
             services.AddInfrastructureLayer(mockConfiguration.Object);
@@ -497,6 +511,12 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
             mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:Region"]).Returns("TestRegion");
             mockConfiguration.Setup(x => x["DigitalOceanSpacesSettings:EndpointEndpoint"]).Returns("https://nyc3.digitaloceanspaces.com");
             
+            mockConfiguration.Setup(x => x.GetSection("AwsSpaceSettings")).Returns(messageBrokerSection.Object);
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:AccessKey"]).Returns("test-access-key");
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:SecretKey"]).Returns("test-secret-key");
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:BucketName"]).Returns("TestBucket");
+            mockConfiguration.Setup(x => x["AwsSpaceSettings:Region"]).Returns("TestRegion");
+
             // Act & Assert
             services.AddInfrastructureLayer(mockConfiguration.Object);
             var serviceProvider = services.BuildServiceProvider();
@@ -772,26 +792,23 @@ namespace MessagingSystem.Tests.Messaging.IntegrationTests.Infrastructure
     var mockRequest = new Mock<HttpRequest>();
     var mockCookies = new Mock<IRequestCookieCollection>();
     var mockQuery = new Mock<IQueryCollection>();
-
-    // Setup query with EMPTY token to force cookie lookup
+    
     mockQuery.Setup(x => x["access_token"]).Returns("");
-
-    // Setup cookies with encrypted token - this covers (string,out string) branch
+    
     mockCookies.Setup(x => x.TryGetValue("access_token", out It.Ref<string>.IsAny))
         .Returns((string _, out string value) =>
         {
             value = "encrypted-cookie-token";
             return true;
         });
-
-    // Setup decryption mock
+    
     mockDecryption.Setup(x => x.Decrypt("encrypted-cookie-token"))
         .Returns("decrypted-token");
 
     mockRequest.Setup(x => x.Query).Returns(mockQuery.Object);
     mockRequest.Setup(x => x.Cookies).Returns(mockCookies.Object);
     mockHttpContext.Setup(x => x.Request).Returns(mockRequest.Object);
-    // This covers (IServiceProvider) branch
+
     mockHttpContext.Setup(x => x.RequestServices).Returns(serviceProvider);
 
     var context = new MessageReceivedContext(
@@ -845,6 +862,42 @@ public void AddInfrastructureLayer_ShouldResolveDigitalOceanSpacesSettingsFromSe
     Assert.Equal("https://test.endpoint.com", digitalOceanSettings.Endpoint);
 }
 
+
+        [Fact]
+        public void AddInfrastructureLayer_ShouldResolveAwsSpacesSettingsFromServiceProvider()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["AwsSpaceSettings:AccessKey"] = "test-access-key",
+                    ["AwsSpaceSettings:SecretKey"] = "test-secret-key", 
+                    ["AwsSpaceSettings:BucketName"] = "test-bucket",
+                    ["AwsSpaceSettings:Region"] = "test-region",
+                    ["MessageBroker:Host"] = "amqp://localhost:5672",
+                    ["MessageBroker:UserName"] = "guest",
+                    ["MessageBroker:Password"] = "guest",
+                    ["JWTConfig:Issuer"] = "test-issuer",
+                    ["JWTConfig:Audience"] = "test-audience",
+                    ["JWTConfig:Key"] = "test-key-with-at-least-256-bits-length-for-security",
+                    ["Redis:Host"] = "localhost:6379"
+                })
+                .Build();
+
+            // Act
+            services.AddInfrastructureLayer(configuration);
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Assert
+            var awsOceanSettings = serviceProvider.GetService<AwsSpaceSettings>();
+            Assert.NotNull(awsOceanSettings);
+            Assert.Equal("test-access-key", awsOceanSettings.AccessKey);
+            Assert.Equal("test-secret-key", awsOceanSettings.SecretKey);
+            Assert.Equal("test-bucket", awsOceanSettings.BucketName);
+            Assert.Equal("test-region", awsOceanSettings.Region);
+        }
+
 [Fact]
 public void AddInfrastructureLayer_ShouldResolveMessageBrokerSettingsFromServiceProvider()
 {
@@ -879,5 +932,6 @@ public void AddInfrastructureLayer_ShouldResolveMessageBrokerSettingsFromService
     Assert.Equal("test-user", messageBrokerSettings.UserName);
     Assert.Equal("test-password", messageBrokerSettings.Password);
 }
+
     }
 }

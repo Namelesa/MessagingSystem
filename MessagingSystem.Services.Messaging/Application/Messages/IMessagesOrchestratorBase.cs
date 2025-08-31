@@ -12,7 +12,6 @@ public interface IMessageOrchestratorBase<TMessage, TCreateDto>
     Task<OperationResult<string>> SoftDeleteMessageAsync(Guid messageId);
     Task<OperationResult<string>> DeleteMessageAsync(Guid messageId);
     Task<OperationResult<string>> FindMessageByIdAsync(Guid messageId);
-
     Task<OperationResult<TMessage>> ReplyForMessageAsync(Guid messageId, Guid replyId);
     Task<List<TMessage>?> FindMessagesAsync(MessageFilter messageFilter);
     Task<OperationResult<string>> UpdateUserInfoInMessageAsync(string newNickName, string oldUserHashName);

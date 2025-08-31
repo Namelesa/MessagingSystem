@@ -29,7 +29,7 @@ public static class AddPersistence
 
         services.AddDbContext<GroupAppDbContext>(options => 
             options.UseNpgsql(configuration.GetConnectionString("GroupDefaultConnection")));
-
+        
         services.AddSingleton<IDbContextFactory<GroupAppDbContext>>(_ =>
         {
             var connectionString = configuration.GetConnectionString("GroupDefaultConnection");

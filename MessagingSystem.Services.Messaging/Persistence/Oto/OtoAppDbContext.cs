@@ -22,7 +22,7 @@ public class OtoAppDbContext(DbContextOptions<OtoAppDbContext> options) : DbCont
                 .HasMaxLength(120)
                 .IsRequired();
             builder.Property(u => u.Content)
-                .HasMaxLength(3500)
+                .HasMaxLength(20000)
                 .IsRequired();
             builder.Property(u => u.RecipientHash)
                 .HasMaxLength(120)

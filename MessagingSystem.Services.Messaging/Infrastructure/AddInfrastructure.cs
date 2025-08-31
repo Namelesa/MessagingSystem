@@ -9,6 +9,7 @@ using MessagingSystem.Services.Messaging.Application.MessageBroker.Key;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoDelete;
 using MessagingSystem.Services.Messaging.Application.MessageBroker.UserInfoUpdate;
 using MessagingSystem.Services.Messaging.Infrastructure.Caching;
+using MessagingSystem.Services.Messaging.Infrastructure.FileLoaderService;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using MessagingSystem.Services.Messaging.Infrastructure.ImageLoader;
 using MessagingSystem.Services.Messaging.Infrastructure.Keys;
@@ -32,12 +33,19 @@ public static class AddInfrastructure
         services.AddSingleton<IPublicKeyStorage, PublicKeyStorage>();
         services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IImageLoaderService, ImageLoaderService>();
+        services.AddScoped<IFileLoader, FileLoader>();
         services.AddScoped<KeyPublisher>();
         
         services.Configure<MessageBrokerSettings>(configuration.GetSection("MessageBroker"));
 
         services.Configure<DigitalOceanSpacesSettings>(
             configuration.GetSection("DigitalOceanSpacesSettings"));
+        
+        services.Configure<AwsSpaceSettings>(
+            configuration.GetSection("AwsSpaceSettings"));
+        
+        services.AddSingleton(sp =>
+            sp.GetRequiredService<IOptions<AwsSpaceSettings>>().Value);
         
         services.AddSingleton(sp =>
             sp.GetRequiredService<IOptions<DigitalOceanSpacesSettings>>().Value);
@@ -81,7 +89,6 @@ public static class AddInfrastructure
             });
         });
     });
-
     services.AddAuthentication(options =>
         {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -145,9 +152,7 @@ public static class AddInfrastructure
             };
             options.AddSecurityDefinition("Bearer", jwtSecurityScheme);
         });
-        
         services.AddAuthorization();
-
         services.AddCors(options =>
         {
             options.AddPolicy("AllowFrontend", policy =>
@@ -159,7 +164,6 @@ public static class AddInfrastructure
                     .AllowCredentials();
             });
         });
-
         services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = configuration

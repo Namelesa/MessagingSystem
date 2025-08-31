@@ -103,7 +103,7 @@ public class EncryptionInfo : IEncryptionInfo
         var excludedProps = new[]
         {
             "HashLogin", "HashEmail", "HashNickName", "SenderHash", "RecipientHash", "AdminHash"
-            , "GroupNameHash"
+            , "GroupNameHash", "FileOriginalHash"
         };
 
         var props = typeof(T).GetProperties()

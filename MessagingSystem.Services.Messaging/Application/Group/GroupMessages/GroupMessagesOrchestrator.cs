@@ -7,6 +7,7 @@ using MessagingSystem.Services.Messaging.Application.MessageDto;
 using MessagingSystem.Services.Messaging.Application.Messages;
 using MessagingSystem.Services.Messaging.Core.Groups.GroupMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Caching;
+using MessagingSystem.Services.Messaging.Infrastructure.FileLoaderService;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 
 namespace MessagingSystem.Services.Messaging.Application.Group.GroupMessages;

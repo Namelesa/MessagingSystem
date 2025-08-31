@@ -1,4 +1,5 @@
 using FluentValidation;
+using MessagingSystem.Services.Messaging.Application.FileLoader;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMember;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages;
 using MessagingSystem.Services.Messaging.Application.Group.GroupMessages.Dto;
@@ -27,6 +28,7 @@ public static class AddApplication
         services.AddScoped<IGroupInfoOrchestrator, GroupInfoOrchestrator>();
         services.AddScoped<IGroupMemberOrchestrator, GroupMemberOrchestrator>();
         services.AddScoped<IGroupMessagesOrchestrator, GroupMessagesOrchestrator>();
+        services.AddScoped<IFileLoaderOrchestrator, FileLoaderOrchestrator>();
         services.AddScoped<IValidator<MessagesDto>, MessageCreateValidator>();
         services.AddScoped<IValidator<EditMessageDto>, MessageEditValidator>();
         services.AddScoped<IValidator<GroupDto>, GroupDtoValidator>();

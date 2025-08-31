@@ -15,7 +15,7 @@ public class GroupMessageCreateValidator : AbstractValidator<GroupMessageDto>
         RuleFor(u => u.Content)
             .NotEmpty().WithMessage("Content cannot be empty.")
             .MinimumLength(1).WithMessage("Minimal length of content must be 1")
-            .MaximumLength(2000).WithMessage("Maximal length of content must be 2000");
+            .MaximumLength(20000).WithMessage("Maximal length of content must be 2000");
         
         RuleFor(u => u.GroupId)
             .NotEmpty().WithMessage("Group ID cannot be empty.")

@@ -54,3 +54,12 @@
     restart: always
     ports:
       - "6650:6379"
+  
+  redisForMapping:
+    image: redis:latest
+    container_name: redis_mapping
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    command: [ "redis-server", "--appendonly", "yes" ]

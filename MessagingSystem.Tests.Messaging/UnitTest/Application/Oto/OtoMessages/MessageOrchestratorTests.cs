@@ -10,6 +10,7 @@ using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Application.Oto.OtoMessages.Dto;
 using MessagingSystem.Services.Messaging.Core.Oto.OtoMessages;
 using MessagingSystem.Services.Messaging.Infrastructure.Caching;
+using MessagingSystem.Services.Messaging.Infrastructure.FileLoaderService;
 using MessagingSystem.Services.Messaging.Infrastructure.Hasher;
 using Moq;
 using Xunit;
@@ -25,6 +26,7 @@ public class MessageOrchestratorTests
     private readonly Mock<ICacheService> _cacheServiceMock;
     private readonly MessageOrchestrator _orchestrator;
     private readonly IChatOrchestrator _chatOrchestrator;
+    private readonly Mock<IFileLoader> _fileLoaderMock;
 
     public MessageOrchestratorTests()
     {
@@ -38,6 +40,7 @@ public class MessageOrchestratorTests
         _cacheServiceMock = new Mock<ICacheService>();
         _chatOrchestrator = new Mock<IChatOrchestrator>().Object;
         new Mock<IValidator<EditMessageDto>>();
+        _fileLoaderMock = new Mock<IFileLoader>();
 
         _orchestrator = new MessageOrchestrator(
             _repositoryMock.Object,
