@@ -45,7 +45,7 @@ public class RegisterController(
         const string frontendUrl = "http://localhost:4200";
         
         var redirectUrl = result.Success
-            ? $"{frontendUrl}/email-confirmed?status=success"
+            ? $"{frontendUrl}/email-confirmed?status=success&nickName={Uri.EscapeDataString(result.Data)}"
             : $"{frontendUrl}/email-confirmed?status=error&message={Uri.EscapeDataString(result.Message)}";
 
         return Redirect(redirectUrl);

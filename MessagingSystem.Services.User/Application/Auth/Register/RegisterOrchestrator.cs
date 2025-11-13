@@ -76,7 +76,6 @@ public class RegisterOrchestrator(
     public async Task<OperationResult<string>> ConfirmEmailAsync(string hashNickName)
     {
         var decodedHash = Uri.UnescapeDataString(hashNickName);
-        Console.WriteLine(decodedHash);
         var user = await userRepository.FindUserByHashNickNameAsync(decodedHash);
 
         if (user == null)
@@ -90,7 +89,7 @@ public class RegisterOrchestrator(
         try
         {
             await userRepository.UpdateUserAsync(user);
-            return OperationResult<string>.Ok("User confirm email");
+            return OperationResult<string>.Ok(user.HashNickName);
         }
         catch (Exception e)
         {

@@ -31,6 +31,17 @@
       POSTGRES_PASSWORD: postgres
     ports:
       - "5558:5432"
+        
+  postgres3:
+    image: postgres:latest
+    container_name: keys_db
+    restart: always
+    environment:
+      POSTGRES_DB: publicKeys
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5559:5432"
   
   rabbitmq:
     image: rabbitmq:3-management
