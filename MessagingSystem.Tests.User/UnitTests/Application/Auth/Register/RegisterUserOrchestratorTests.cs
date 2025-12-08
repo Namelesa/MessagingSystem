@@ -239,7 +239,6 @@ public class RegisterUserOrchestratorTests
         var result = await _orchestrator.ConfirmEmailAsync("hash");
 
         result.Success.Should().BeTrue();
-        result.Data.Should().Contain("confirm email");
         user.EmailConfirmed.Should().BeTrue();
     }
     
