@@ -21,7 +21,6 @@ namespace MessagingSystem.Tests.User.UnitTests.Application
         [Fact]
         public void AddApplicationLayer_RegistersAllDependenciesCorrectly()
         {
-            // Arrange
             var services = new ServiceCollection();
             
             var userRepositoryMock = new Mock<IUserRepository>();
@@ -47,7 +46,7 @@ namespace MessagingSystem.Tests.User.UnitTests.Application
                 ["MessageBrokerSettings:Password"] = "guest"
             };
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(configDict)
+                .AddInMemoryCollection(configDict!)
                 .Build();
             
             services.AddScoped<IUserRepository>(_ => userRepositoryMock.Object);
